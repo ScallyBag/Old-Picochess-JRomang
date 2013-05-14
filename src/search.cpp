@@ -17,6 +17,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define PA_GTB 1
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -99,6 +101,26 @@ namespace {
   void id_loop(Position& pos);
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
+#if PA_GTB
+  template <NodeType NT>
+  inline bool ok_to_use_TT(const TTEntry* tte, Depth depth, Value alpha, Value beta, int ply) {
+
+    const bool PvNode   = (NT == PV || NT == Root || NT == SplitPointPV || NT == SplitPointRoot);
+    const Value v = value_from_tt(tte->value(), ply);
+    
+    return
+    PvNode ?    tte->type() == BOUND_EXACT
+    && (   tte->depth() >= depth
+        || v >= VALUE_MATE_IN_MAX_PLY
+        || v <= VALUE_MATED_IN_MAX_PLY)
+    
+    :    (   tte->depth() >= depth
+          || v >= std::max(VALUE_MATE_IN_MAX_PLY, beta)
+          || v <= std::min(VALUE_MATED_IN_MAX_PLY, alpha))
+    && (   ((tte->type() & BOUND_LOWER) && v >= beta)
+        || ((tte->type() & BOUND_UPPER) && v <= alpha));
+  }
+#endif
   bool check_is_dangerous(const Position& pos, Move move, Value futilityBase, Value beta);
   bool allows(const Position& pos, Move first, Move second);
   bool refutes(const Position& pos, Move first, Move second);
@@ -570,11 +592,16 @@ namespace {
     // we should also update RootMoveList to avoid bogus output.
     if (   !RootNode
         && tte
+#if PA_GTB
+        && ttValue != VALUE_NONE // Only in case of TT access race
+        && ok_to_use_TT<PvNode ? PV : NonPV>(tte, depth, alpha, beta, ss->ply))
+#else
         && tte->depth() >= depth
         && ttValue != VALUE_NONE // Only in case of TT access race
         && (           PvNode ?  tte->type() == BOUND_EXACT
             : ttValue >= beta ? (tte->type() & BOUND_LOWER)
                               : (tte->type() & BOUND_UPPER)))
+#endif
     {
         TT.refresh(tte);
         ss->currentMove = ttMove; // Can be MOVE_NONE
@@ -1162,11 +1189,16 @@ split_point_start: // At split points actual search starts from here
     ttValue = tte ? value_from_tt(tte->value(),ss->ply) : VALUE_NONE;
 
     if (   tte
+#if PA_GTB
+        && ttValue != VALUE_NONE // Only in case of TT access race
+        && ok_to_use_TT<PvNode ? PV : NonPV>(tte, ttDepth, alpha, beta, ss->ply))
+#else
         && tte->depth() >= ttDepth
         && ttValue != VALUE_NONE // Only in case of TT access race
         && (           PvNode ?  tte->type() == BOUND_EXACT
             : ttValue >= beta ? (tte->type() & BOUND_LOWER)
                               : (tte->type() & BOUND_UPPER)))
+#endif
     {
         ss->currentMove = ttMove; // Can be MOVE_NONE
         return ttValue;
