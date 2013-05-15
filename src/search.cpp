@@ -17,8 +17,6 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define PA_GTB 1
-
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -36,6 +34,10 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
+#if PA_GTB && defined(USE_EGTB)
+#include "bitcount.h"
+#include "egtb.h"
+#endif
 
 namespace Search {
 
@@ -120,7 +122,11 @@ namespace {
     && (   ((tte->type() & BOUND_LOWER) && v >= beta)
         || ((tte->type() & BOUND_UPPER) && v <= alpha));
   }
-#endif
+#if defined(USE_EGTB)
+  bool UseGaviotaTb;
+  bool ProbeOnlyAtRoot;
+#endif // defined(USE_EGTB)
+#endif // PA_GTB
   bool check_is_dangerous(const Position& pos, Move move, Value futilityBase, Value beta);
   bool allows(const Position& pos, Move first, Move second);
   bool refutes(const Position& pos, Move first, Move second);
@@ -249,6 +255,25 @@ void Search::think() {
           << " moves to go: " << Limits.movestogo
           << std::endl;
   }
+  
+#if PA_GTB && defined(USE_EGTB)
+  if (Options["UseGaviotaTb"] && popcount<Full>(RootPos.pieces()) <= MaxEgtbPieces)
+  {
+    int success;
+    Move move;
+    Value v = egtb_probe_root(RootPos, &move, &success);
+
+    if (success)
+    {
+      std::swap(RootMoves[0], *std::find(RootMoves.begin(), RootMoves.end(), move));
+      RootMoves[0].score = v;
+      RootPos.set_tb_hits(RootPos.tb_hits() - 1);
+      RootMoves[0].extract_pv_from_tb(RootPos);
+      sync_cout << uci_pv(RootPos, 1, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
+      goto finalize;
+    }
+  }
+#endif
 
   // Reset the threads, still sleeping: will be wake up at split time
   for (size_t i = 0; i < Threads.size(); i++)
@@ -321,6 +346,9 @@ namespace {
     int depth, prevBestMoveChanges;
     Value bestValue, alpha, beta, delta;
 
+#if PA_GTB && defined(USE_EGTB)
+    pos.set_tb_hits(0); // reset tbhits before doing the root search
+#endif
     memset(ss, 0, 4 * sizeof(Stack));
     depth = BestMoveChanges = 0;
     bestValue = delta = -VALUE_INFINITE;
@@ -332,6 +360,10 @@ namespace {
 
     PVSize = Options["MultiPV"];
     Skill skill(Options["Skill Level"]);
+#if PA_GTB && defined(USE_EGTB)
+    UseGaviotaTb = Options["UseGaviotaTb"];
+    ProbeOnlyAtRoot = Options["ProbeOnlyAtRoot"];
+#endif
 
     // Do we have to play with skill handicap? In this case enable MultiPV search
     // that we will use behind the scenes to retrieve a set of possible moves.
@@ -617,6 +649,37 @@ namespace {
         return ttValue;
     }
 
+#if PA_GTB && defined(USE_EGTB)
+    if (UseGaviotaTb && !ProbeOnlyAtRoot && !RootNode && popcount<Full>(pos.pieces()) <= MaxEgtbPieces) {
+      int success = 1;
+      bool hard;
+      
+      if (depth >= 8 * ONE_PLY || ss->ply <= 1 || (PvNode && depth >= 5 * ONE_PLY))
+        hard = true;
+      else if (depth > Depth(0) || PvNode)
+        hard = false;
+      else
+        success = 0; // don't bother
+      
+      if (success) {
+        bool exact = (alpha < -VALUE_KNOWN_WIN || beta > VALUE_KNOWN_WIN);
+        Value v = egtb_probe(pos, hard, exact, &success);
+        if (success) {
+          if (exact) {
+            value = (v < -1) ? v + ss->ply : (v > 1) ? v - ss->ply : v;
+          } else {
+            if (v < -1) value = -VALUE_MATE + MAX_PLY + ss->ply;
+            else if (v > 1) value = VALUE_MATE - MAX_PLY - ss->ply;
+            else value = VALUE_DRAW + v;
+          }
+          TT.store(posKey, value_to_tt(value, ss->ply), BOUND_EXACT, depth + 6 * ONE_PLY,
+                   MOVE_NONE, VALUE_NONE, VALUE_NONE);
+          return value;
+        }
+      }
+    }
+#endif
+    
     // Step 5. Evaluate the position statically and update parent's gain statistics
     if (inCheck)
         ss->staticEval = ss->evalMargin = eval = VALUE_NONE;
@@ -1511,7 +1574,7 @@ split_point_start: // At split points actual search starts from here
     return false;
   }
 
-
+  
   // When playing with strength handicap choose best move among the MultiPV set
   // using a statistical rule dependent on 'level'. Idea by Heinz van Saanen.
 
@@ -1589,6 +1652,9 @@ split_point_start: // At split points actual search starts from here
           << " nps "       << pos.nodes_searched() * 1000 / elaspsed
           << " time "      << elaspsed
           << " multipv "   << i + 1
+#if PA_GTB && defined(USE_EGTB)
+          << " tbhits "    << pos.tb_hits()
+#endif
           << " pv";
 
         for (size_t j = 0; RootMoves[i].pv[j] != MOVE_NONE; j++)
@@ -1599,6 +1665,35 @@ split_point_start: // At split points actual search starts from here
   }
 
 } // namespace
+
+
+void RootMove::extract_pv_from_tb(Position& pos) {
+  
+  StateInfo state[MAX_PLY_PLUS_2], *st = state;
+  int ply = 0;
+  Move m = pv[0];
+  int success;
+  Value v = VALUE_NONE;
+  
+  pv.clear();
+  
+  do {
+    pv.push_back(m);
+    
+    assert(MoveList<LEGAL>(pos).contains(pv[ply]));
+    
+    pos.do_move(pv[ply++], *st++);
+    v = egtb_probe_root(pos, &m, &success);
+  } while (   success
+           && pos.is_pseudo_legal(m) // Local copy, TT could change
+           && pos.pl_move_is_legal(m, pos.pinned_pieces())
+           && ply < MAX_PLY
+           && (!pos.is_draw() || ply < 2));
+  
+  pv.push_back(MOVE_NONE); // Must be zero-terminating
+  
+  while (ply) pos.undo_move(pv[--ply]);
+}
 
 
 /// RootMove::extract_pv_from_tt() builds a PV by adding moves from the TT table.
@@ -1747,6 +1842,9 @@ void Thread::idle_loop() {
           activePosition = NULL;
           sp->slavesMask &= ~(1ULL << idx);
           sp->nodes += pos.nodes_searched();
+#if PA_GTB && defined(USE_EGTB)
+          sp->tbhits += pos.tb_hits();
+#endif
 
           // Wake up master thread so to allow it to return from the idle loop
           // in case we are the last slave of the split point.

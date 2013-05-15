@@ -89,6 +89,19 @@ void init(OptionsMap& o) {
   o["Slow Mover"]                  = Option(100, 10, 1000);
   o["UCI_Chess960"]                = Option(false);
   o["UCI_AnalyseMode"]             = Option(false, on_eval);
+#if PA_GTB && defined(USE_EGTB)
+  o["UseGaviotaTb"]                = Option(true);
+  o["ProbeOnlyAtRoot"]             = Option(false);
+  o["GaviotaTbPath"]               = Option("c:/gtb");
+  o["GaviotaTbCache"]              = Option(32, 4, 1024);
+  StrVector schemes(5);
+  schemes[0] = "Uncompressed";
+  schemes[1] = "Huffman (cp1)";
+  schemes[2] = "LZF (cp2)";
+  schemes[3] = "Zlib-9 (cp3)";
+  schemes[4] = "LZMA-5-4k (cp4)";
+  o["GaviotaTbCompression"]        = Option(schemes[4], schemes);
+#endif
 }
 
 
@@ -97,7 +110,7 @@ void init(OptionsMap& o) {
 
 std::ostream& operator<<(std::ostream& os, const OptionsMap& om) {
 
-  for (size_t idx = 0; idx < om.size(); idx++)
+  for (size_t idx = 0; idx <= om.size(); idx++)
       for (OptionsMap::const_iterator it = om.begin(); it != om.end(); ++it)
           if (it->second.idx == idx)
           {
@@ -109,6 +122,12 @@ std::ostream& operator<<(std::ostream& os, const OptionsMap& om) {
 
               if (o.type == "spin")
                   os << " min " << o.min << " max " << o.max;
+
+              if (o.type == "combo")
+              {
+                for (StrVector::const_iterator itc = it->second.comboValues.begin(); itc != it->second.comboValues.end(); ++itc)
+                  os << " var " << *itc;
+              }
 
               break;
           }
@@ -130,14 +149,27 @@ Option::Option(Fn* f) : type("button"), min(0), max(0), idx(Options.size()), on_
 Option::Option(int v, int minv, int maxv, Fn* f) : type("spin"), min(minv), max(maxv), idx(Options.size()), on_change(f)
 { std::ostringstream ss; ss << v; defaultValue = currentValue = ss.str(); }
 
+#if PA_GTB && defined (USE_EGTB)
+Option::Option(string def, StrVector values) : type("combo"), idx(Options.size()), defaultValue(def), currentValue(def), comboValues(values), min(0), max(0)
+{}
+#endif
 
 Option::operator int() const {
-  assert(type == "check" || type == "spin");
-  return (type == "spin" ? atoi(currentValue.c_str()) : currentValue == "true");
+  assert(   type == "check"
+         || type == "spin"
+#if PA_GTB && defined (USE_EGTB)
+         || type == "combo"
+#endif
+         );
+  return ((   type == "spin"
+#if PA_GTB && defined (USE_EGTB)
+           || type == "combo"
+#endif
+           ) ? atoi(currentValue.c_str()) : currentValue == "true");
 }
 
 Option::operator std::string() const {
-  assert(type == "string");
+  assert(type == "string" || type == "combo");
   return currentValue;
 }
 

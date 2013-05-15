@@ -87,7 +87,11 @@ typedef uint64_t Key;
 typedef uint64_t Bitboard;
 
 const int MAX_MOVES      = 192;
+#if PA_GTB && defined(USE_EGTB)
+const int MAX_PLY        = 254;
+#else
 const int MAX_PLY        = 100;
+#endif
 const int MAX_PLY_PLUS_2 = MAX_PLY + 2;
 
 const Bitboard FileABB = 0x0101010101010101ULL;

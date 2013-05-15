@@ -180,7 +180,12 @@ public:
   int64_t nodes_searched() const;
   void set_nodes_searched(int64_t n);
   bool is_draw() const;
-
+  
+#if PA_GTB && defined(USE_EGTB)
+  int64_t tb_hits() const;
+  void set_tb_hits(int64_t n);
+#endif
+  
   // Position consistency check, for debugging
   bool pos_is_ok(int* failedStep = NULL) const;
   void flip();
@@ -211,7 +216,7 @@ private:
   int pieceCount[COLOR_NB][PIECE_TYPE_NB];
   Square pieceList[COLOR_NB][PIECE_TYPE_NB][16];
   int index[SQUARE_NB];
-
+  
   // Other info
   int castleRightsMask[SQUARE_NB];
   Square castleRookSquare[COLOR_NB][CASTLING_SIDE_NB];
@@ -223,6 +228,10 @@ private:
   Thread* thisThread;
   StateInfo* st;
   int chess960;
+#if PA_GTB && defined(USE_EGTB)
+  int64_t tbhits;
+  int64_t tbhits_root;
+#endif
 };
 
 inline int64_t Position::nodes_searched() const {
@@ -421,5 +430,16 @@ inline PieceType Position::captured_piece_type() const {
 inline Thread* Position::this_thread() const {
   return thisThread;
 }
+
+#if PA_GTB && defined(USE_EGTB)
+inline int64_t Position::tb_hits() const {
+  return tbhits;
+}
+
+inline void Position::set_tb_hits(int64_t n) {
+  tbhits = n;
+}
+#endif // PA_GTB && defined(USE_EGTB)
+
 
 #endif // !defined(POSITION_H_INCLUDED)

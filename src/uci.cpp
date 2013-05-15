@@ -29,6 +29,9 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
+#if PA_GTB && defined(USE_EGTB)
+#include "egtb.h"
+#endif
 
 using namespace std;
 
@@ -179,9 +182,13 @@ namespace {
         Options[name] = value;
     else
         sync_cout << "No such option: " << name << sync_endl;
+
+#if PA_GTB && defined(USE_EGTB)
+    init_egtb();
+#endif
   }
 
-
+  
   // go() is called when engine receives the "go" UCI command. The function sets
   // the thinking time and other parameters from the input string, and starts
   // the search.

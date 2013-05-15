@@ -27,6 +27,9 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
+#if PA_GTB && defined(USE_EGTB)
+#include "egtb.h"
+#endif
 
 int main(int argc, char* argv[]) {
 
@@ -40,6 +43,9 @@ int main(int argc, char* argv[]) {
   Eval::init();
   Threads.init();
   TT.set_size(Options["Hash"]);
+#if PA_GTB && defined(USE_EGTB)
+  init_egtb(); // Init here, not at the top of each move. Setting uci options will check this and update if necessary.
+#endif
 
   std::string args;
 
@@ -48,5 +54,8 @@ int main(int argc, char* argv[]) {
 
   UCI::loop(args);
 
+#if PA_GTB && defined(USE_EGTB)
+  close_egtb();
+#endif
   Threads.exit();
 }
