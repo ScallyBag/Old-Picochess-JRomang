@@ -34,8 +34,15 @@ using namespace std;
 /// date, in the format DD-MM-YY, are used as a version number.
 
 static const string Version = "";
+#if PA_GTB
+#ifdef USE_EGTB
+static const string Tag = "PA_GTB";
+#else
+static const string Tag = "PA";
+#endif
+#else
 static const string Tag = "";
-
+#endif
 
 /// engine_info() returns the full name of the current Stockfish version. This
 /// will be either "Stockfish <Tag> DD-MM-YY" (where DD-MM-YY is the date when
