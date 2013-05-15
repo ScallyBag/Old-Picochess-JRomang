@@ -40,7 +40,7 @@ PGOBENCH = ./$(EXE) bench 32 1 10 default depth
 ### Object files
 OBJS = benchmark.o bitbase.o bitboard.o book.o endgame.o evaluate.o main.o \
 	material.o misc.o movegen.o movepick.o notation.o pawns.o position.o \
-	search.o thread.o timeman.o tt.o uci.o ucioption.o
+	search.o thread.o timeman.o tt.o uci.o ucioption.o egtb.o
 
 ### ==========================================================================
 ### Section 2. High-level Configuration
@@ -231,7 +231,7 @@ ifeq ($(COMP),clang)
 endif
 
 ### 3.2 General compiler settings
-CXXFLAGS = -g -Wall -Wcast-qual -fno-exceptions -fno-rtti $(EXTRACXXFLAGS)
+CXXFLAGS = -g -Wall -Wcast-qual -fno-exceptions -fno-rtti $(EXTRACXXFLAGS) -DPA_GTB=1 -DUSE_EGTB
 
 ifeq ($(comp),gcc)
 	CXXFLAGS += -ansi -pedantic -Wno-long-long -Wextra -Wshadow
@@ -257,7 +257,7 @@ endif
 LDFLAGS = $(EXTRALDFLAGS)
 
 ifeq ($(comp),mingw)
-	LDFLAGS += -static-libstdc++ -static-libgcc
+	LDFLAGS += -static-libstdc++ -static-libgcc -L ./egtb -lgtb
 endif
 
 ### On mingw use Windows threads, otherwise POSIX
