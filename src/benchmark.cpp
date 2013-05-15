@@ -47,9 +47,17 @@ static const char* Defaults[] = {
   "3r1rk1/p5pp/bpp1pp2/8/q1PP1P2/b3P3/P2NQRPP/1R2B1K1 b - - 6 22",
   "r1q2rk1/2p1bppp/2Pp4/p6b/Q1PNp3/4B3/PP1R1PPP/2K4R w - - 2 18",
   "4k2r/1pb2ppp/1p2p3/1R1p4/3P4/2r1PN2/P4PPP/1R4K1 b - - 3 22",
-  "3q2k1/pb3p1p/4pbp1/2r5/PpN2N2/1P2P2P/5PP1/Q2R2K1 b - - 4 26"
+  "3q2k1/pb3p1p/4pbp1/2r5/PpN2N2/1P2P2P/5PP1/Q2R2K1 b - - 4 26",
 #if PA_GTB
-  , "8/k7/8/4Kn2/8/P7/8/1n6 b - - 0 1" // add a tb position
+  // add some tb positions
+  "8/k7/8/4Kn2/8/P7/8/1n6 b - - 0 1",               // 17. 5-man. mate 115  bm Ne7  (f5e7)
+  "8/1k6/1p1r4/5K2/8/8/8/2R5 w - - 0 1",            // 18. 5-man. cp 0      bm Ke4  (f5e4)
+  "8/8/8/8/5kp1/P7/8/1K1N4 w - - 0 1",              // 19. 5-man. mate 50   bm Kc2  (b1c2)
+  "k7/P6R/2K5/8/7P/1r6/8/8 w - - 0 1",              // 20. 6-man. mate 46   bm Rh8+ (h7h8)
+  "8/2p4P/8/kr6/6R1/8/8/1K6 w - - 0 1",             // 21. 6-man. mate 72   bm Ka2  (b1a2)
+  "8/2p4P/6R1/kr6/8/8/8/1K6 w - - 0 1",             // 22. 6-man. mate 72   bm Ka2  (b1a2)
+  "8/8/1P6/5pr1/8/4R3/7k/2K5 w - - 0 1",            // 23. 6-man. mate 78   bm Re5  (e3e5)
+  
 #endif
 };
 
@@ -92,7 +100,7 @@ void benchmark(const Position& current, istream& is) {
       limits.depth = atoi(limit.c_str());
 
   if (fenFile == "default")
-      fens.assign(Defaults, Defaults + 17);
+      fens.assign(Defaults, Defaults + (sizeof(Defaults) / sizeof(const char *)));
 
   else if (fenFile == "current")
       fens.push_back(current.fen());
