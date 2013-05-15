@@ -1667,6 +1667,7 @@ split_point_start: // At split points actual search starts from here
 } // namespace
 
 
+#if PA_GTB && defined(USE_EGTB)
 void RootMove::extract_pv_from_tb(Position& pos) {
   
   StateInfo state[MAX_PLY_PLUS_2], *st = state;
@@ -1694,7 +1695,7 @@ void RootMove::extract_pv_from_tb(Position& pos) {
   
   while (ply) pos.undo_move(pv[--ply]);
 }
-
+#endif
 
 /// RootMove::extract_pv_from_tt() builds a PV by adding moves from the TT table.
 /// We consider also failing high nodes and not only BOUND_EXACT nodes so to

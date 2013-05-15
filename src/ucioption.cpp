@@ -123,12 +123,13 @@ std::ostream& operator<<(std::ostream& os, const OptionsMap& om) {
               if (o.type == "spin")
                   os << " min " << o.min << " max " << o.max;
 
+#if PA_GTB && defined(USE_EGTB)
               if (o.type == "combo")
               {
                 for (StrVector::const_iterator itc = it->second.comboValues.begin(); itc != it->second.comboValues.end(); ++itc)
                   os << " var " << *itc;
               }
-
+#endif
               break;
           }
   return os;
