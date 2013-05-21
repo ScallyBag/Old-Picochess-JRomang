@@ -33,6 +33,9 @@
 
 int main(int argc, char* argv[]) {
 
+  setvbuf(stdin,NULL,_IONBF,0);
+  setvbuf(stdout,NULL,_IONBF,0);
+
   std::cout << engine_info() << std::endl;
 
   UCI::init(Options);
