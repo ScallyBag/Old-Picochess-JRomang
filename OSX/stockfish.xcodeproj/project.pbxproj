@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F7802A06174CFDC300D3CEF8 /* bitcount.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7802A03174CFCC200D3CEF8 /* bitcount.cpp */; };
 		F7BE3E9F174280270021A427 /* benchmark.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7BE3E75174280270021A427 /* benchmark.cpp */; };
 		F7BE3EA0174280270021A427 /* bitbase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7BE3E76174280270021A427 /* bitbase.cpp */; };
 		F7BE3EA1174280270021A427 /* bitboard.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7BE3E77174280270021A427 /* bitboard.cpp */; };
@@ -69,6 +70,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		F7802A03174CFCC200D3CEF8 /* bitcount.cpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.cpp; path = bitcount.cpp; sourceTree = "<group>"; tabWidth = 2; usesTabs = 0; };
 		F7BE3E6817427FEF0021A427 /* stockfish */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = stockfish; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7BE3E75174280270021A427 /* benchmark.cpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.cpp; path = benchmark.cpp; sourceTree = "<group>"; tabWidth = 2; usesTabs = 0; };
 		F7BE3E76174280270021A427 /* bitbase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.cpp; path = bitbase.cpp; sourceTree = "<group>"; tabWidth = 2; usesTabs = 0; };
@@ -216,6 +218,7 @@
 				F7BE3E76174280270021A427 /* bitbase.cpp */,
 				F7BE3E77174280270021A427 /* bitboard.cpp */,
 				F7BE3E78174280270021A427 /* bitboard.h */,
+				F7802A03174CFCC200D3CEF8 /* bitcount.cpp */,
 				F7BE3E79174280270021A427 /* bitcount.h */,
 				F7BE3E7A174280270021A427 /* book.cpp */,
 				F7BE3E7B174280270021A427 /* book.h */,
@@ -480,6 +483,7 @@
 				F7BE3F34174368010021A427 /* gtb-dec.c in Sources */,
 				F7BE3F35174368010021A427 /* gtb-probe.c in Sources */,
 				F7BE3F37174368010021A427 /* sysport.c in Sources */,
+				F7802A06174CFDC300D3CEF8 /* bitcount.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -534,6 +538,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = "NDEBUG=1";
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
@@ -548,21 +553,16 @@
 			buildSettings = {
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
-					"USE_PREFETCH=1",
-					"USE_POPCNT=1",
-					"USE_EGTB=1",
+					USE_PREFETCH,
+					USE_POPCNT,
+					USE_EGTB,
 					"PA_GTB=1",
 					Z_PREFIX,
 				);
 				"GCC_PREPROCESSOR_DEFINITIONS[arch=x86_64]" = (
 					"$(inherited)",
-					"IS_64BIT=1",
-					"USE_PREFETCH=1",
-					"USE_BSFQ=1",
-					"USE_POPCNT=1",
-					"USE_EGTB=1",
-					"PA_GTB=1",
-					Z_PREFIX,
+					IS_64BIT,
+					USE_BSFQ,
 				);
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
@@ -576,23 +576,16 @@
 			buildSettings = {
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
-					"NDEBUG=1",
-					"USE_PREFETCH=1",
-					"USE_POPCNT=1",
-					"USE_EGTB=1",
+					USE_PREFETCH,
+					USE_POPCNT,
+					USE_EGTB,
 					"PA_GTB=1",
 					Z_PREFIX,
 				);
 				"GCC_PREPROCESSOR_DEFINITIONS[arch=x86_64]" = (
 					"$(inherited)",
-					"NDEBUG=1",
-					"IS_64BIT=1",
-					"USE_PREFETCH=1",
-					"USE_BSFQ=1",
-					"USE_POPCNT=1",
-					"USE_EGTB=1",
-					"PA_GTB=1",
-					Z_PREFIX,
+					IS_64BIT,
+					USE_BSFQ,
 				);
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
