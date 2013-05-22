@@ -30,14 +30,23 @@ enum BitCountType {
   CNT_32,
   CNT_32_MAX15,
   CNT_HW_POPCNT
+#if PA_GTB
+  ,
+  CNT_PA_GTB_FULL,
+  CNT_PA_GTB_MAX15
+#endif
 };
 
 /// Determine at compile time the best popcount<> specialization according if
 /// platform is 32 or 64 bits, to the maximum number of nonzero bits to count
 /// and if hardware popcnt instruction is available.
+#if PA_GTB
+const BitCountType Full  = CNT_PA_GTB_FULL;
+const BitCountType Max15  = CNT_PA_GTB_MAX15;
+#else
 const BitCountType Full  = HasPopCnt ? CNT_HW_POPCNT : Is64Bit ? CNT_64 : CNT_32;
 const BitCountType Max15 = HasPopCnt ? CNT_HW_POPCNT : Is64Bit ? CNT_64_MAX15 : CNT_32_MAX15;
-
+#endif
 
 /// popcount() counts the number of nonzero bits in a bitboard
 template<BitCountType> inline int popcount(Bitboard);
@@ -101,5 +110,58 @@ inline int popcount<CNT_HW_POPCNT>(Bitboard b) {
 
 #endif
 }
+
+#if PA_GTB
+inline void initPopCnt();
+inline int popCntAvailable();
+
+// http://www.gregbugaj.com/?p=348
+inline void cpuinfo(int code, int *eax, int *ebx, int *ecx, int *edx) {
+  __asm__ volatile(
+                   "cpuid;" //  call cpuid instruction
+                   :"=a"(*eax),"=b"(*ebx),"=c"(*ecx), "=d"(*edx)// output equal to "movl  %%eax %1"
+                   :"a"(code)// input equal to "movl %1, %%eax"
+                   //:"%eax","%ebx","%ecx","%edx"// clobbered register
+                   );
+}
+
+inline int popCntAvailable()
+{
+  int eax, ebx, ecx, edx;
+  
+  cpuinfo(1, &eax, &ebx, &ecx, &edx);
+  if (ecx && (1 << 23)) {
+    return 1;
+  }
+  return 0;
+}
+
+template<>
+inline int popcount<CNT_PA_GTB_FULL>(Bitboard b) {
+  if (HasPopCnt) {
+    return popcount<CNT_HW_POPCNT>(b);
+  } else if (Is64Bit) {
+    return popcount<CNT_64>(b);
+  } else {
+    return popcount<CNT_32>(b);
+  }
+}
+
+template<>
+inline int popcount<CNT_PA_GTB_MAX15>(Bitboard b) {
+  if (HasPopCnt) {
+    return popcount<CNT_HW_POPCNT>(b);
+  } else if (Is64Bit) {
+    return popcount<CNT_64_MAX15>(b);
+  } else {
+    return popcount<CNT_32_MAX15>(b);
+  }
+}
+
+inline void initPopCnt()
+{
+  HasPopCnt = popCntAvailable();
+}
+#endif
 
 #endif // !defined(BITCOUNT_H_INCLUDED)

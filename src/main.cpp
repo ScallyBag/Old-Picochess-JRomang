@@ -27,13 +27,20 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
-#if PA_GTB && defined(USE_EGTB)
+#if PA_GTB
+#include "bitcount.h"
+#ifdef USE_EGTB
 #include "egtb.h"
+#endif
 #endif
 
 int main(int argc, char* argv[]) {
 
   setvbuf(stdout,NULL,_IONBF,0);
+
+#if PA_GTB
+  initPopCnt();
+#endif
 
   std::cout << engine_info() << std::endl;
 

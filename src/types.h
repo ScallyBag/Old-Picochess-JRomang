@@ -71,10 +71,14 @@
 #  define FORCE_INLINE  inline
 #endif
 
+#if PA_GTB
+extern bool HasPopCnt;
+#else
 #if defined(USE_POPCNT)
 const bool HasPopCnt = true;
 #else
 const bool HasPopCnt = false;
+#endif
 #endif
 
 #if defined(IS_64BIT)
