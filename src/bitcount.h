@@ -130,7 +130,7 @@ inline int popCntAvailable()
   int eax, ebx, ecx, edx;
   
   cpuinfo(1, &eax, &ebx, &ecx, &edx);
-  if (ecx && (1 << 23)) {
+  if (ecx & (1 << 23)) {
     return 1;
   }
   return 0;
