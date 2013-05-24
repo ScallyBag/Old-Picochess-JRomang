@@ -2034,6 +2034,12 @@ egtb_get_id (SQ_CONTENT *w, SQ_CONTENT *b, tbkey_t *id)
 	bool_t found;
 	tbkey_t i;
 	static tbkey_t cache_i = 0;
+	// make a local variable copy of the cache value, otherwise reentrant searches can cause this value to
+	// change unexpectedly just before assigning the *id after a cache hit. I think that we can avoid a lock
+	// here, since the worst thing that can occur is that cache_i is overwritten before this assignment and
+	// we miss a cache hit, and I suspect that the mutex overhead is greater than the iteration overhead.
+	// Plus locking just feels overengineered to me.
+	tbkey_t this_cache = cache_i;
 	
 	assert (PAWN == 1 && KNIGHT == 2 && BISHOP == 3 && ROOK == 4 && QUEEN == 5 && KING == 6);
 
@@ -2048,10 +2054,10 @@ egtb_get_id (SQ_CONTENT *w, SQ_CONTENT *b, tbkey_t *id)
 
 	*t = '\0';
 
-	found = (0 == strcmp(pcstr, egkey[cache_i].str));
+	found = (0 == strcmp(pcstr, egkey[this_cache].str));
 	if (found) {
-		*id = cache_i;
-		return found;		
+		*id = this_cache;
+		return found;
 	}
 	
 	for (i = 0, found = FALSE; !found && egkey[i].str != NULL; i++) {
