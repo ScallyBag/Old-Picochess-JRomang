@@ -656,7 +656,8 @@ namespace {
       Value v = VALUE_ZERO;
       bool exact = true;
 
-      if ((ss->ply <= 1) || (depth >= 5 * ONE_PLY))
+      // we need to hit the disk earlier if there are fewer threads
+      if ((ss->ply <= 1) || (depth > (int(Threads.size()) * ONE_PLY)))
         hard = true;
 
       do {
