@@ -651,35 +651,52 @@ namespace {
 
 #if PA_GTB && defined(USE_EGTB)
     if (UseGaviotaTb && !ProbeOnlyAtRoot && !RootNode && popcount<Full>(pos.pieces()) <= MaxEgtbPieces) {
-      int success = 1;
-      bool hard;
-      
-      if (depth >= 8 * ONE_PLY || ss->ply <= 1 || (PvNode && depth >= 5 * ONE_PLY))
+      bool hard = false;
+      int probed = 0;
+      Value v = VALUE_ZERO;
+      bool exact = true;
+
+      if ((ss->ply <= 1) || (depth >= 5 * ONE_PLY))
         hard = true;
-      else if (depth > Depth(0) || PvNode)
-        hard = false;
-      else
-        success = 0; // don't bother
-      
-      if (success) {
-        bool exact = (alpha < -VALUE_KNOWN_WIN || beta > VALUE_KNOWN_WIN);
-        Value v = egtb_probe(pos, hard, exact, &success);
-        if (success) {
+
+      do {
+        // TODO: Some experiments with exact/wdl settings. through version PA_GTB-003 we were probing
+        //       WDL most of the time, but this caused the engine to miss long mates which it can very
+        //       easily find when probing with DTM. Leaving test code in with do{}while(), but this
+        //       can be removed at some point, once a more or less ideal setting has been determined.
+        //       For now, we just probe DTM all the time.
+        v = egtb_probe(pos, hard, exact, &probed);
+        if (probed) {
           if (exact) {
-            value = (v < -1) ? v + ss->ply : (v > 1) ? v - ss->ply : v;
+            value =
+                v ==  VALUE_NONE   ? VALUE_NONE
+              : v >=  1            ? v - ss->ply
+              : v <= -1            ? v + ss->ply
+              : v;
           } else {
-            if (v < -1) value = -VALUE_MATE + MAX_PLY + ss->ply;
-            else if (v > 1) value = VALUE_MATE - MAX_PLY - ss->ply;
-            else value = VALUE_DRAW + v;
+            value =
+                v ==  VALUE_NONE   ? ( VALUE_NONE )
+              : v >=  1            ? ( VALUE_MATE - MAX_PLY ) - ss->ply
+              : v <= -1            ? (-VALUE_MATE + MAX_PLY ) + ss->ply
+              : v;
           }
-          TT.store(posKey, value_to_tt(value, ss->ply), BOUND_EXACT, depth + 6 * ONE_PLY,
-                   MOVE_NONE, VALUE_NONE, VALUE_NONE);
-          return value;
-        }
+          // it's a win or a loss, let's re-probe exactly.
+          // maybe it's more efficient to just always probe exactly.
+          if (!exact && value != VALUE_NONE && (value > VALUE_KNOWN_WIN || value < -VALUE_KNOWN_WIN)) {
+            v = VALUE_ZERO;
+            probed = 0;
+            exact = true;
+          } else break;
+        } else break;
+      } while (1);
+      if (probed && value != VALUE_NONE) {
+        TT.store(posKey, value_to_tt(value, ss->ply), BOUND_EXACT, depth + 6 * ONE_PLY,
+                 MOVE_NONE, VALUE_NONE, VALUE_NONE);
+        return value;
       }
     }
 #endif
-    
+
     // Step 5. Evaluate the position statically and update parent's gain statistics
     if (inCheck)
         ss->staticEval = ss->evalMargin = eval = VALUE_NONE;
