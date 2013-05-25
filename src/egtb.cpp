@@ -107,58 +107,59 @@ void init_egtb()
     
     //Finally initialize tablebases
     tb_init(0, CompressionScheme, paths);
-  }
-  if (tb_is_initialized()) {
-    tb_available_bits = tb_availability();
-    if (tb_available_bits) {
+    if (tb_is_initialized()) {
       std::ostringstream status;
       
-      status << "info string GTB successfully initialized: ";
-      // 3-man
-      if (tb_available_bits & 0x3) {
-        status << "3-man";
-        if (!(tb_available_bits & 0x2)) {
-          status << " (partial)";
+      tb_available_bits = tb_availability();
+      if (tb_available_bits) {
+        status << "info string GTB successfully initialized: ";
+        // 3-man
+        if (tb_available_bits & 0x3) {
+          status << "3-man";
+          if (!(tb_available_bits & 0x2)) {
+            status << " (partial)";
+          }
+          status << ", ";
+          MaxEgtbPieces = 3;
         }
-        status << ", ";
-        MaxEgtbPieces = 3;
-      }
-      // 4-man
-      if (tb_available_bits & 0xC) {
-        status << "4-man";
-        if (!(tb_available_bits & 0x8)) {
-          status << " (partial)";
+        // 4-man
+        if (tb_available_bits & 0xC) {
+          status << "4-man";
+          if (!(tb_available_bits & 0x8)) {
+            status << " (partial)";
+          }
+          status << ", ";
+          MaxEgtbPieces = 4;
         }
-        status << ", ";
-        MaxEgtbPieces = 4;
-      }
-      // 5-man
-      if (tb_available_bits & 0x30) {
-        status << "5-man";
-        if (!(tb_available_bits & 0x20)) {
-          status << " (partial)";
+        // 5-man
+        if (tb_available_bits & 0x30) {
+          status << "5-man";
+          if (!(tb_available_bits & 0x20)) {
+            status << " (partial)";
+          }
+          MaxEgtbPieces = 5;
         }
-        MaxEgtbPieces = 5;
-      }
 #if 0
-      // 6-man, not yet available
-      if (tb_available_bits & 0xC0) {
-        status << ", 6-man";
-        if (!(tb_available_bits & 0x80)) {
-          status << " (partial)";
+        // 6-man, not yet available
+        if (tb_available_bits & 0xC0) {
+          status << ", 6-man";
+          if (!(tb_available_bits & 0x80)) {
+            status << " (partial)";
+          }
+          MaxEgtbPieces = 6;
         }
-        MaxEgtbPieces = 6;
-      }
 #endif
-      status << "; cache: " << TbSize << "MB";
-      tbcache_init(TbSize * 1024 * 1024, 124);
+        status << "; cache: " << TbSize << "MB";
+        tbcache_init(TbSize * 1024 * 1024, 124);
+      }
+      else {
+        status << "info string GTB could not be initialized";
+        close_egtb();
+      }
       sync_cout << status.str() << sync_endl;
     }
-    else {
-      close_egtb();
-    }
+    tbstats_reset();
   }
-  tbstats_reset();
 }
 
 // close_egtb() closes/frees tablebases if necessary
@@ -267,11 +268,8 @@ Value probe_egtb(Position &pos, const bool hard, const bool exact)
       return (exact ? mated_in(pliestomate) : -VALUE_KNOWN_WIN);
     else if (info == tb_BMATE && stm == tb_WHITE_TO_MOVE)
       return (exact ? mated_in(pliestomate) : -VALUE_KNOWN_WIN);
-    else
-      return VALUE_NONE;
   }
-  else
-    return VALUE_NONE;
+  return VALUE_NONE;
 }
 
 // note that these are cribbed from the strategy employed by Ronald de Man
