@@ -651,49 +651,21 @@ namespace {
 
 #if PA_GTB && defined(USE_EGTB)
     if (UseGaviotaTb && !ProbeOnlyAtRoot && !RootNode && popcount<Full>(pos.pieces()) <= MaxEgtbPieces) {
-      bool hard = false;
       int probed = 0;
-      Value v = VALUE_ZERO;
-      bool exact = true;
-
-      // we need to hit the disk earlier if there are fewer threads
-      if ((ss->ply <= 1) || (depth > (int(Threads.size()) * ONE_PLY)))
-        hard = true;
-
-      do {
-        // TODO: Some experiments with exact/wdl settings. through version PA_GTB-003 we were probing
-        //       WDL most of the time, but this caused the engine to miss long mates which it can very
-        //       easily find when probing with DTM. Leaving test code in with do{}while(), but this
-        //       can be removed at some point, once a more or less ideal setting has been determined.
-        //       For now, we just probe DTM all the time.
-        v = egtb_probe(pos, hard, exact, &probed);
+      bool wantsprobe, hard, exact;
+      Value val;
+      
+      wantsprobe =  ((ss->ply <= 1) || (PvNode && depth >= 5 * ONE_PLY) || (depth >= 8 * ONE_PLY));
+      hard =        (PvNode || (ss->ply <= 1) || (depth >= 8 * ONE_PLY));
+      exact =       (PvNode || (ss->ply <= 1) || (alpha <= VALUE_KNOWN_WIN) || (beta >= VALUE_KNOWN_WIN));
+      
+      if (wantsprobe) {
+        val = egtb_probe(pos, hard, exact, &probed);
         if (probed) {
-          if (exact) {
-            value =
-                v ==  VALUE_NONE   ? VALUE_NONE
-              : v >=  1            ? v - ss->ply
-              : v <= -1            ? v + ss->ply
-              : v;
-          } else {
-            value =
-                v ==  VALUE_NONE   ? ( VALUE_NONE )
-              : v >=  1            ? ( VALUE_MATE - MAX_PLY ) - ss->ply
-              : v <= -1            ? (-VALUE_MATE + MAX_PLY ) + ss->ply
-              : v;
-          }
-          // it's a win or a loss, let's re-probe exactly.
-          // maybe it's more efficient to just always probe exactly.
-          if (!exact && value != VALUE_NONE && (value > VALUE_KNOWN_WIN || value < -VALUE_KNOWN_WIN)) {
-            v = VALUE_ZERO;
-            probed = 0;
-            exact = true;
-          } else break;
-        } else break;
-      } while (1);
-      if (probed && value != VALUE_NONE) {
-        TT.store(posKey, value_to_tt(value, ss->ply), BOUND_EXACT, depth + 6 * ONE_PLY,
-                 MOVE_NONE, VALUE_NONE, VALUE_NONE);
-        return value;
+          value = value_from_tt(val, ss->ply);
+          TT.store(pos.key(), val, BOUND_EXACT, depth, MOVE_NONE, val, VALUE_ZERO);
+          return value;
+        }
       }
     }
 #endif

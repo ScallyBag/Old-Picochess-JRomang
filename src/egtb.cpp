@@ -282,7 +282,7 @@ Value egtb_probe_root(Position &pos, Move *return_move, int *success)
   value = probe_egtb(pos, PROBE_HARD, PROBE_EXACT); // always probe hard; the root probe is exact
   if (value == VALUE_NONE) {
     *success = 0;
-    return VALUE_ZERO;
+    return VALUE_NONE;
   }
   
   
@@ -317,7 +317,7 @@ Value egtb_probe_root(Position &pos, Move *return_move, int *success)
     }
     pos.undo_move(move);
 
-    if (v == VALUE_NONE) return VALUE_ZERO;
+    if (v == VALUE_NONE) return VALUE_NONE;
     
     if (v > best || (v == best && w > best2)) {
       stack[0].move = move;
@@ -339,14 +339,14 @@ Value egtb_probe_root(Position &pos, Move *return_move, int *success)
 Value egtb_probe(Position &pos, const bool hard, const bool exact, int *success)
 {
   Value value;
+
   *success = 0;
-  
   value = probe_egtb(pos, hard ? PROBE_HARD : PROBE_SOFT, exact ? PROBE_EXACT : PROBE_WDL);
   if (value != VALUE_NONE) {
     *success = 1;
     return value;
   }
-  return VALUE_ZERO;
+  return VALUE_NONE;
 }
 
 
