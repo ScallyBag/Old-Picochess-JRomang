@@ -30,7 +30,8 @@
 ////
 //// Constants and variables
 ////
-const int MaxEgtbPieces = 5;
+extern int MaxEgtbPieces;
+
 enum {
   PROBE_SOFT = 0,
   PROBE_HARD = 1
