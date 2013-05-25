@@ -61,7 +61,6 @@
 		F75FFF4D174D4D2E00B953ED /* gtb-probe.c in Sources */ = {isa = PBXBuildFile; fileRef = F75FFF0A174D4D2E00B953ED /* gtb-probe.c */; };
 		F75FFF4E174D4D2E00B953ED /* gtb-probe.h in Headers */ = {isa = PBXBuildFile; fileRef = F75FFF0B174D4D2E00B953ED /* gtb-probe.h */; };
 		F75FFF4F174D4D2E00B953ED /* gtb-types.h in Headers */ = {isa = PBXBuildFile; fileRef = F75FFF0C174D4D2E00B953ED /* gtb-types.h */; };
-		F75FFF50174D4D2E00B953ED /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = F75FFF0E174D4D2E00B953ED /* Makefile */; };
 		F75FFF51174D4D2E00B953ED /* progname.h in Headers */ = {isa = PBXBuildFile; fileRef = F75FFF10174D4D2E00B953ED /* progname.h */; };
 		F75FFF52174D4D2E00B953ED /* sysport.c in Sources */ = {isa = PBXBuildFile; fileRef = F75FFF15174D4D2E00B953ED /* sysport.c */; };
 		F75FFF53174D4D2E00B953ED /* sysport.h in Headers */ = {isa = PBXBuildFile; fileRef = F75FFF16174D4D2E00B953ED /* sysport.h */; };
@@ -496,7 +495,6 @@
 				F75FFF49174D4D2E00B953ED /* gtb-att.c in Sources */,
 				F75FFF4B174D4D2E00B953ED /* gtb-dec.c in Sources */,
 				F75FFF4D174D4D2E00B953ED /* gtb-probe.c in Sources */,
-				F75FFF50174D4D2E00B953ED /* Makefile in Sources */,
 				F75FFF52174D4D2E00B953ED /* sysport.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
