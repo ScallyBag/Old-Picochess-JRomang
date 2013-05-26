@@ -654,10 +654,12 @@ namespace {
       int probed = 0;
       bool wantsprobe, hard, exact;
       Value val;
+      int spd = Options["Soft Probe Depth"];
+      int hpd = Options["Hard Probe Depth"];
       
-      wantsprobe =  ((ss->ply <= 1) || (PvNode && depth >= 5 * ONE_PLY) || (depth >= 8 * ONE_PLY));
-      hard =        (PvNode || (ss->ply <= 1) || (depth >= 8 * ONE_PLY));
-      exact =       (PvNode || (ss->ply <= 1) || (alpha <= VALUE_KNOWN_WIN) || (beta >= VALUE_KNOWN_WIN));
+      wantsprobe  = ((ss->ply <= 1) || (PvNode && depth >= spd - ONE_PLY) || (depth >= spd));
+      hard        = (PvNode || (ss->ply <= 1) || (depth >= hpd));
+      exact       = (PvNode || (ss->ply <= 1) || (alpha <= VALUE_KNOWN_WIN) || (beta >= VALUE_KNOWN_WIN));
       
       if (wantsprobe) {
         val = egtb_probe(pos, hard, exact, &probed);

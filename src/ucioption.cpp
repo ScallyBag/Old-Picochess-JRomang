@@ -94,6 +94,8 @@ void init(OptionsMap& o) {
   o["ProbeOnlyAtRoot"]             = Option(false);
   o["GaviotaTbPath"]               = Option("c:/gtb");
   o["GaviotaTbCache"]              = Option(32, 4, 1024);
+  o["Soft Probe Depth"]            = Option(10, 2, 99);
+  o["Hard Probe Depth"]            = Option(16, 2, 99);
   StrVector schemes(5);
   schemes[0] = "Uncompressed";
   schemes[1] = "Huffman (cp1)";
