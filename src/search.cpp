@@ -1672,7 +1672,6 @@ void RootMove::extract_pv_from_tb(Position& pos) {
   int ply = 0;
   Move m = pv[0];
   int success;
-  Value v = VALUE_NONE;
   
   pv.clear();
   
@@ -1682,7 +1681,7 @@ void RootMove::extract_pv_from_tb(Position& pos) {
     assert(MoveList<LEGAL>(pos).contains(pv[ply]));
     
     pos.do_move(pv[ply++], *st++);
-    v = egtb_probe_root(pos, &m, &success);
+    egtb_probe_root(pos, &m, &success);
   } while (   success
            && pos.is_pseudo_legal(m) // Local copy, TT could change
            && pos.pl_move_is_legal(m, pos.pinned_pieces())
