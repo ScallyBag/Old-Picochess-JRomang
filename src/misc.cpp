@@ -167,6 +167,7 @@ public:
 };
 
 
+#if !PA_GTB
 /// Used to serialize access to std::cout to avoid multiple threads to write at
 /// the same time.
 
@@ -182,6 +183,7 @@ std::ostream& operator<<(std::ostream& os, SyncCout sc) {
 
   return os;
 }
+#endif
 
 
 /// Trampoline helper to avoid moving Logger to misc.h

@@ -22,8 +22,6 @@
 ////
 #ifdef USE_EGTB
 #include <cassert>
-#include <iostream>
-#include <sstream>
 #include <string>
 
 #include "egtb.h"

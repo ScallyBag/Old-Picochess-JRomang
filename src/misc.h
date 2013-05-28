@@ -60,10 +60,33 @@ private:
 };
 
 
+#if PA_GTB
+#include <iostream>
+#include <sstream>
+
+struct ToCout {
+  std::ostringstream stream;
+  ToCout() {};
+ ~ToCout() { std::cout << stream.str(); }
+  template<class T> ToCout& operator<<(T t) {
+    stream << t;
+    return *this;
+  }
+  ToCout& operator<<(std::ostream& (*f)(std::ostream&)) {
+    stream << f;
+    return *this;
+  }
+};
+
+#define sync_cout ToCout()
+#define sync_endl std::endl
+
+#else
 enum SyncCout { io_lock, io_unlock };
 std::ostream& operator<<(std::ostream&, SyncCout);
 
 #define sync_cout std::cout << io_lock
 #define sync_endl std::endl << io_unlock
+#endif
 
 #endif // !defined(MISC_H_INCLUDED)
