@@ -250,14 +250,14 @@ ifeq ($(comp),clang)
 endif
 
 ifeq ($(os),osx)
-	CXXFLAGS += -arch $(arch) -mmacosx-version-min=10.0
+	CXXFLAGS += -arch $(arch) -mmacosx-version-min=10.6
 endif
 
 ### 3.3 General linker settings
-LDFLAGS = $(EXTRALDFLAGS)
+LDFLAGS = $(EXTRALDFLAGS) -Legtb -lgtb
 
 ifeq ($(comp),mingw)
-	LDFLAGS += -static-libstdc++ -static-libgcc -L ./egtb -lgtb
+	LDFLAGS += -static-libstdc++ -static-libgcc
 endif
 
 ### On mingw use Windows threads, otherwise POSIX
@@ -269,7 +269,7 @@ ifneq ($(comp),mingw)
 endif
 
 ifeq ($(os),osx)
-	LDFLAGS += -arch $(arch) -mmacosx-version-min=10.0
+	LDFLAGS += -arch $(arch) -mmacosx-version-min=10.6
 endif
 
 ### 3.4 Debugging
