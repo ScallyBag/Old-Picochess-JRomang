@@ -594,7 +594,7 @@ namespace {
     if (!RootNode)
     {
         // Step 2. Check for aborted search and immediate draw
-        if (Signals.stop || pos.is_draw(PvNode) || ss->ply > MAX_PLY)
+        if (Signals.stop || pos.is_draw(true/*PvNode*/) || ss->ply > MAX_PLY)
             return DrawValue[pos.side_to_move()];
 
         // Step 3. Mate distance pruning. Even if we mate at the next move our score
@@ -1234,7 +1234,7 @@ split_point_start: // At split points actual search starts from here
     ss->ply = (ss-1)->ply + 1;
 
     // Check for an instant draw or maximum ply reached
-    if (pos.is_draw(false) || ss->ply > MAX_PLY)
+    if (pos.is_draw(true/*false*/) || ss->ply > MAX_PLY)
         return DrawValue[pos.side_to_move()];
 
     // Decide whether or not to include checks, this fixes also the type of
