@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		F750AF5C174F55FF00CA61BC /* libgtb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F750AF57174F559F00CA61BC /* libgtb.a */; };
+		F757E724174F6E630034FC58 /* libqdbm.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F757E721174F6E4A0034FC58 /* libqdbm.a */; };
+		F757E727174F6E8E0034FC58 /* qdbm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F757E726174F6E8E0034FC58 /* qdbm.cpp */; };
 		F7802A06174CFDC300D3CEF8 /* bitcount.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7802A03174CFCC200D3CEF8 /* bitcount.cpp */; };
 		F7BE3E9F174280270021A427 /* benchmark.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7BE3E75174280270021A427 /* benchmark.cpp */; };
 		F7BE3EA0174280270021A427 /* bitbase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7BE3E76174280270021A427 /* bitbase.cpp */; };
@@ -47,6 +49,20 @@
 			remoteGlobalIDString = F75FFE59174D4B6800B953ED;
 			remoteInfo = gtb;
 		};
+		F757E720174F6E4A0034FC58 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F757E71C174F6E4A0034FC58 /* qdbm.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = F750AF2A174E12FA00CA61BC;
+			remoteInfo = qdbm;
+		};
+		F757E722174F6E5F0034FC58 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F757E71C174F6E4A0034FC58 /* qdbm.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = F750AF29174E12FA00CA61BC;
+			remoteInfo = qdbm;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -63,6 +79,9 @@
 
 /* Begin PBXFileReference section */
 		F750AF52174F559F00CA61BC /* gtb.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = gtb.xcodeproj; path = gtb/gtb.xcodeproj; sourceTree = "<group>"; };
+		F757E71C174F6E4A0034FC58 /* qdbm.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = qdbm.xcodeproj; path = qdbm/qdbm.xcodeproj; sourceTree = "<group>"; };
+		F757E725174F6E8E0034FC58 /* phash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = phash.h; sourceTree = "<group>"; };
+		F757E726174F6E8E0034FC58 /* qdbm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = qdbm.cpp; sourceTree = "<group>"; };
 		F7802A03174CFCC200D3CEF8 /* bitcount.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bitcount.cpp; sourceTree = "<group>"; };
 		F7BE3E6817427FEF0021A427 /* stockfish */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = stockfish; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7BE3E75174280270021A427 /* benchmark.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = benchmark.cpp; sourceTree = "<group>"; };
@@ -116,6 +135,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F757E724174F6E630034FC58 /* libqdbm.a in Frameworks */,
 				F750AF5C174F55FF00CA61BC /* libgtb.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -131,10 +151,19 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		F757E71D174F6E4A0034FC58 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F757E721174F6E4A0034FC58 /* libqdbm.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		F7BE3E5F17427FEF0021A427 = {
 			isa = PBXGroup;
 			children = (
 				F750AF52174F559F00CA61BC /* gtb.xcodeproj */,
+				F757E71C174F6E4A0034FC58 /* qdbm.xcodeproj */,
 				F7BE3E74174280270021A427 /* src */,
 				F7BE3E6917427FEF0021A427 /* Products */,
 			);
@@ -181,10 +210,12 @@
 				F7BE3E8B174280270021A427 /* notation.h */,
 				F7BE3E8C174280270021A427 /* pawns.cpp */,
 				F7BE3E8D174280270021A427 /* pawns.h */,
+				F757E725174F6E8E0034FC58 /* phash.h */,
 				F7BE3E8E174280270021A427 /* platform.h */,
 				F7BE3E8F174280270021A427 /* position.cpp */,
 				F7BE3E90174280270021A427 /* position.h */,
 				F7BE3E91174280270021A427 /* psqtab.h */,
+				F757E726174F6E8E0034FC58 /* qdbm.cpp */,
 				F7BE3E92174280270021A427 /* rkiss.h */,
 				F7BE3E93174280270021A427 /* search.cpp */,
 				F7BE3E94174280270021A427 /* search.h */,
@@ -218,6 +249,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				F757E723174F6E5F0034FC58 /* PBXTargetDependency */,
 				F750AF5A174F55F900CA61BC /* PBXTargetDependency */,
 			);
 			name = stockfish;
@@ -249,6 +281,10 @@
 					ProductGroup = F750AF53174F559F00CA61BC /* Products */;
 					ProjectRef = F750AF52174F559F00CA61BC /* gtb.xcodeproj */;
 				},
+				{
+					ProductGroup = F757E71D174F6E4A0034FC58 /* Products */;
+					ProjectRef = F757E71C174F6E4A0034FC58 /* qdbm.xcodeproj */;
+				},
 			);
 			projectRoot = "";
 			targets = (
@@ -263,6 +299,13 @@
 			fileType = archive.ar;
 			path = libgtb.a;
 			remoteRef = F750AF56174F559F00CA61BC /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		F757E721174F6E4A0034FC58 /* libqdbm.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libqdbm.a;
+			remoteRef = F757E720174F6E4A0034FC58 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
@@ -294,6 +337,7 @@
 				F7BE3EB3174280270021A427 /* ucioption.cpp in Sources */,
 				F7BE3EB6174296520021A427 /* egtb.cpp in Sources */,
 				F7802A06174CFDC300D3CEF8 /* bitcount.cpp in Sources */,
+				F757E727174F6E8E0034FC58 /* qdbm.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -304,6 +348,11 @@
 			isa = PBXTargetDependency;
 			name = gtb;
 			targetProxy = F750AF59174F55F900CA61BC /* PBXContainerItemProxy */;
+		};
+		F757E723174F6E5F0034FC58 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = qdbm;
+			targetProxy = F757E722174F6E5F0034FC58 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 

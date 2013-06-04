@@ -29,8 +29,11 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
-#if PA_GTB && defined(USE_EGTB)
+#if PA_GTB
+#include "phash.h"
+#ifdef USE_EGTB
 #include "egtb.h"
+#endif
 #endif
 
 using namespace std;
@@ -183,8 +186,11 @@ namespace {
     else
         sync_cout << "No such option: " << name << sync_endl;
 
-#if PA_GTB && defined(USE_EGTB)
+#if PA_GTB
+    init_phash();
+#ifdef USE_EGTB
     init_egtb();
+#endif
 #endif
   }
 

@@ -34,9 +34,12 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
-#if PA_GTB && defined(USE_EGTB)
+#if PA_GTB
 #include "bitcount.h"
+#include "phash.h"
+#ifdef USE_EGTB
 #include "egtb.h"
+#endif
 #endif
 
 namespace Search {
@@ -122,6 +125,7 @@ namespace {
     && (   ((tte->type() & BOUND_LOWER) && v >= beta)
         || ((tte->type() & BOUND_UPPER) && v <= alpha));
   }
+  bool UsePersistentHash;
 #if defined(USE_EGTB)
   bool UseGaviotaTb;
   bool ProbeOnlyAtRoot;
@@ -360,9 +364,18 @@ namespace {
 
     PVSize = Options["MultiPV"];
     Skill skill(Options["Skill Level"]);
-#if PA_GTB && defined(USE_EGTB)
+#if PA_GTB
+    UsePersistentHash = Options["Use Persistent Hash"];
+#ifdef USE_EGTB
     UseGaviotaTb = Options["UseGaviotaTb"];
     ProbeOnlyAtRoot = Options["ProbeOnlyAtRoot"];
+#endif
+#endif
+
+#if PA_GTB
+    if (UsePersistentHash) {
+      PH.from_phash();
+    }
 #endif
 
     // Do we have to play with skill handicap? In this case enable MultiPV search
@@ -525,6 +538,13 @@ namespace {
                     Signals.stop = true;
             }
         }
+#if PA_GTB
+      if (UsePersistentHash) {
+        PH.to_phash();
+      }
+#endif
+      
+
     }
   }
 
@@ -646,6 +666,7 @@ namespace {
             ss->killers[1] = ss->killers[0];
             ss->killers[0] = ttMove;
         }
+
         return ttValue;
     }
 
@@ -665,7 +686,7 @@ namespace {
         val = egtb_probe(pos, hard, exact, &probed);
         if (probed) {
           value = value_from_tt(val, ss->ply);
-          TT.store(pos.key(), val, BOUND_EXACT, depth, MOVE_NONE, val, VALUE_ZERO);
+          TT.store(pos.key(), val, BOUND_EXACT, depth, MOVE_NONE, val, VALUE_ZERO, false);
           return value;
         }
       }
