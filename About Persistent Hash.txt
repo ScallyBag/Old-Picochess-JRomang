@@ -1,0 +1,49 @@
+About Persistent Hash (Stockfish-3-PA_GTB-005 Release Notes)
+============================================================
+
+INTRODUCTION:
+
+The basic idea of Persistent Hash is that (some) engine analysis is retained from session to session, rather than being dumped every time the program is restarted. The version of Stockfish in your hot grubby little hands has a fairly simple (but effective) implementation of persistent hash. "Interesting" positions are written to a disk file (called 'stockfish.hsh' by default, referred to as PH file below). Any positions in this file are loaded into the hash at the start of a new search. This mechanism allows previous analysis to influence present analysis without over-manipulating the way that Stockfish deals with hash entries (and the decision to preserve or overwrite them). New positions are written to the PH file between iteration depths (so if you are analyzing at depth 29, all interesting positions from the depth 28 search are in the file, but none of your depth 29 analysis).
+
+HOW TO USE IT:
+
+Please Enable Persistent Hash (see below, UCI Options) and use the engine as normal. You probably don't want Persistent Hash enabled during games at very fast time controls, since the reading and writing of takes a little, but measurable amount of time.
+
+KNOWN ISSUES:
+
+The contents of the PH file are loaded into the hash table at search start. When the PH file is very large, this can take a moment and the engine will appear to stop responding (although usually this takes less than a second, even with PH files of many MB). I haven't really checked with HUGE PH files. Anyway, it's kind of unavoidable and known.
+
+RELEASE NOTES:
+
+v005 (changes since v004):
+  - Persistent Hash implementation
+  - non-main threads can publish their currmovenumber
+  - 3x repetition is checked all the time
+  - update to the tip of the Stockfish upstream master branch
+
+FURTHER INFO:
+
+What makes a position interesting?
+  - the score is exact, not a fail-high or fail-low
+  - the search depth is equal or above a certain value (UCI option "Persistent Hash Depth"), 24 being the default
+  - the score is not the result of an Endgame Tablebase hit
+  - the score is still in the hash table at the end of the present iteration
+
+These criteria are fairly straightforward, although the last one is admittedly potentially problematic, since important information might get lost. Practically, I don't think it matters (PH is just a hint to the search, and none of the information in the PH file can't be reconstructed via a normal search) -- if the score is that important and has a high enough depth, it will still be there.
+
+UCI OPTIONS:
+
+As mentioned above, there are a few UCI options to control the PH operation.
+
+  - "Use Persistent Hash": set this to true to enable the PH feature (default: false)
+  - "Persistent Hash File": this defaults to the file "stockfish.hsh" in the engine's working directory. You can change the name or set an absolute path to a different location, such as on an SSD if you like.
+  - "Clear Persistent Hash": deletes _all_ of the analysis in the PH file.
+  - "Persistent Hash Depth": the minimum depth at which analysis is stored in the PH file. (default: 24). The default was determined empirically to balance usefulness with file size. The lower the depth, the larger the file.
+  - "Persistent Hash Size": desired maximum size of the PH file when Pruning.
+  - "Prune Persistent Hash": starting at the current Persistent Hash Depth, iterate through the PH file and delete all records at that depth level and below. If the file is still above the "Persistent Hash Size", increase the depth and repeat until the file is either below the requested size or no further records can be found to delete.
+  - "Persistent Hash Merge File": the file to merge _from_ when "Merge Persistent Hash" is used. This defaults to the file "stockfish_merge.hsh" in the engine's working directory. You can change the name or set an absolute path to a different location.
+  - "Merge Persistent Hash": if the file specified in "Persistent Hash Merge File" is found and vallid, any entries in the file which are a) at the "Persistent Hash Depth" or higher and b) are _deeper_ than existing entries in your current PH file (same depth is ignored) will be merged into your current PH file.
+
+FILE SIZE: 
+
+You may have noticed that there is a file size option. This option is not used at runtime, but rather in conjunction with the "Prune Persistent Hash" button to manually keep your PH file below a desired size. When writing, there is currently no way to limit the file size of the PH file (for tech-interested, the file is in QDBM format, an open-source fast, small database implementation [http://fallabs.com/qdbm/]). It will basically grow to fill your hard drive, if you let it, albeit very slowly. For now, don't worry about it too much. Let's see who gets to 1GB first -- the entries are very compact (8 byte key + 24 bytes data + indexing entries) and shouldn't explode too quickly. Maybe it's worth calling "Prune" when closing Stockfish, but I've left that out for now.
