@@ -230,8 +230,10 @@ void convert_phash(std::string &srcname)
   DEPOT *srcfile;
   
   srcfile = dpopen(srcname.c_str(), DP_OREADER, 0);
-  needsconvert = needsconvert_phash(srcfile);
-  dpclose(srcfile);
+  if (srcfile) {
+    needsconvert = needsconvert_phash(srcfile);
+    dpclose(srcfile);
+  }
   if (needsconvert) {
     std::string backupname = srcname + ".bak";
     DEPOT *backupfile;
