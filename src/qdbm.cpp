@@ -45,14 +45,24 @@ namespace
   bool PersHashWantsMerge = false;
 }
 
+typedef struct _phash_data_old
+{
+  Value   v;
+  Bound   t;
+  Depth   d;
+  Move    m;
+  Value   statV;
+  Value   kingD;
+} t_phash_data_old;
+
 typedef struct _phash_data
 {
-  Value v;
-  Bound t;
-  Depth d;
-  Move m;
-  Value statV;
-  Value kingD;
+  int16_t   v;
+  uint8_t   t;
+  uint16_t  d;
+  uint16_t  m;
+  int16_t   statV;
+  int16_t   kingD;
 } t_phash_data;
 
 ////
@@ -72,50 +82,26 @@ void optimize_phash();
 int getsize_phash();
 int prune_below_phash(int depth);
 
-
-// init_phash() initializes or reinitializes persistent hash if necessary.
+bool needsconvert_phash(DEPOT *depot);
+void doconvert_phash(DEPOT *dst, DEPOT *src);
+void convert_phash(std::string &srcname);
 
 void init_phash()
 {
-  starttransaction_phash(PHASH_READ);
+  bool usePersHash = Options["Use Persistent Hash"];
+  
+  if (usePersHash) {
+    std::string persHashFilePath = Options["Persistent Hash File"];
+    std::string persHashMergePath = Options["Persistent Hash Merge File"];
+
+    convert_phash(persHashFilePath); // in case of old-format phash files
+    convert_phash(persHashMergePath);
+  }
+  starttransaction_phash(PHASH_READ); // in case we asked for a clear, purge or merge
 #ifdef PHASH_DEBUG
   count_phash();
 #endif
   endtransaction_phash();
-/*
-  bool usePersHash = Options["Use Persistent Hash"];
-  std::string persHashFilePath = Options["Persistent Hash File"];
-  //int persHashSize = Options["PersistentHashSize"];
-  const char *cfilename = persHashFilePath.c_str();
-  
-  if (!usePersHash) {
-    close_phash();
-    return;
-  }
-  
-  PersHashFile = dpopen(cfilename, DP_OWRITER | DP_OCREAT, 0);
-  if (PersHashFile) {
-    Key k = 0;
-    const char *key = (const char *)&k;
-    const char *data = "testdata";
-    char data2[128];
-    int data2size;
-    
-    int rv = dpput(PersHashFile, key, sizeof(Key), data, 9, DP_DOVER);
-    printf("dpput %d\n", rv);
-
-    data2size = dpgetwb(PersHashFile, key, sizeof(Key), 0, 128, data2);
-    if (data2size) {
-      printf("dpget: got %0llx size %d\n", *((Key *)key), data2size);
-    } else {
-      printf("dpget: failure\n");
-    }
-
-    count_phash();
-    clear_phash();
-    count_phash();
-  }
-*/
 }
 
 void quit_phash()
@@ -173,6 +159,93 @@ void wantsmerge_phash()
     PersHashWantsMerge = true;
   } else {
     merge_phash();
+  }
+}
+
+bool needsconvert_phash(DEPOT *depot)
+{
+  bool rv = false;
+  
+  // check the first record. if it's the old size, we want to convert.
+  if (depot) {
+    if (dpiterinit(depot)) {
+      char *key;
+      while ((key = dpiternext(depot, NULL))) {
+        t_phash_data_old data;
+        int datasize = 0;
+        
+        datasize = dpgetwb(depot, (const char *)key, (int)sizeof(Key), 0, (int)sizeof(t_phash_data_old), (char *)&data);
+        if (datasize == sizeof(t_phash_data_old)) {
+          rv = true;
+        } else {
+          rv = false;
+        }
+        free(key);
+        break;
+      }
+    }
+  }
+  return rv;
+}
+
+void doconvert_phash(DEPOT *dst, DEPOT *src)
+{
+  if (src && dst && dpiterinit(src)) {
+    char *key;
+    int count = 0;
+    char *dstfilename = dpname(dst);
+    
+    while ((key = dpiternext(src, NULL))) {
+      t_phash_data data;
+      t_phash_data_old odata;
+      int datasize = 0;
+      
+      datasize = dpgetwb(src, (const char *)key, (int)sizeof(Key), 0, (int)sizeof(t_phash_data_old), (char *)&odata);
+      if (datasize == sizeof(t_phash_data_old)) {
+        data.v = odata.v;
+        data.t = odata.t;
+        data.d = odata.d;
+        data.m = odata.m;
+        data.statV = odata.statV;
+        data.kingD = odata.kingD;
+      } else if (datasize == sizeof(t_phash_data)) {
+        memcpy(&data, &odata, sizeof(t_phash_data));
+      } else {
+        sync_cout << "info Persistent Hash error converting " << dstfilename << " (records are incorrectly sized, database is probably invalid)." << sync_endl;
+        free(dstfilename);
+        return;
+      }
+      dpput(dst, (const char *)key, (int)sizeof(Key), (const char *)&data, (int)sizeof(t_phash_data), DP_DOVER);
+      count++;
+      free(key);
+    }
+    sync_cout << "info Persistent Hash updated " << count << " records in " << dstfilename << " to new format." << sync_endl;
+    free(dstfilename);
+  }
+}
+
+void convert_phash(std::string &srcname)
+{
+  bool needsconvert = false;
+  DEPOT *srcfile;
+  
+  srcfile = dpopen(srcname.c_str(), DP_OREADER, 0);
+  needsconvert = needsconvert_phash(srcfile);
+  dpclose(srcfile);
+  if (needsconvert) {
+    std::string backupname = srcname + ".bak";
+    DEPOT *backupfile;
+    
+    rename(srcname.c_str(), backupname.c_str());
+    backupfile = dpopen(backupname.c_str(),DP_OREADER, 0);
+    if (backupfile) {
+      srcfile = dpopen(srcname.c_str(), DP_OWRITER | DP_OCREAT, 0);
+      if (srcfile) {
+        doconvert_phash(srcfile, backupfile);
+        dpclose(srcfile);
+      }
+      dpclose(backupfile);
+    }
   }
 }
 
@@ -396,7 +469,7 @@ int getsize_phash()
 {
   if (PersHashFile) {
     //return dpfsiz(PersHashFile);
-    return count_phash() * sizeof(t_phash_data);
+    return count_phash() * (int)sizeof(t_phash_data);
   }
   return 0;
 }
@@ -412,7 +485,7 @@ int probe_phash(const Key key, Depth *d)
     
     datasize = dpgetwb(PersHashFile, (const char *)&key, (int)sizeof(Key), 0, (int)sizeof(t_phash_data), (char *)&data);
     if (datasize == sizeof(t_phash_data)) {
-      *d = data.d;
+      *d = (Depth)data.d;
       rv = 1;
     }
   }
@@ -435,7 +508,7 @@ void to_tt_phash()
         
         datasize = dpgetwb(PersHashFile, (const char *)key, (int)sizeof(Key), 0, (int)sizeof(t_phash_data), (char *)&data);
         if (datasize == sizeof(t_phash_data)) {
-          TT.store(*((Key *)key), data.v, data.t, data.d, data.m, data.statV, data.kingD, false);
+          TT.store(*((Key *)key), (Value)data.v, (Bound)data.t, (Depth)data.d, (Move)data.m, (Value)data.statV, (Value)data.kingD, false);
 #ifdef PHASH_DEBUG
           printf("dpgetwb: pull %llx\n", *((Key *)key));
           count++;
@@ -474,13 +547,4 @@ int count_phash()
   return count;
 }
 
-// close_egtb() closes/frees persistent hash if necessary
-/*void close_phash()
-{
-  if (PersHashFile) {
-    dpclose(PersHashFile);
-    PersHashFile = NULL;
-  }
-}
-*/
 #endif
