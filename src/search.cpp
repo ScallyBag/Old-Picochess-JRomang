@@ -580,6 +580,13 @@ namespace {
     bool captureOrPromotion, dangerous, doFullDepthSearch;
     int moveCount, playedMoveCount;
 
+    // before doing anything, check for a draw.
+    // only do the full check at the root, 2x check at lower nodes gives the best results,
+    // in terms of the engine avoiding drawn lines. in qsearch, a full search seems to be ok.
+    if (pos.is_draw(RootNode)) {
+      return DrawValue[pos.side_to_move()];
+    }
+
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
     moveCount = playedMoveCount = 0;
@@ -1259,7 +1266,7 @@ split_point_start: // At split points actual search starts from here
     ss->ply = (ss-1)->ply + 1;
 
     // Check for an instant draw or maximum ply reached
-    if (pos.is_draw(true/*false*/) || ss->ply > MAX_PLY)
+    if (pos.is_draw(true) || ss->ply > MAX_PLY)
         return DrawValue[pos.side_to_move()];
 
     // Decide whether or not to include checks, this fixes also the type of
