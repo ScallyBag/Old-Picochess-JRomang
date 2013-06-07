@@ -187,7 +187,7 @@ namespace {
         sync_cout << "No such option: " << name << sync_endl;
 
 #if PA_GTB
-    init_phash();
+    PHInst.init_phash();
 #ifdef USE_EGTB
     init_egtb();
 #endif

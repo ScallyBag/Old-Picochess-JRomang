@@ -9,9 +9,11 @@
 /* Begin PBXBuildFile section */
 		F750AF5C174F55FF00CA61BC /* libgtb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F750AF57174F559F00CA61BC /* libgtb.a */; };
 		F757E724174F6E630034FC58 /* libqdbm.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F757E721174F6E4A0034FC58 /* libqdbm.a */; };
-		F757E727174F6E8E0034FC58 /* qdbm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F757E726174F6E8E0034FC58 /* qdbm.cpp */; };
+		F757E727174F6E8E0034FC58 /* phash_qdbm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F757E726174F6E8E0034FC58 /* phash_qdbm.cpp */; };
 		F7802A06174CFDC300D3CEF8 /* bitcount.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7802A03174CFCC200D3CEF8 /* bitcount.cpp */; };
 		F791ECC31761CBC300262B71 /* liblmdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F7B1E7501761C97500ABCFE9 /* liblmdb.a */; };
+		F791ECCD1761CCCF00262B71 /* phash_lmdb.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F791ECCB1761CCCF00262B71 /* phash_lmdb.cpp */; };
+		F791ECD11761F13D00262B71 /* phash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F791ECD01761F13D00262B71 /* phash.cpp */; };
 		F7BE3E9F174280270021A427 /* benchmark.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7BE3E75174280270021A427 /* benchmark.cpp */; };
 		F7BE3EA0174280270021A427 /* bitbase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7BE3E76174280270021A427 /* bitbase.cpp */; };
 		F7BE3EA1174280270021A427 /* bitboard.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7BE3E77174280270021A427 /* bitboard.cpp */; };
@@ -96,8 +98,12 @@
 		F750AF52174F559F00CA61BC /* gtb.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = gtb.xcodeproj; path = gtb/gtb.xcodeproj; sourceTree = "<group>"; };
 		F757E71C174F6E4A0034FC58 /* qdbm.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = qdbm.xcodeproj; path = qdbm/qdbm.xcodeproj; sourceTree = "<group>"; };
 		F757E725174F6E8E0034FC58 /* phash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = phash.h; sourceTree = "<group>"; };
-		F757E726174F6E8E0034FC58 /* qdbm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = qdbm.cpp; sourceTree = "<group>"; };
+		F757E726174F6E8E0034FC58 /* phash_qdbm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = phash_qdbm.cpp; sourceTree = "<group>"; };
 		F7802A03174CFCC200D3CEF8 /* bitcount.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bitcount.cpp; sourceTree = "<group>"; };
+		F791ECCB1761CCCF00262B71 /* phash_lmdb.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = phash_lmdb.cpp; sourceTree = "<group>"; };
+		F791ECCE1761E61B00262B71 /* phash_qdbm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = phash_qdbm.h; sourceTree = "<group>"; };
+		F791ECCF1761EC4600262B71 /* phash_lmdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = phash_lmdb.h; sourceTree = "<group>"; };
+		F791ECD01761F13D00262B71 /* phash.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = phash.cpp; sourceTree = "<group>"; };
 		F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = lmdb.xcodeproj; path = lmdb/lmdb.xcodeproj; sourceTree = "<group>"; };
 		F7BE3E6817427FEF0021A427 /* stockfish */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = stockfish; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7BE3E75174280270021A427 /* benchmark.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = benchmark.cpp; sourceTree = "<group>"; };
@@ -237,11 +243,15 @@
 				F7BE3E8C174280270021A427 /* pawns.cpp */,
 				F7BE3E8D174280270021A427 /* pawns.h */,
 				F757E725174F6E8E0034FC58 /* phash.h */,
+				F791ECD01761F13D00262B71 /* phash.cpp */,
+				F791ECCB1761CCCF00262B71 /* phash_lmdb.cpp */,
+				F791ECCF1761EC4600262B71 /* phash_lmdb.h */,
+				F757E726174F6E8E0034FC58 /* phash_qdbm.cpp */,
+				F791ECCE1761E61B00262B71 /* phash_qdbm.h */,
 				F7BE3E8E174280270021A427 /* platform.h */,
 				F7BE3E8F174280270021A427 /* position.cpp */,
 				F7BE3E90174280270021A427 /* position.h */,
 				F7BE3E91174280270021A427 /* psqtab.h */,
-				F757E726174F6E8E0034FC58 /* qdbm.cpp */,
 				F7BE3E92174280270021A427 /* rkiss.h */,
 				F7BE3E93174280270021A427 /* search.cpp */,
 				F7BE3E94174280270021A427 /* search.h */,
@@ -375,7 +385,9 @@
 				F7BE3EB3174280270021A427 /* ucioption.cpp in Sources */,
 				F7BE3EB6174296520021A427 /* egtb.cpp in Sources */,
 				F7802A06174CFDC300D3CEF8 /* bitcount.cpp in Sources */,
-				F757E727174F6E8E0034FC58 /* qdbm.cpp in Sources */,
+				F757E727174F6E8E0034FC58 /* phash_qdbm.cpp in Sources */,
+				F791ECCD1761CCCF00262B71 /* phash_lmdb.cpp in Sources */,
+				F791ECD11761F13D00262B71 /* phash.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

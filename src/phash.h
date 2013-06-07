@@ -23,17 +23,36 @@
 #define UNUSED(x) x
 #endif
 
-typedef enum { PHASH_READ, PHASH_WRITE } PHASH_MODE;
+typedef struct _phash_data
+{
+  int16_t   v;
+  uint8_t   t;
+  uint16_t  d;
+  uint16_t  m;
+  int16_t   statV;
+  int16_t   kingD;
+} t_phash_data;
 
-void init_phash();
-void quit_phash();
-void store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD);
-int probe_phash(const Key key, Depth *d);
-void starttransaction_phash(PHASH_MODE mode);
-void endtransaction_phash();
-void to_tt_phash();
-void wantsclear_phash();
-void wantsprune_phash();
-void wantsmerge_phash();
+typedef enum { PHASH_MODE_READ, PHASH_MODE_WRITE } PHASH_MODE;
+typedef enum { PHASH_BACKEND_QDBM, PHASH_BACKEND_LMDB } PHASH_BACKEND;
 
-#endif /* defined(ISAM_H_INCLUDED) */
+class PersistentHash {
+
+public:
+  static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_QDBM);
+
+  virtual void init_phash() = 0;
+  virtual void quit_phash() = 0;
+  virtual void store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD) = 0;
+  virtual int probe_phash(const Key key, Depth *d) = 0;
+  virtual void starttransaction_phash(PHASH_MODE mode) = 0;
+  virtual void endtransaction_phash() = 0;
+  virtual void to_tt_phash() = 0;
+  virtual void wantsclear_phash() = 0;
+  virtual void wantsprune_phash() = 0;
+  virtual void wantsmerge_phash() = 0;
+};
+
+#define PHInst PersistentHash::getInstance()
+
+#endif /* defined(PHASH_H_INCLUDED) */

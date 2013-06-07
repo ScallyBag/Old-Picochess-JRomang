@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
 
   UCI::init(Options);
 #if PA_GTB
-  init_phash();
+  PHInst.init_phash();
 #endif
   Bitboards::init();
   Zobrist::init();
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
   UCI::loop(args);
 
 #if PA_GTB
-  quit_phash();
+  PHInst.quit_phash();
 #ifdef USE_EGTB
   close_egtb();
 #endif

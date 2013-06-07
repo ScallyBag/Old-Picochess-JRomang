@@ -44,9 +44,9 @@ void on_threads(const Option&) { Threads.read_uci_options(); }
 void on_hash_size(const Option& o) { TT.set_size(o); }
 void on_clear_hash(const Option&) { TT.clear(); }
 #if PA_GTB
-  void on_clear_phash(const Option&) { wantsclear_phash(); }
-  void on_prune_phash(const Option&) { wantsprune_phash(); }
-  void on_merge_phash(const Option&) { wantsmerge_phash(); }
+  void on_clear_phash(const Option&) { PHInst.wantsclear_phash(); }
+  void on_prune_phash(const Option&) { PHInst.wantsprune_phash(); }
+  void on_merge_phash(const Option&) { PHInst.wantsmerge_phash(); }
 #endif
 
 /// Our case insensitive less() function as required by UCI protocol

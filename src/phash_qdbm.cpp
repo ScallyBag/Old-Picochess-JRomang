@@ -21,29 +21,14 @@
 //// Includes
 ////
 #if PA_GTB
-#include <cassert>
-#include <string>
-
 #include "phash.h"
-#include "qdbm/depot.h"
-#include "misc.h"
-#include "thread.h"
-#include "tt.h"
+#include "phash_qdbm.h"
 
-//PHashList PHL; // Our global list of interesting positions
+QDBM_PersistentHash QDBM;
 
 ////
 //// Local definitions
 ////
-
-namespace
-{
-  /// Variables
-  DEPOT *PersHashFile = NULL;
-  bool PersHashWantsClear = false;
-  bool PersHashWantsPrune = false;
-  bool PersHashWantsMerge = false;
-}
 
 typedef struct _phash_data_old
 {
@@ -55,38 +40,20 @@ typedef struct _phash_data_old
   Value   kingD;
 } t_phash_data_old;
 
-typedef struct _phash_data
-{
-  int16_t   v;
-  uint8_t   t;
-  uint16_t  d;
-  uint16_t  m;
-  int16_t   statV;
-  int16_t   kingD;
-} t_phash_data;
-
 ////
 //// Functions
 ////
 
-int count_phash();
-DEPOT *open_phash(PHASH_MODE mode);
-void close_phash(DEPOT *depot);
-void clear_phash();
-void doclear_phash();
-void prune_phash();
-void doprune_phash();
-void merge_phash();
-void domerge_phash();
-void optimize_phash();
-int getsize_phash();
-int prune_below_phash(int depth);
+QDBM_PersistentHash::QDBM_PersistentHash() :
+  PersHashFile(NULL),
+  PersHashWantsClear(false),
+  PersHashWantsPrune(false),
+  PersHashWantsMerge(false)
+{
+  ;
+}
 
-bool needsconvert_phash(DEPOT *depot);
-void doconvert_phash(DEPOT *dst, DEPOT *src);
-void convert_phash(std::string &srcname);
-
-void init_phash()
+void QDBM_PersistentHash::init_phash()
 {
   bool usePersHash = Options["Use Persistent Hash"];
   
@@ -97,28 +64,28 @@ void init_phash()
     convert_phash(persHashFilePath); // in case of old-format phash files
     convert_phash(persHashMergePath);
   }
-  starttransaction_phash(PHASH_READ); // in case we asked for a clear, purge or merge
+  starttransaction_phash(PHASH_MODE_READ); // in case we asked for a clear, purge or merge
 #ifdef PHASH_DEBUG
   count_phash();
 #endif
   endtransaction_phash();
 }
 
-void quit_phash()
+void QDBM_PersistentHash::quit_phash()
 {
-  starttransaction_phash(PHASH_WRITE);
+  starttransaction_phash(PHASH_MODE_WRITE);
   optimize_phash();
   endtransaction_phash();
 }
 
-void clear_phash()
+void QDBM_PersistentHash::clear_phash()
 {
-  starttransaction_phash(PHASH_WRITE);
+  starttransaction_phash(PHASH_MODE_WRITE);
   doclear_phash();
   endtransaction_phash();
 }
 
-void wantsclear_phash()
+void QDBM_PersistentHash::wantsclear_phash()
 {
   MainThread *t = Threads.main_thread();
   if (t->thinking) {
@@ -128,14 +95,14 @@ void wantsclear_phash()
   }
 }
 
-void prune_phash()
+void QDBM_PersistentHash::prune_phash()
 {
-  starttransaction_phash(PHASH_WRITE);
+  starttransaction_phash(PHASH_MODE_WRITE);
   doprune_phash();
   endtransaction_phash();
 }
 
-void wantsprune_phash()
+void QDBM_PersistentHash::wantsprune_phash()
 {
   MainThread *t = Threads.main_thread();
   if (t->thinking) {
@@ -145,14 +112,14 @@ void wantsprune_phash()
   }
 }
 
-void merge_phash()
+void QDBM_PersistentHash::merge_phash()
 {
-  starttransaction_phash(PHASH_WRITE);
+  starttransaction_phash(PHASH_MODE_WRITE);
   domerge_phash();
   endtransaction_phash();
 }
 
-void wantsmerge_phash()
+void QDBM_PersistentHash::wantsmerge_phash()
 {
   MainThread *t = Threads.main_thread();
   if (t->thinking) {
@@ -162,7 +129,7 @@ void wantsmerge_phash()
   }
 }
 
-bool needsconvert_phash(DEPOT *depot)
+bool QDBM_PersistentHash::needsconvert_phash(DEPOT *depot)
 {
   bool rv = false;
   
@@ -188,7 +155,7 @@ bool needsconvert_phash(DEPOT *depot)
   return rv;
 }
 
-void doconvert_phash(DEPOT *dst, DEPOT *src)
+void QDBM_PersistentHash::doconvert_phash(DEPOT *dst, DEPOT *src)
 {
   if (src && dst && dpiterinit(src)) {
     char *key;
@@ -224,7 +191,7 @@ void doconvert_phash(DEPOT *dst, DEPOT *src)
   }
 }
 
-void convert_phash(std::string &srcname)
+void QDBM_PersistentHash::convert_phash(std::string &srcname)
 {
   bool needsconvert = false;
   DEPOT *srcfile;
@@ -251,27 +218,27 @@ void convert_phash(std::string &srcname)
   }
 }
 
-DEPOT *open_phash(PHASH_MODE mode)
+DEPOT *QDBM_PersistentHash::open_phash(PHASH_MODE mode)
 {
   bool usePersHash = Options["Use Persistent Hash"];
   std::string filename = Options["Persistent Hash File"];
   DEPOT *hash = NULL;
   
   if (usePersHash) {
-    hash = dpopen(filename.c_str(), (mode == PHASH_WRITE) ? DP_OWRITER | DP_OCREAT : DP_OREADER, 0);
-    if (mode == PHASH_WRITE) {
+    hash = dpopen(filename.c_str(), (mode == PHASH_MODE_WRITE) ? DP_OWRITER | DP_OCREAT : DP_OREADER, 0);
+    if (mode == PHASH_MODE_WRITE) {
       dpsetalign(hash, sizeof(t_phash_data)); // optimizes overwrite operations
     }
   }
   return hash;
 }
 
-void close_phash(DEPOT *depot)
+void QDBM_PersistentHash::close_phash(DEPOT *depot)
 {
   dpclose(depot);
 }
 
-void store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD)
+void QDBM_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD)
 {
   Depth oldDepth = DEPTH_ZERO;
 
@@ -301,7 +268,7 @@ void store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, 
   }
 }
 
-void starttransaction_phash(PHASH_MODE mode)
+void QDBM_PersistentHash::starttransaction_phash(PHASH_MODE mode)
 {
   if (PersHashFile) return;
   
@@ -321,7 +288,7 @@ void starttransaction_phash(PHASH_MODE mode)
   PersHashFile = open_phash(mode);
 }
 
-void endtransaction_phash()
+void QDBM_PersistentHash::endtransaction_phash()
 {
   if (PersHashFile) {
     close_phash(PersHashFile);
@@ -329,7 +296,7 @@ void endtransaction_phash()
   }
 }
 
-int prune_below_phash(int depth)
+int QDBM_PersistentHash::prune_below_phash(int depth)
 {
   int count = 0;
 
@@ -358,7 +325,7 @@ int prune_below_phash(int depth)
 // the basic algorithm is: check the file size, if it's higher than the target size
 // delete all entries at the minimum depth and optimize
 // if still too big, repeat with the next highest depth and so on until we're below the target size
-void doprune_phash()
+void QDBM_PersistentHash::doprune_phash()
 {
   if (PersHashFile) {
     int desiredFileSize = Options["Persistent Hash Size"] * (1024 * 1024);
@@ -399,7 +366,7 @@ void doprune_phash()
   }
 }
 
-void doclear_phash()
+void QDBM_PersistentHash::doclear_phash()
 {
   if (PersHashFile) {
 #ifdef PHASH_DEBUG
@@ -428,7 +395,7 @@ void doclear_phash()
   }
 }
 
-void domerge_phash()
+void QDBM_PersistentHash::domerge_phash()
 {
   if (PersHashFile) {
     std::string mergename = Options["Persistent Hash Merge File"];
@@ -467,7 +434,7 @@ void domerge_phash()
   }
 }
 
-int getsize_phash()
+int QDBM_PersistentHash::getsize_phash()
 {
   if (PersHashFile) {
     //return dpfsiz(PersHashFile);
@@ -476,7 +443,7 @@ int getsize_phash()
   return 0;
 }
 
-int probe_phash(const Key key, Depth *d)
+int QDBM_PersistentHash::probe_phash(const Key key, Depth *d)
 {
   int rv = 0;
   
@@ -494,7 +461,7 @@ int probe_phash(const Key key, Depth *d)
   return rv;
 }
 
-void to_tt_phash()
+void QDBM_PersistentHash::to_tt_phash()
 {
   if (PersHashFile) {
 #ifdef PHASH_DEBUG
@@ -525,14 +492,14 @@ void to_tt_phash()
   }
 }
 
-void optimize_phash()
+void QDBM_PersistentHash::optimize_phash()
 {
   if (PersHashFile) {
     dpoptimize(PersHashFile, 0);
   }
 }
 
-int count_phash()
+int QDBM_PersistentHash::count_phash()
 {
   int count = 0;
 

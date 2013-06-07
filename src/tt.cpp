@@ -156,14 +156,14 @@ void TranspositionTable<PHEntry>::to_phash() {
 #endif
   int minDepth = Options["Persistent Hash Depth"];
 
-  starttransaction_phash(PHASH_WRITE);
+  PHInst.starttransaction_phash(PHASH_MODE_WRITE);
   for (unsigned i = 0; i < (hashMask + ClusterSize); i++) {
     PHEntry *phe = table + i;
     Key key;
     if ((key = phe->fullkey())) {
       TTEntry *tte = TT.probe(key);
       if (tte && tte->type() == BOUND_EXACT && tte->depth() >= minDepth) { // double-check criteria
-        store_phash(key, tte->value(), tte->type(), tte->depth(), tte->move(), tte->eval_value(), tte->eval_margin());
+        PHInst.store_phash(key, tte->value(), tte->type(), tte->depth(), tte->move(), tte->eval_value(), tte->eval_margin());
       }
 #ifdef PHASH_DEBUG
       count++;
@@ -173,7 +173,7 @@ void TranspositionTable<PHEntry>::to_phash() {
     entries++;
 #endif
   }
-  endtransaction_phash();
+  PHInst.endtransaction_phash();
   clear(); // clear the hash each time
 #ifdef PHASH_DEBUG
   gettimeofday(&tv2, NULL);
@@ -196,9 +196,9 @@ void TranspositionTable<PHEntry>::from_phash() {
 
   gettimeofday(&tv1, NULL);
 #endif
-  starttransaction_phash(PHASH_READ);
-  to_tt_phash();
-  endtransaction_phash();
+  PHInst.starttransaction_phash(PHASH_MODE_READ);
+  PHInst.to_tt_phash();
+  PHInst.endtransaction_phash();
 #ifdef PHASH_DEBUG
   gettimeofday(&tv2, NULL);
   sync_cout << "\nTranspositionTable<PHEntry>::from_phash executed in "
