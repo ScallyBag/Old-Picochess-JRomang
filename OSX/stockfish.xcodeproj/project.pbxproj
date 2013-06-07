@@ -11,6 +11,7 @@
 		F757E724174F6E630034FC58 /* libqdbm.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F757E721174F6E4A0034FC58 /* libqdbm.a */; };
 		F757E727174F6E8E0034FC58 /* qdbm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F757E726174F6E8E0034FC58 /* qdbm.cpp */; };
 		F7802A06174CFDC300D3CEF8 /* bitcount.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7802A03174CFCC200D3CEF8 /* bitcount.cpp */; };
+		F791ECC31761CBC300262B71 /* liblmdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F7B1E7501761C97500ABCFE9 /* liblmdb.a */; };
 		F7BE3E9F174280270021A427 /* benchmark.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7BE3E75174280270021A427 /* benchmark.cpp */; };
 		F7BE3EA0174280270021A427 /* bitbase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7BE3E76174280270021A427 /* bitbase.cpp */; };
 		F7BE3EA1174280270021A427 /* bitboard.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7BE3E77174280270021A427 /* bitboard.cpp */; };
@@ -63,6 +64,20 @@
 			remoteGlobalIDString = F750AF29174E12FA00CA61BC;
 			remoteInfo = qdbm;
 		};
+		F791ECC01761CBBF00262B71 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = F7B1E7431761C97400ABCFE9;
+			remoteInfo = lmdb;
+		};
+		F7B1E74F1761C97500ABCFE9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = F7B1E7441761C97400ABCFE9;
+			remoteInfo = lmdb;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -83,6 +98,7 @@
 		F757E725174F6E8E0034FC58 /* phash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = phash.h; sourceTree = "<group>"; };
 		F757E726174F6E8E0034FC58 /* qdbm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = qdbm.cpp; sourceTree = "<group>"; };
 		F7802A03174CFCC200D3CEF8 /* bitcount.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bitcount.cpp; sourceTree = "<group>"; };
+		F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = lmdb.xcodeproj; path = lmdb/lmdb.xcodeproj; sourceTree = "<group>"; };
 		F7BE3E6817427FEF0021A427 /* stockfish */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = stockfish; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7BE3E75174280270021A427 /* benchmark.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = benchmark.cpp; sourceTree = "<group>"; };
 		F7BE3E76174280270021A427 /* bitbase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bitbase.cpp; sourceTree = "<group>"; };
@@ -135,6 +151,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F791ECC31761CBC300262B71 /* liblmdb.a in Frameworks */,
 				F757E724174F6E630034FC58 /* libqdbm.a in Frameworks */,
 				F750AF5C174F55FF00CA61BC /* libgtb.a in Frameworks */,
 			);
@@ -159,9 +176,18 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		F7B1E74C1761C97400ABCFE9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F7B1E7501761C97500ABCFE9 /* liblmdb.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		F7BE3E5F17427FEF0021A427 = {
 			isa = PBXGroup;
 			children = (
+				F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */,
 				F750AF52174F559F00CA61BC /* gtb.xcodeproj */,
 				F757E71C174F6E4A0034FC58 /* qdbm.xcodeproj */,
 				F7BE3E74174280270021A427 /* src */,
@@ -249,6 +275,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				F791ECC11761CBBF00262B71 /* PBXTargetDependency */,
 				F757E723174F6E5F0034FC58 /* PBXTargetDependency */,
 				F750AF5A174F55F900CA61BC /* PBXTargetDependency */,
 			);
@@ -282,6 +309,10 @@
 					ProjectRef = F750AF52174F559F00CA61BC /* gtb.xcodeproj */;
 				},
 				{
+					ProductGroup = F7B1E74C1761C97400ABCFE9 /* Products */;
+					ProjectRef = F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */;
+				},
+				{
 					ProductGroup = F757E71D174F6E4A0034FC58 /* Products */;
 					ProjectRef = F757E71C174F6E4A0034FC58 /* qdbm.xcodeproj */;
 				},
@@ -306,6 +337,13 @@
 			fileType = archive.ar;
 			path = libqdbm.a;
 			remoteRef = F757E720174F6E4A0034FC58 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		F7B1E7501761C97500ABCFE9 /* liblmdb.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = liblmdb.a;
+			remoteRef = F7B1E74F1761C97500ABCFE9 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
@@ -354,6 +392,11 @@
 			name = qdbm;
 			targetProxy = F757E722174F6E5F0034FC58 /* PBXContainerItemProxy */;
 		};
+		F791ECC11761CBBF00262B71 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = lmdb;
+			targetProxy = F791ECC01761CBBF00262B71 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -362,13 +405,6 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -394,13 +430,6 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
