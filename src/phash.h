@@ -39,7 +39,7 @@ typedef enum { PHASH_BACKEND_QDBM, PHASH_BACKEND_LMDB } PHASH_BACKEND;
 class PersistentHash {
 
 public:
-  static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_QDBM);
+  static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_LMDB);
 
   virtual void init_phash() = 0;
   virtual void quit_phash() = 0;

@@ -48,12 +48,17 @@ private:
   void optimize_phash();
   int getsize_phash();
   int prune_below_phash(int depth);
-  
+
+  void copyfile(std::string &srcfile, std::string &dstfile);
+
   bool needsconvert_phash(MDB_env *depot);
   void doconvert_phash(MDB_env *dst, MDB_env *src);
   void convert_phash(std::string &srcname);
   
-  MDB_env *PersHashFile;
+  MDB_env *PersHashEnv;
+  MDB_txn *PersHashTxn;
+  MDB_dbi PersHashDbi;
+
   bool PersHashWantsClear;
   bool PersHashWantsPrune;
   bool PersHashWantsMerge;

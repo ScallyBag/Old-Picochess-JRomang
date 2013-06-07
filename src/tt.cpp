@@ -164,10 +164,10 @@ void TranspositionTable<PHEntry>::to_phash() {
       TTEntry *tte = TT.probe(key);
       if (tte && tte->type() == BOUND_EXACT && tte->depth() >= minDepth) { // double-check criteria
         PHInst.store_phash(key, tte->value(), tte->type(), tte->depth(), tte->move(), tte->eval_value(), tte->eval_margin());
-      }
 #ifdef PHASH_DEBUG
-      count++;
+        count++;
 #endif
+      }
     }
 #ifdef PHASH_DEBUG
     entries++;
