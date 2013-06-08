@@ -64,18 +64,22 @@ void QDBM_PersistentHash::init_phash()
     convert_phash(persHashFilePath); // in case of old-format phash files
     convert_phash(persHashMergePath);
   }
+#if 0
   starttransaction_phash(PHASH_MODE_READ); // in case we asked for a clear, purge or merge
 #ifdef PHASH_DEBUG
   count_phash();
 #endif
   endtransaction_phash();
+#endif
 }
 
 void QDBM_PersistentHash::quit_phash()
 {
+#if 0
   starttransaction_phash(PHASH_MODE_WRITE);
   optimize_phash();
   endtransaction_phash();
+#endif
 }
 
 void QDBM_PersistentHash::clear_phash()
@@ -155,12 +159,11 @@ bool QDBM_PersistentHash::needsconvert_phash(DEPOT *depot)
   return rv;
 }
 
-void QDBM_PersistentHash::doconvert_phash(DEPOT *dst, DEPOT *src)
+void QDBM_PersistentHash::doconvert_phash(std::string &dstname, DEPOT *src)
 {
-  if (src && dst && dpiterinit(src)) {
+  if (src && dpiterinit(src)) {
     char *key;
     int count = 0;
-    char *dstfilename = dpname(dst);
     
     while ((key = dpiternext(src, NULL))) {
       t_phash_data data;
@@ -178,16 +181,14 @@ void QDBM_PersistentHash::doconvert_phash(DEPOT *dst, DEPOT *src)
       } else if (datasize == sizeof(t_phash_data)) {
         memcpy(&data, &odata, sizeof(t_phash_data));
       } else {
-        sync_cout << "info Persistent Hash error converting " << dstfilename << " (records are incorrectly sized, database is probably invalid)." << sync_endl;
-        free(dstfilename);
+        sync_cout << "info Persistent Hash error converting " << dstname << " (records are incorrectly sized, database is probably invalid)." << sync_endl;
         return;
       }
-      dpput(dst, (const char *)key, (int)sizeof(Key), (const char *)&data, (int)sizeof(t_phash_data), DP_DOVER);
+      PHInst.store_phash(*((const Key *)key), data);
       count++;
       free(key);
     }
-    sync_cout << "info Persistent Hash updated " << count << " records in " << dstfilename << " to new format." << sync_endl;
-    free(dstfilename);
+    sync_cout << "info Persistent Hash updated " << count << " records in " << dstname << " to new format." << sync_endl;
   }
 }
 
@@ -198,21 +199,24 @@ void QDBM_PersistentHash::convert_phash(std::string &srcname)
   
   srcfile = dpopen(srcname.c_str(), DP_OREADER, 0);
   if (srcfile) {
+#ifdef USE_LMDB
+    // we're converting to LMDB -- it's a QDBM file, so yes, we need to convert
+    needsconvert = 1;
+#else
     needsconvert = needsconvert_phash(srcfile);
+#endif
     dpclose(srcfile);
   }
   if (needsconvert) {
-    std::string backupname = srcname + ".bak";
+    std::string backupname = srcname + ".old";
     DEPOT *backupfile;
     
     rename(srcname.c_str(), backupname.c_str());
     backupfile = dpopen(backupname.c_str(),DP_OREADER, 0);
     if (backupfile) {
-      srcfile = dpopen(srcname.c_str(), DP_OWRITER | DP_OCREAT, 0);
-      if (srcfile) {
-        doconvert_phash(srcfile, backupfile);
-        dpclose(srcfile);
-      }
+      PHInst.starttransaction_phash(PHASH_MODE_WRITE);
+      doconvert_phash(srcname, backupfile);
+      PHInst.endtransaction_phash();
       dpclose(backupfile);
     }
   }
@@ -236,6 +240,26 @@ DEPOT *QDBM_PersistentHash::open_phash(PHASH_MODE mode)
 void QDBM_PersistentHash::close_phash(DEPOT *depot)
 {
   dpclose(depot);
+}
+
+void QDBM_PersistentHash::store_phash(const Key key, t_phash_data &data)
+{
+  Depth oldDepth = DEPTH_ZERO;
+  
+  if (PersHashFile) {
+    probe_phash(key, &oldDepth);
+    if (data.d >= oldDepth) {
+      int rv = 0;
+      rv = dpput(PersHashFile, (const char *)&key, (int)sizeof(Key), (const char *)&data, (int)sizeof(t_phash_data), DP_DOVER);
+#ifdef PHASH_DEBUG
+      if (rv) {
+        printf("dpput: put %llx\n", key);
+      } else {
+        printf("dpput: %s\n", dperrmsg(dpecode));
+      }
+#endif
+    }
+  }
 }
 
 void QDBM_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD)

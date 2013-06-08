@@ -26,6 +26,7 @@ public:
   
   virtual void init_phash();
   virtual void quit_phash();
+  virtual void store_phash(const Key key, t_phash_data &data);
   virtual void store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD);
   virtual int probe_phash(const Key key, Depth *d);
   virtual void starttransaction_phash(PHASH_MODE mode);
@@ -48,6 +49,8 @@ private:
   void optimize_phash();
   int getsize_phash();
   int prune_below_phash(int depth);
+  int put_withpurge(MDB_txn *txn, MDB_dbi dbi, MDB_val *vKey, MDB_val *vData);
+  void dostore_phash(const Key key, t_phash_data &data);
 
   void copyfile(std::string &srcfile, std::string &dstfile);
 
@@ -58,6 +61,8 @@ private:
   MDB_env *PersHashEnv;
   MDB_txn *PersHashTxn;
   MDB_dbi PersHashDbi;
+  std::string PersHashFileName;
+  std::string PersHashPrunefileName;
 
   bool PersHashWantsClear;
   bool PersHashWantsPrune;

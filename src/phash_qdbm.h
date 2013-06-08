@@ -26,6 +26,7 @@ public:
 
   virtual void init_phash();
   virtual void quit_phash();
+  virtual void store_phash(const Key key, t_phash_data &data);
   virtual void store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD);
   virtual int probe_phash(const Key key, Depth *d);
   virtual void starttransaction_phash(PHASH_MODE mode);
@@ -50,7 +51,7 @@ private:
   int prune_below_phash(int depth);
   void convert_phash(std::string &filename);
   bool needsconvert_phash(DEPOT *depot);
-  void doconvert_phash(DEPOT *dst, DEPOT *src);
+  void doconvert_phash(std::string &dstname, DEPOT *src);
   
   DEPOT *PersHashFile;
   bool PersHashWantsClear;

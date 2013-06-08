@@ -13,6 +13,7 @@
 #include "ucioption.h"
 
 //#define PHASH_DEBUG
+#define USE_LMDB
 
 #ifdef UNUSED
 #elif defined(__GNUC__)
@@ -39,11 +40,16 @@ typedef enum { PHASH_BACKEND_QDBM, PHASH_BACKEND_LMDB } PHASH_BACKEND;
 class PersistentHash {
 
 public:
+#ifdef USE_LMDB
   static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_LMDB);
+#else
+  static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_QDBM);
+#endif
 
   virtual void init_phash() = 0;
   virtual void quit_phash() = 0;
   virtual void store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD) = 0;
+  virtual void store_phash(const Key key, t_phash_data &data) = 0;
   virtual int probe_phash(const Key key, Depth *d) = 0;
   virtual void starttransaction_phash(PHASH_MODE mode) = 0;
   virtual void endtransaction_phash() = 0;
