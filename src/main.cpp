@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
   PHInst.init_phash();
 #endif
   Bitboards::init();
-  Zobrist::init();
+  Position::init();
   Bitbases::init_kpk();
   Search::init();
   Eval::init();

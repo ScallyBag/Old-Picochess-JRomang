@@ -346,17 +346,17 @@ namespace {
 
   void id_loop(Position& pos) {
 
-    Stack ss[MAX_PLY_PLUS_2];
+    Stack stack[MAX_PLY_PLUS_2], *ss = stack+1; // To allow referencing (ss-1)
     int depth, prevBestMoveChanges;
     Value bestValue, alpha, beta, delta;
 
 #if PA_GTB && defined(USE_EGTB)
     pos.set_tb_hits(0); // reset tbhits before doing the root search
 #endif
-    memset(ss, 0, 4 * sizeof(Stack));
+    memset(ss-1, 0, 4 * sizeof(Stack));
     depth = BestMoveChanges = 0;
     bestValue = delta = -VALUE_INFINITE;
-    ss->currentMove = MOVE_NULL; // Hack to skip update gains
+    (ss-1)->currentMove = MOVE_NULL; // Hack to skip update gains
     TT.new_search();
     History.clear();
     Gains.clear();
@@ -416,9 +416,7 @@ namespace {
             // research with bigger window until not failing high/low anymore.
             while (true)
             {
-                // Search starts from ss+1 to allow referencing (ss-1). This is
-                // needed by update gains and ss copy when splitting at Root.
-                bestValue = search<Root>(pos, ss+1, alpha, beta, depth * ONE_PLY);
+                bestValue = search<Root>(pos, ss, alpha, beta, depth * ONE_PLY);
 
                 // Bring to front the best move. It is critical that sorting is
                 // done with a stable algorithm because all the values but the first
@@ -483,8 +481,12 @@ namespace {
 
         if (Options["Use Search Log"])
         {
+            RootMove& rm = RootMoves[0];
+            if (skill.best != MOVE_NONE)
+                rm = *std::find(RootMoves.begin(), RootMoves.end(), skill.best);
+
             Log log(Options["Search Log Filename"]);
-            log << pretty_pv(pos, depth, bestValue, Time::now() - SearchTime, &RootMoves[0].pv[0])
+            log << pretty_pv(pos, depth, rm.score, Time::now() - SearchTime, rm.pv.data())
                 << std::endl;
         }
 
@@ -518,11 +520,11 @@ namespace {
                     || Time::now() - SearchTime > (TimeMgr.available_time() * 20) / 100))
             {
                 Value rBeta = bestValue - 2 * PawnValueMg;
-                (ss+1)->excludedMove = RootMoves[0].pv[0];
-                (ss+1)->skipNullMove = true;
-                Value v = search<NonPV>(pos, ss+1, rBeta - 1, rBeta, (depth - 3) * ONE_PLY);
-                (ss+1)->skipNullMove = false;
-                (ss+1)->excludedMove = MOVE_NONE;
+                ss->excludedMove = RootMoves[0].pv[0];
+                ss->skipNullMove = true;
+                Value v = search<NonPV>(pos, ss, rBeta - 1, rBeta, (depth - 3) * ONE_PLY);
+                ss->skipNullMove = false;
+                ss->excludedMove = MOVE_NONE;
 
                 if (v < rBeta)
                     stop = true;
@@ -673,7 +675,6 @@ namespace {
             ss->killers[1] = ss->killers[0];
             ss->killers[0] = ttMove;
         }
-
         return ttValue;
     }
 
@@ -822,7 +823,7 @@ namespace {
                 && (ss-1)->reduction
                 && threatMove != MOVE_NONE
                 && allows(pos, (ss-1)->currentMove, threatMove))
-                return beta - 1;
+                return alpha;
         }
     }
 
@@ -1582,15 +1583,15 @@ split_point_start: // At split points actual search starts from here
     {
         // Update occupancy as if the piece and the threat are moving
         Bitboard occ = pos.pieces() ^ m1from ^ m1to ^ m2from;
-        Piece piece = pos.piece_on(m1from);
+        Piece pc = pos.piece_on(m1from);
 
         // The moved piece attacks the square 'tto' ?
-        if (pos.attacks_from(piece, m1to, occ) & m2to)
+        if (pos.attacks_from(pc, m1to, occ) & m2to)
             return true;
 
         // Scan for possible X-ray attackers behind the moved piece
-        Bitboard xray =  (attacks_bb<  ROOK>(m2to, occ) & pos.pieces(color_of(piece), QUEEN, ROOK))
-                       | (attacks_bb<BISHOP>(m2to, occ) & pos.pieces(color_of(piece), QUEEN, BISHOP));
+        Bitboard xray =  (attacks_bb<  ROOK>(m2to, occ) & pos.pieces(color_of(pc), QUEEN, ROOK))
+                       | (attacks_bb<BISHOP>(m2to, occ) & pos.pieces(color_of(pc), QUEEN, BISHOP));
 
         // Verify attackers are triggered by our move and not already existing
         if (xray && (xray ^ (xray & pos.attacks_from<QUEEN>(m2to))))
@@ -1604,7 +1605,7 @@ split_point_start: // At split points actual search starts from here
     return false;
   }
 
-  
+
   // When playing with strength handicap choose best move among the MultiPV set
   // using a statistical rule dependent on 'level'. Idea by Heinz van Saanen.
 
@@ -1654,7 +1655,7 @@ split_point_start: // At split points actual search starts from here
   string uci_pv(const Position& pos, int depth, Value alpha, Value beta) {
 
     std::stringstream s;
-    Time::point elaspsed = Time::now() - SearchTime + 1;
+    Time::point elapsed = Time::now() - SearchTime + 1;
     size_t uciPVSize = std::min((size_t)Options["MultiPV"], RootMoves.size());
     int selDepth = 0;
 
@@ -1679,8 +1680,8 @@ split_point_start: // At split points actual search starts from here
           << " seldepth "  << selDepth
           << " score "     << (i == PVIdx ? score_to_uci(v, alpha, beta) : score_to_uci(v))
           << " nodes "     << pos.nodes_searched()
-          << " nps "       << pos.nodes_searched() * 1000 / elaspsed
-          << " time "      << elaspsed
+          << " nps "       << pos.nodes_searched() * 1000 / elapsed
+          << " time "      << elapsed
           << " multipv "   << i + 1
 #if PA_GTB && defined(USE_EGTB)
           << " tbhits "    << pos.tb_hits()
@@ -1840,11 +1841,11 @@ void Thread::idle_loop() {
 
           Threads.mutex.unlock();
 
-          Stack ss[MAX_PLY_PLUS_2];
+          Stack stack[MAX_PLY_PLUS_2], *ss = stack+1; // To allow referencing (ss-1)
           Position pos(*sp->pos, this);
 
-          memcpy(ss, sp->ss - 1, 4 * sizeof(Stack));
-          (ss+1)->splitPoint = sp;
+          memcpy(ss-1, sp->ss-1, 4 * sizeof(Stack));
+          ss->splitPoint = sp;
 
           sp->mutex.lock();
 
@@ -1854,13 +1855,13 @@ void Thread::idle_loop() {
 
           switch (sp->nodeType) {
           case Root:
-              search<SplitPointRoot>(pos, ss+1, sp->alpha, sp->beta, sp->depth);
+              search<SplitPointRoot>(pos, ss, sp->alpha, sp->beta, sp->depth);
               break;
           case PV:
-              search<SplitPointPV>(pos, ss+1, sp->alpha, sp->beta, sp->depth);
+              search<SplitPointPV>(pos, ss, sp->alpha, sp->beta, sp->depth);
               break;
           case NonPV:
-              search<SplitPointNonPV>(pos, ss+1, sp->alpha, sp->beta, sp->depth);
+              search<SplitPointNonPV>(pos, ss, sp->alpha, sp->beta, sp->depth);
               break;
           default:
               assert(false);
