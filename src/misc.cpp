@@ -62,7 +62,7 @@ const string engine_info(bool to_uci) {
 #else
   const string popcnt(HasPopCnt ? " SSE4.2" : "");
 #endif
-  
+
   string month, day, year;
   stringstream s, date(__DATE__); // From compiler, format is "Sep 21 2008"
 
