@@ -42,7 +42,7 @@ PersistentHash &PersistentHash::getInstance(PHASH_BACKEND backend)
 
 void PersistentHash::import_epd(std::istringstream& is) {
   
-  std::string token, filename;
+  std::string token, filename, noce;
   bool useHash = Options["Use Persistent Hash"]; // cache existing vlaue
   unsigned count = 0;
   unsigned total = 0;
@@ -51,7 +51,9 @@ void PersistentHash::import_epd(std::istringstream& is) {
 
   PHInst.starttransaction_phash(PHASH_MODE_WRITE);
 
-  is >> filename; // importepd <filename>
+  // importepd <filename> [noce]
+  is >> filename;
+  is >> noce;
   std::ifstream infile(filename.c_str());
   std::string line;
   while (std::getline(infile, line)) {
@@ -86,8 +88,8 @@ void PersistentHash::import_epd(std::istringstream& is) {
 #endif
       }
     } while (iss >> token && !wantsToken(token));
-    if (v == VALUE_NONE) {
-      v = pos.side_to_move() == WHITE ? Value(VALUE_KNOWN_WIN) : Value(-VALUE_KNOWN_WIN); // is this reasonable?
+    if (v == VALUE_NONE && noce == "noce") {
+      v = pos.side_to_move() == WHITE ? Value(VALUE_KNOWN_WIN) : Value(-VALUE_KNOWN_WIN);
     }
     if (v != VALUE_NONE && m != MOVE_NONE) {
       if (PHInst.store_phash(pos.key(), v, BOUND_EXACT, d, m, v, VALUE_ZERO)) {
