@@ -129,7 +129,7 @@ int LMDB_PHFile::put(MDB_val *vKey, MDB_val *vData, int flags)
   int rv = -1;
   
   if (e && t && d) {
-    if (++tc > 50) {
+    if (++tc > MAX_TXN) {
       mdb_txn_commit(t);
       mdb_txn_begin(e, NULL, 0, &t);
       tc = 0;
@@ -151,6 +151,26 @@ int LMDB_PHFile::clear()
 {
   if (e && t && d) {
     return mdb_drop(t, d, 0);
+  }
+  return -1;
+}
+
+int LMDB_PHFile::commit(bool nextreadonly)
+{
+  if (e && t && d) {
+    mdb_txn_commit(t);
+    return mdb_txn_begin(e, NULL, nextreadonly ? MDB_RDONLY : 0, &t);
+    tc = 0;
+  }
+  return -1;
+}
+
+int LMDB_PHFile::abort(bool nextreadonly)
+{
+  if (e && t && d) {
+    mdb_txn_abort(t);
+    return mdb_txn_begin(e, NULL, nextreadonly ? MDB_RDONLY : 0, &t);
+    tc = 0;
   }
   return -1;
 }
@@ -296,9 +316,10 @@ void LMDB_PersistentHash::wantsmerge_phash()
   }
 }
 
-bool LMDB_PersistentHash::commit_and_rebuild(bool UNUSED(commit), bool UNUSED(optimize))
+bool LMDB_PersistentHash::commit_and_rebuild(bool commit, bool UNUSED(optimize))
 {
   if (PersHashFile) {
+    PersHashFile->close(commit);
     delete PersHashFile;
     PersHashFile = NULL;
   }
@@ -323,17 +344,43 @@ int LMDB_PersistentHash::put_withprune(MDB_val *vKey, MDB_val *vData)
     int depth = Options["Persistent Hash Depth"];
 #if 1 // better method to handle this prophylactically
     MDB_stat stat;
+    MDB_stat stat2;
+    size_t usedpages = 0;
     PersHashFile->stat(&stat);
-    if (stat.ms_branch_pages + stat.ms_leaf_pages + stat.ms_overflow_pages > (PersHashFile->maxpages() * 0.4)) {
-      do {
-        pruned = prune_below_phash(depth);
-      } while (depth++ <= 99 && !pruned);
+
+    mdb_stat(PersHashFile->txn(), 0, &stat2);
+    usedpages = (stat.ms_branch_pages + stat.ms_leaf_pages + stat.ms_overflow_pages);
+    if (usedpages > (PersHashFile->maxpages() * 0.8)) {
+      MDB_cursor *c = NULL;
+      MDB_val vKey, vData;
+      size_t *iptr;
+      size_t freepages = 0;
+
+      PersHashFile->commit(true);
+      if (!mdb_cursor_open(PersHashFile->txn(), 0, &c)) {
+        while(!mdb_cursor_get(c, &vKey, &vData, MDB_NEXT)) {
+          iptr = (size_t *)vData.mv_data;
+          freepages += *iptr;
+        }
+        mdb_cursor_close(c);
+      } else {
+        printf("wtf\n");
+      }
+      PersHashFile->abort();
+      if (usedpages - freepages > (PersHashFile->maxpages() * 0.8)) {
+        do {
+          pruned = prune_below_phash(depth);
+          commit_and_rebuild(true);
+        } while (depth++ <= 99 && !pruned);
+      }
     }
     rv = PersHashFile->put(vKey, vData);
     if (rv) {
       if (rv == MDB_MAP_FULL) {
         sync_cout << "info string Persistent Hash catastrophic failure (out of space in PH file). Increase your Persistent Hash Size." << sync_endl;
         sync_cout << "info string Persistent Hash setting Use Persistent Hash to false." << sync_endl;
+        delete PersHashFile;
+        PersHashFile = NULL;
         Options["Use Persistent Hash"] = t_to_string("false");
       }
     }
@@ -471,9 +518,10 @@ int LMDB_PersistentHash::prune_below_phash(int depth)
       MDB_val vKey;
       MDB_val vData;
       size_t entries;
-
+      unsigned txct = 0;
       // start at the end and work backward since we're deleting stuff.
       entries = PersHashFile->numentries();
+      
       while (!mdb_cursor_get(cursor, &vKey, &vData, MDB_PREV) && count != entries) {
         if (vData.mv_size == sizeof(t_phash_data)) {
           if (((t_phash_data *)vData.mv_data)->d <= depth) {
@@ -497,6 +545,13 @@ int LMDB_PersistentHash::prune_below_phash(int depth)
               printf("mdb_del: %s\n", mdb_strerror(rv));
             }
 #endif
+            if (++txct > LMDB_PHFile::MAX_TXN) { // we have to be careful about overloading cursor_del transactions, too
+              mdb_cursor_close(cursor);
+              PersHashFile->commit();
+              cursor = PersHashFile->cursor();
+              mdb_cursor_get(cursor, &vKey, &vData, MDB_SET); // reset the cursor for the new transaction
+              txct = 0;
+            }
           }
         }
       }

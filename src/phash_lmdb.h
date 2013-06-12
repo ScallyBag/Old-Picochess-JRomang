@@ -24,10 +24,14 @@ struct LMDB_PHFile
 
   LMDB_PHFile(std::string &filename, int mode = PHASH_MODE_WRITE);
   ~LMDB_PHFile();
+  
+  static const unsigned MAX_TXN = 50;
 
   void close(bool commit = true);
   int put(MDB_val *vKey, MDB_val *vData, int flags = 0);
   int get(MDB_val *vKey, MDB_val *vData);
+  int commit(bool nextreadonly = false);
+  int abort(bool nextreadonly = false);
   int clear();
 
   MDB_env *env()          { return e; }
