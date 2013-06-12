@@ -1,0 +1,344 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F784B92C176905B9007B0098 /* kccachedb.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B91C176905B9007B0098 /* kccachedb.cc */; };
+		F784B92D176905B9007B0098 /* kccompare.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B91D176905B9007B0098 /* kccompare.cc */; };
+		F784B92E176905B9007B0098 /* kccompress.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B91E176905B9007B0098 /* kccompress.cc */; };
+		F784B92F176905B9007B0098 /* kcdb.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B91F176905B9007B0098 /* kcdb.cc */; };
+		F784B930176905B9007B0098 /* kcdbext.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B920176905B9007B0098 /* kcdbext.cc */; };
+		F784B931176905B9007B0098 /* kcdirdb.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B921176905B9007B0098 /* kcdirdb.cc */; };
+		F784B932176905B9007B0098 /* kcfile.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B922176905B9007B0098 /* kcfile.cc */; };
+		F784B933176905B9007B0098 /* kchashdb.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B923176905B9007B0098 /* kchashdb.cc */; };
+		F784B934176905B9007B0098 /* kcmap.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B924176905B9007B0098 /* kcmap.cc */; };
+		F784B935176905B9007B0098 /* kcpolydb.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B925176905B9007B0098 /* kcpolydb.cc */; };
+		F784B936176905B9007B0098 /* kcprotodb.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B926176905B9007B0098 /* kcprotodb.cc */; };
+		F784B937176905B9007B0098 /* kcregex.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B927176905B9007B0098 /* kcregex.cc */; };
+		F784B938176905B9007B0098 /* kcstashdb.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B928176905B9007B0098 /* kcstashdb.cc */; };
+		F784B939176905B9007B0098 /* kctextdb.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B929176905B9007B0098 /* kctextdb.cc */; };
+		F784B93A176905B9007B0098 /* kcthread.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B92A176905B9007B0098 /* kcthread.cc */; };
+		F784B93B176905B9007B0098 /* kcutil.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B92B176905B9007B0098 /* kcutil.cc */; };
+		F784B94F176905D5007B0098 /* kccachedb.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B93C176905D5007B0098 /* kccachedb.h */; };
+		F784B950176905D5007B0098 /* kccommon.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B93D176905D5007B0098 /* kccommon.h */; };
+		F784B951176905D5007B0098 /* kccompare.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B93E176905D5007B0098 /* kccompare.h */; };
+		F784B952176905D5007B0098 /* kccompress.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B93F176905D5007B0098 /* kccompress.h */; };
+		F784B953176905D5007B0098 /* kcdb.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B940176905D5007B0098 /* kcdb.h */; };
+		F784B954176905D5007B0098 /* kcdbext.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B941176905D5007B0098 /* kcdbext.h */; };
+		F784B955176905D5007B0098 /* kcdirdb.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B942176905D5007B0098 /* kcdirdb.h */; };
+		F784B956176905D5007B0098 /* kcfile.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B943176905D5007B0098 /* kcfile.h */; };
+		F784B957176905D5007B0098 /* kchashdb.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B944176905D5007B0098 /* kchashdb.h */; };
+		F784B958176905D5007B0098 /* kclangc.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B945176905D5007B0098 /* kclangc.h */; };
+		F784B959176905D5007B0098 /* kcmap.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B946176905D5007B0098 /* kcmap.h */; };
+		F784B95A176905D5007B0098 /* kcplantdb.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B947176905D5007B0098 /* kcplantdb.h */; };
+		F784B95B176905D5007B0098 /* kcpolydb.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B948176905D5007B0098 /* kcpolydb.h */; };
+		F784B95C176905D5007B0098 /* kcprotodb.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B949176905D5007B0098 /* kcprotodb.h */; };
+		F784B95D176905D5007B0098 /* kcregex.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B94A176905D5007B0098 /* kcregex.h */; };
+		F784B95E176905D5007B0098 /* kcstashdb.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B94B176905D5007B0098 /* kcstashdb.h */; };
+		F784B95F176905D5007B0098 /* kctextdb.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B94C176905D5007B0098 /* kctextdb.h */; };
+		F784B960176905D5007B0098 /* kcthread.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B94D176905D5007B0098 /* kcthread.h */; };
+		F784B961176905D5007B0098 /* kcutil.h in Headers */ = {isa = PBXBuildFile; fileRef = F784B94E176905D5007B0098 /* kcutil.h */; };
+		F784B96317690623007B0098 /* kcplantdb.cc in Sources */ = {isa = PBXBuildFile; fileRef = F784B96217690623007B0098 /* kcplantdb.cc */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		F784B91C176905B9007B0098 /* kccachedb.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kccachedb.cc; path = ../../src/kyotocabinet/kccachedb.cc; sourceTree = "<group>"; };
+		F784B91D176905B9007B0098 /* kccompare.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kccompare.cc; path = ../../src/kyotocabinet/kccompare.cc; sourceTree = "<group>"; };
+		F784B91E176905B9007B0098 /* kccompress.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kccompress.cc; path = ../../src/kyotocabinet/kccompress.cc; sourceTree = "<group>"; };
+		F784B91F176905B9007B0098 /* kcdb.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kcdb.cc; path = ../../src/kyotocabinet/kcdb.cc; sourceTree = "<group>"; };
+		F784B920176905B9007B0098 /* kcdbext.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kcdbext.cc; path = ../../src/kyotocabinet/kcdbext.cc; sourceTree = "<group>"; };
+		F784B921176905B9007B0098 /* kcdirdb.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kcdirdb.cc; path = ../../src/kyotocabinet/kcdirdb.cc; sourceTree = "<group>"; };
+		F784B922176905B9007B0098 /* kcfile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kcfile.cc; path = ../../src/kyotocabinet/kcfile.cc; sourceTree = "<group>"; };
+		F784B923176905B9007B0098 /* kchashdb.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kchashdb.cc; path = ../../src/kyotocabinet/kchashdb.cc; sourceTree = "<group>"; };
+		F784B924176905B9007B0098 /* kcmap.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kcmap.cc; path = ../../src/kyotocabinet/kcmap.cc; sourceTree = "<group>"; };
+		F784B925176905B9007B0098 /* kcpolydb.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kcpolydb.cc; path = ../../src/kyotocabinet/kcpolydb.cc; sourceTree = "<group>"; };
+		F784B926176905B9007B0098 /* kcprotodb.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kcprotodb.cc; path = ../../src/kyotocabinet/kcprotodb.cc; sourceTree = "<group>"; };
+		F784B927176905B9007B0098 /* kcregex.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kcregex.cc; path = ../../src/kyotocabinet/kcregex.cc; sourceTree = "<group>"; };
+		F784B928176905B9007B0098 /* kcstashdb.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kcstashdb.cc; path = ../../src/kyotocabinet/kcstashdb.cc; sourceTree = "<group>"; };
+		F784B929176905B9007B0098 /* kctextdb.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kctextdb.cc; path = ../../src/kyotocabinet/kctextdb.cc; sourceTree = "<group>"; };
+		F784B92A176905B9007B0098 /* kcthread.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kcthread.cc; path = ../../src/kyotocabinet/kcthread.cc; sourceTree = "<group>"; };
+		F784B92B176905B9007B0098 /* kcutil.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kcutil.cc; path = ../../src/kyotocabinet/kcutil.cc; sourceTree = "<group>"; };
+		F784B93C176905D5007B0098 /* kccachedb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kccachedb.h; path = ../../src/kyotocabinet/kccachedb.h; sourceTree = "<group>"; };
+		F784B93D176905D5007B0098 /* kccommon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kccommon.h; path = ../../src/kyotocabinet/kccommon.h; sourceTree = "<group>"; };
+		F784B93E176905D5007B0098 /* kccompare.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kccompare.h; path = ../../src/kyotocabinet/kccompare.h; sourceTree = "<group>"; };
+		F784B93F176905D5007B0098 /* kccompress.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kccompress.h; path = ../../src/kyotocabinet/kccompress.h; sourceTree = "<group>"; };
+		F784B940176905D5007B0098 /* kcdb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kcdb.h; path = ../../src/kyotocabinet/kcdb.h; sourceTree = "<group>"; };
+		F784B941176905D5007B0098 /* kcdbext.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kcdbext.h; path = ../../src/kyotocabinet/kcdbext.h; sourceTree = "<group>"; };
+		F784B942176905D5007B0098 /* kcdirdb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kcdirdb.h; path = ../../src/kyotocabinet/kcdirdb.h; sourceTree = "<group>"; };
+		F784B943176905D5007B0098 /* kcfile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kcfile.h; path = ../../src/kyotocabinet/kcfile.h; sourceTree = "<group>"; };
+		F784B944176905D5007B0098 /* kchashdb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kchashdb.h; path = ../../src/kyotocabinet/kchashdb.h; sourceTree = "<group>"; };
+		F784B945176905D5007B0098 /* kclangc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kclangc.h; path = ../../src/kyotocabinet/kclangc.h; sourceTree = "<group>"; };
+		F784B946176905D5007B0098 /* kcmap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kcmap.h; path = ../../src/kyotocabinet/kcmap.h; sourceTree = "<group>"; };
+		F784B947176905D5007B0098 /* kcplantdb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kcplantdb.h; path = ../../src/kyotocabinet/kcplantdb.h; sourceTree = "<group>"; };
+		F784B948176905D5007B0098 /* kcpolydb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kcpolydb.h; path = ../../src/kyotocabinet/kcpolydb.h; sourceTree = "<group>"; };
+		F784B949176905D5007B0098 /* kcprotodb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kcprotodb.h; path = ../../src/kyotocabinet/kcprotodb.h; sourceTree = "<group>"; };
+		F784B94A176905D5007B0098 /* kcregex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kcregex.h; path = ../../src/kyotocabinet/kcregex.h; sourceTree = "<group>"; };
+		F784B94B176905D5007B0098 /* kcstashdb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kcstashdb.h; path = ../../src/kyotocabinet/kcstashdb.h; sourceTree = "<group>"; };
+		F784B94C176905D5007B0098 /* kctextdb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kctextdb.h; path = ../../src/kyotocabinet/kctextdb.h; sourceTree = "<group>"; };
+		F784B94D176905D5007B0098 /* kcthread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kcthread.h; path = ../../src/kyotocabinet/kcthread.h; sourceTree = "<group>"; };
+		F784B94E176905D5007B0098 /* kcutil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = kcutil.h; path = ../../src/kyotocabinet/kcutil.h; sourceTree = "<group>"; };
+		F784B96217690623007B0098 /* kcplantdb.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = kcplantdb.cc; path = ../../src/kyotocabinet/kcplantdb.cc; sourceTree = "<group>"; };
+		F7B1E7441761C97400ABCFE9 /* libkyotocabinet.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libkyotocabinet.a; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F7B1E7411761C97400ABCFE9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F791ECBF1761CBA700262B71 /* kyotocabinet */ = {
+			isa = PBXGroup;
+			children = (
+				F784B945176905D5007B0098 /* kclangc.h */,
+				F784B93D176905D5007B0098 /* kccommon.h */,
+				F784B91C176905B9007B0098 /* kccachedb.cc */,
+				F784B93C176905D5007B0098 /* kccachedb.h */,
+				F784B91D176905B9007B0098 /* kccompare.cc */,
+				F784B93E176905D5007B0098 /* kccompare.h */,
+				F784B91E176905B9007B0098 /* kccompress.cc */,
+				F784B93F176905D5007B0098 /* kccompress.h */,
+				F784B91F176905B9007B0098 /* kcdb.cc */,
+				F784B940176905D5007B0098 /* kcdb.h */,
+				F784B920176905B9007B0098 /* kcdbext.cc */,
+				F784B941176905D5007B0098 /* kcdbext.h */,
+				F784B921176905B9007B0098 /* kcdirdb.cc */,
+				F784B942176905D5007B0098 /* kcdirdb.h */,
+				F784B922176905B9007B0098 /* kcfile.cc */,
+				F784B943176905D5007B0098 /* kcfile.h */,
+				F784B923176905B9007B0098 /* kchashdb.cc */,
+				F784B944176905D5007B0098 /* kchashdb.h */,
+				F784B924176905B9007B0098 /* kcmap.cc */,
+				F784B946176905D5007B0098 /* kcmap.h */,
+				F784B96217690623007B0098 /* kcplantdb.cc */,
+				F784B947176905D5007B0098 /* kcplantdb.h */,
+				F784B925176905B9007B0098 /* kcpolydb.cc */,
+				F784B948176905D5007B0098 /* kcpolydb.h */,
+				F784B926176905B9007B0098 /* kcprotodb.cc */,
+				F784B949176905D5007B0098 /* kcprotodb.h */,
+				F784B927176905B9007B0098 /* kcregex.cc */,
+				F784B94A176905D5007B0098 /* kcregex.h */,
+				F784B928176905B9007B0098 /* kcstashdb.cc */,
+				F784B94B176905D5007B0098 /* kcstashdb.h */,
+				F784B929176905B9007B0098 /* kctextdb.cc */,
+				F784B94C176905D5007B0098 /* kctextdb.h */,
+				F784B92A176905B9007B0098 /* kcthread.cc */,
+				F784B94D176905D5007B0098 /* kcthread.h */,
+				F784B92B176905B9007B0098 /* kcutil.cc */,
+				F784B94E176905D5007B0098 /* kcutil.h */,
+			);
+			name = kyotocabinet;
+			sourceTree = "<group>";
+		};
+		F7B1E73B1761C97400ABCFE9 = {
+			isa = PBXGroup;
+			children = (
+				F791ECBF1761CBA700262B71 /* kyotocabinet */,
+				F7B1E7451761C97400ABCFE9 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F7B1E7451761C97400ABCFE9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F7B1E7441761C97400ABCFE9 /* libkyotocabinet.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		F7B1E7421761C97400ABCFE9 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F784B94F176905D5007B0098 /* kccachedb.h in Headers */,
+				F784B950176905D5007B0098 /* kccommon.h in Headers */,
+				F784B951176905D5007B0098 /* kccompare.h in Headers */,
+				F784B952176905D5007B0098 /* kccompress.h in Headers */,
+				F784B953176905D5007B0098 /* kcdb.h in Headers */,
+				F784B954176905D5007B0098 /* kcdbext.h in Headers */,
+				F784B955176905D5007B0098 /* kcdirdb.h in Headers */,
+				F784B956176905D5007B0098 /* kcfile.h in Headers */,
+				F784B957176905D5007B0098 /* kchashdb.h in Headers */,
+				F784B958176905D5007B0098 /* kclangc.h in Headers */,
+				F784B959176905D5007B0098 /* kcmap.h in Headers */,
+				F784B95A176905D5007B0098 /* kcplantdb.h in Headers */,
+				F784B95B176905D5007B0098 /* kcpolydb.h in Headers */,
+				F784B95C176905D5007B0098 /* kcprotodb.h in Headers */,
+				F784B95D176905D5007B0098 /* kcregex.h in Headers */,
+				F784B95E176905D5007B0098 /* kcstashdb.h in Headers */,
+				F784B95F176905D5007B0098 /* kctextdb.h in Headers */,
+				F784B960176905D5007B0098 /* kcthread.h in Headers */,
+				F784B961176905D5007B0098 /* kcutil.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		F7B1E7431761C97400ABCFE9 /* kyotocabinet */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F7B1E7481761C97400ABCFE9 /* Build configuration list for PBXNativeTarget "kyotocabinet" */;
+			buildPhases = (
+				F7B1E7401761C97400ABCFE9 /* Sources */,
+				F7B1E7411761C97400ABCFE9 /* Frameworks */,
+				F7B1E7421761C97400ABCFE9 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = kyotocabinet;
+			productName = kyotocabinet;
+			productReference = F7B1E7441761C97400ABCFE9 /* libkyotocabinet.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F7B1E73C1761C97400ABCFE9 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0460;
+				ORGANIZATIONNAME = openldap;
+			};
+			buildConfigurationList = F7B1E73F1761C97400ABCFE9 /* Build configuration list for PBXProject "kyotocabinet" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = F7B1E73B1761C97400ABCFE9;
+			productRefGroup = F7B1E7451761C97400ABCFE9 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F7B1E7431761C97400ABCFE9 /* kyotocabinet */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F7B1E7401761C97400ABCFE9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F784B92C176905B9007B0098 /* kccachedb.cc in Sources */,
+				F784B92D176905B9007B0098 /* kccompare.cc in Sources */,
+				F784B92E176905B9007B0098 /* kccompress.cc in Sources */,
+				F784B92F176905B9007B0098 /* kcdb.cc in Sources */,
+				F784B930176905B9007B0098 /* kcdbext.cc in Sources */,
+				F784B931176905B9007B0098 /* kcdirdb.cc in Sources */,
+				F784B932176905B9007B0098 /* kcfile.cc in Sources */,
+				F784B933176905B9007B0098 /* kchashdb.cc in Sources */,
+				F784B934176905B9007B0098 /* kcmap.cc in Sources */,
+				F784B935176905B9007B0098 /* kcpolydb.cc in Sources */,
+				F784B936176905B9007B0098 /* kcprotodb.cc in Sources */,
+				F784B937176905B9007B0098 /* kcregex.cc in Sources */,
+				F784B938176905B9007B0098 /* kcstashdb.cc in Sources */,
+				F784B939176905B9007B0098 /* kctextdb.cc in Sources */,
+				F784B93A176905B9007B0098 /* kcthread.cc in Sources */,
+				F784B93B176905B9007B0098 /* kcutil.cc in Sources */,
+				F784B96317690623007B0098 /* kcplantdb.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F7B1E7461761C97400ABCFE9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				COPY_PHASE_STRIP = NO;
+				GCC_VERSION = com.apple.compilers.llvmgcc42;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx10.6;
+			};
+			name = Debug;
+		};
+		F7B1E7471761C97400ABCFE9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_VERSION = com.apple.compilers.llvmgcc42;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				SDKROOT = macosx10.6;
+			};
+			name = Release;
+		};
+		F7B1E7491761C97400ABCFE9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NDEBUG,
+					"_GNU_SOURCE=1",
+					"_FILE_OFFSET_BITS=64",
+					_REENTRANT,
+					__EXTENSIONS__,
+					_MYGCCATOMIC,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		F7B1E74A1761C97400ABCFE9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_PREFIX = lib;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NDEBUG,
+					"_GNU_SOURCE=1",
+					"_FILE_OFFSET_BITS=64",
+					_REENTRANT,
+					__EXTENSIONS__,
+					_MYGCCATOMIC,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F7B1E73F1761C97400ABCFE9 /* Build configuration list for PBXProject "kyotocabinet" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F7B1E7461761C97400ABCFE9 /* Debug */,
+				F7B1E7471761C97400ABCFE9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F7B1E7481761C97400ABCFE9 /* Build configuration list for PBXNativeTarget "kyotocabinet" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F7B1E7491761C97400ABCFE9 /* Debug */,
+				F7B1E74A1761C97400ABCFE9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F7B1E73C1761C97400ABCFE9 /* Project object */;
+}

@@ -11,6 +11,8 @@
 		F757E724174F6E630034FC58 /* libqdbm.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F757E721174F6E4A0034FC58 /* libqdbm.a */; };
 		F757E727174F6E8E0034FC58 /* phash_qdbm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F757E726174F6E8E0034FC58 /* phash_qdbm.cpp */; };
 		F7802A06174CFDC300D3CEF8 /* bitcount.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7802A03174CFCC200D3CEF8 /* bitcount.cpp */; };
+		F784B96C1769078A007B0098 /* libkyotocabinet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F784B9691769076D007B0098 /* libkyotocabinet.a */; };
+		F784B96F176909AC007B0098 /* phash_kyoto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F784B96D176907C4007B0098 /* phash_kyoto.cpp */; };
 		F791ECC31761CBC300262B71 /* liblmdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F7B1E7501761C97500ABCFE9 /* liblmdb.a */; };
 		F791ECCD1761CCCF00262B71 /* phash_lmdb.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F791ECCB1761CCCF00262B71 /* phash_lmdb.cpp */; };
 		F791ECD11761F13D00262B71 /* phash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F791ECD01761F13D00262B71 /* phash.cpp */; };
@@ -66,6 +68,20 @@
 			remoteGlobalIDString = F750AF29174E12FA00CA61BC;
 			remoteInfo = qdbm;
 		};
+		F784B9681769076D007B0098 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F784B9641769076C007B0098 /* kyotocabinet.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = F7B1E7441761C97400ABCFE9;
+			remoteInfo = kyotocabinet;
+		};
+		F784B96A17690784007B0098 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F784B9641769076C007B0098 /* kyotocabinet.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = F7B1E7431761C97400ABCFE9;
+			remoteInfo = kyotocabinet;
+		};
 		F791ECC01761CBBF00262B71 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */;
@@ -100,6 +116,9 @@
 		F757E725174F6E8E0034FC58 /* phash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = phash.h; sourceTree = "<group>"; };
 		F757E726174F6E8E0034FC58 /* phash_qdbm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = phash_qdbm.cpp; sourceTree = "<group>"; };
 		F7802A03174CFCC200D3CEF8 /* bitcount.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bitcount.cpp; sourceTree = "<group>"; };
+		F784B9641769076C007B0098 /* kyotocabinet.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = kyotocabinet.xcodeproj; path = kyotocabinet/kyotocabinet.xcodeproj; sourceTree = "<group>"; };
+		F784B96D176907C4007B0098 /* phash_kyoto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = phash_kyoto.cpp; sourceTree = "<group>"; };
+		F784B96E176907DB007B0098 /* phash_kyoto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = phash_kyoto.h; sourceTree = "<group>"; };
 		F791ECCB1761CCCF00262B71 /* phash_lmdb.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = phash_lmdb.cpp; sourceTree = "<group>"; };
 		F791ECCE1761E61B00262B71 /* phash_qdbm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = phash_qdbm.h; sourceTree = "<group>"; };
 		F791ECCF1761EC4600262B71 /* phash_lmdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = phash_lmdb.h; sourceTree = "<group>"; };
@@ -157,6 +176,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F784B96C1769078A007B0098 /* libkyotocabinet.a in Frameworks */,
 				F791ECC31761CBC300262B71 /* liblmdb.a in Frameworks */,
 				F757E724174F6E630034FC58 /* libqdbm.a in Frameworks */,
 				F750AF5C174F55FF00CA61BC /* libgtb.a in Frameworks */,
@@ -182,6 +202,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		F784B9651769076C007B0098 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F784B9691769076D007B0098 /* libkyotocabinet.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		F7B1E74C1761C97400ABCFE9 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -193,8 +221,9 @@
 		F7BE3E5F17427FEF0021A427 = {
 			isa = PBXGroup;
 			children = (
-				F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */,
 				F750AF52174F559F00CA61BC /* gtb.xcodeproj */,
+				F784B9641769076C007B0098 /* kyotocabinet.xcodeproj */,
+				F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */,
 				F757E71C174F6E4A0034FC58 /* qdbm.xcodeproj */,
 				F7BE3E74174280270021A427 /* src */,
 				F7BE3E6917427FEF0021A427 /* Products */,
@@ -246,6 +275,8 @@
 				F791ECD01761F13D00262B71 /* phash.cpp */,
 				F791ECCB1761CCCF00262B71 /* phash_lmdb.cpp */,
 				F791ECCF1761EC4600262B71 /* phash_lmdb.h */,
+				F784B96D176907C4007B0098 /* phash_kyoto.cpp */,
+				F784B96E176907DB007B0098 /* phash_kyoto.h */,
 				F757E726174F6E8E0034FC58 /* phash_qdbm.cpp */,
 				F791ECCE1761E61B00262B71 /* phash_qdbm.h */,
 				F7BE3E8E174280270021A427 /* platform.h */,
@@ -285,6 +316,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				F784B96B17690784007B0098 /* PBXTargetDependency */,
 				F791ECC11761CBBF00262B71 /* PBXTargetDependency */,
 				F757E723174F6E5F0034FC58 /* PBXTargetDependency */,
 				F750AF5A174F55F900CA61BC /* PBXTargetDependency */,
@@ -319,6 +351,10 @@
 					ProjectRef = F750AF52174F559F00CA61BC /* gtb.xcodeproj */;
 				},
 				{
+					ProductGroup = F784B9651769076C007B0098 /* Products */;
+					ProjectRef = F784B9641769076C007B0098 /* kyotocabinet.xcodeproj */;
+				},
+				{
 					ProductGroup = F7B1E74C1761C97400ABCFE9 /* Products */;
 					ProjectRef = F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */;
 				},
@@ -347,6 +383,13 @@
 			fileType = archive.ar;
 			path = libqdbm.a;
 			remoteRef = F757E720174F6E4A0034FC58 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		F784B9691769076D007B0098 /* libkyotocabinet.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libkyotocabinet.a;
+			remoteRef = F784B9681769076D007B0098 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		F7B1E7501761C97500ABCFE9 /* liblmdb.a */ = {
@@ -388,6 +431,7 @@
 				F757E727174F6E8E0034FC58 /* phash_qdbm.cpp in Sources */,
 				F791ECCD1761CCCF00262B71 /* phash_lmdb.cpp in Sources */,
 				F791ECD11761F13D00262B71 /* phash.cpp in Sources */,
+				F784B96F176909AC007B0098 /* phash_kyoto.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -403,6 +447,11 @@
 			isa = PBXTargetDependency;
 			name = qdbm;
 			targetProxy = F757E722174F6E5F0034FC58 /* PBXContainerItemProxy */;
+		};
+		F784B96B17690784007B0098 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = kyotocabinet;
+			targetProxy = F784B96A17690784007B0098 /* PBXContainerItemProxy */;
 		};
 		F791ECC11761CBBF00262B71 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -427,9 +476,7 @@
 					"$(inherited)",
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				ONLY_ACTIVE_ARCH = YES;
@@ -447,7 +494,6 @@
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = "NDEBUG=1";
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
@@ -472,6 +518,7 @@
 					USE_BSFQ,
 				);
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
+				HEADER_SEARCH_PATHS = "../src/kyotocabinet/**";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.6;
@@ -494,6 +541,7 @@
 					USE_BSFQ,
 				);
 				GCC_VERSION = com.apple.compilers.llvmgcc42;
+				HEADER_SEARCH_PATHS = "../src/kyotocabinet/**";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.6;

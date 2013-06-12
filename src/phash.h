@@ -16,7 +16,9 @@
 //#define PHASH_DEBUG
 //#define EPD_DEBUG
 
-#define USE_LMDB
+//#define PHASH_BACKEND_PREF 0
+//#define PHASH_BACKEND_PREF 1
+#define PHASH_BACKEND_PREF 2
 
 #ifdef UNUSED
 #elif defined(__GNUC__)
@@ -38,15 +40,17 @@ typedef struct _phash_data
 } t_phash_data;
 
 typedef enum { PHASH_MODE_READ, PHASH_MODE_WRITE } PHASH_MODE;
-typedef enum { PHASH_BACKEND_QDBM, PHASH_BACKEND_LMDB } PHASH_BACKEND;
+typedef enum { PHASH_BACKEND_QDBM, PHASH_BACKEND_LMDB, PHASH_BACKEND_KYOTO } PHASH_BACKEND;
 
 class PersistentHash {
 
 public:
-#ifdef USE_LMDB
+#if PHASH_BACKEND_PREF == PHASH_BACKEND_LMDB
   static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_LMDB);
-#else
+#elif PHASH_BACKEND_PREF == PHASH_BACKEND_QDBM
   static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_QDBM);
+#else 
+  static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_KYOTO);
 #endif
   static void import_epd(std::istringstream& is);
   static void exercise(std::istringstream& is);

@@ -41,7 +41,7 @@ PGOBENCH = ./$(EXE) bench 32 1 10 default depth
 OBJS = benchmark.o bitbase.o bitboard.o bitcount.o book.o endgame.o evaluate.o main.o \
 	material.o misc.o movegen.o movepick.o notation.o pawns.o position.o \
 	search.o thread.o timeman.o tt.o uci.o ucioption.o egtb.o \
-	phash.o phash_lmdb.o phash_qdbm.o
+	phash.o phash_kyoto.o phash_lmdb.o phash_qdbm.o
 
 ### ==========================================================================
 ### Section 2. High-level Configuration
@@ -232,7 +232,7 @@ ifeq ($(COMP),clang)
 endif
 
 ### 3.2 General compiler settings
-CXXFLAGS = -g -Wall -Wcast-qual -fno-exceptions -fno-rtti $(EXTRACXXFLAGS) -DPA_GTB=1 -DUSE_EGTB
+CXXFLAGS = -g -Wall -Wcast-qual -fno-exceptions -fno-rtti $(EXTRACXXFLAGS) -DPA_GTB=1 -DUSE_EGTB -Ikyotocabinet/
 
 ifeq ($(comp),gcc)
 	CXXFLAGS += -ansi -pedantic -Wno-long-long -Wextra -Wshadow
@@ -255,8 +255,7 @@ ifeq ($(os),osx)
 endif
 
 ### 3.3 General linker settings
-LDFLAGS = $(EXTRALDFLAGS) -Legtb -lgtb -Llmdb -llmdb -Lqdbm  -lqdbm
-
+LDFLAGS = $(EXTRALDFLAGS) -Legtb -lgtb -Llmdb -llmdb -Lqdbm  -lqdbm -Lkyotocabinet -lkyotocabinet
 ifeq ($(comp),mingw)
 	LDFLAGS += -static-libstdc++ -static-libgcc
 endif

@@ -24,12 +24,15 @@
 #include "phash.h"
 #include "phash_qdbm.h"
 #include "phash_lmdb.h"
+#include "phash_kyoto.h"
 #include "notation.h"
 
 PersistentHash &PersistentHash::getInstance(PHASH_BACKEND backend)
 {
   if (backend == PHASH_BACKEND_LMDB) {
     return LMDB;
+  } else if (backend == PHASH_BACKEND_KYOTO) {
+    return KYOTO;
   } else {
     return QDBM;
   }
@@ -81,7 +84,7 @@ void PersistentHash::import_epd(std::istringstream& is) {
         } else if (name == "ce") {      // centipawn evaluation
           v = uci_to_score(token);
         } else if (name == "acd") {     // analysis count depth
-          d = (Depth)atoi(token.c_str());
+          d = (Depth)::atoi(token.c_str());
         }
 #ifdef EPD_DEBUG
         sync_cout << name << ": " << token << sync_endl;
