@@ -108,17 +108,21 @@ void PersistentHash::exercise(std::istringstream& is)
 {
   t_phash_data data;
   int iterations;
+  int rndepth = 1;
+  int hashdepth = Options["Persistent Hash Depth"];
 
   is >> iterations;
+  is >> rndepth;
   memset(&data, 0, sizeof(t_phash_data));
-  data.d = 25;
   PHInst.starttransaction_phash(PHASH_MODE_WRITE);
   for (int i = 0; i < iterations; i++) {
     Key r30 = RAND_MAX*rand()+rand();
     Key s30 = RAND_MAX*rand()+rand();
     Key t4  = rand() & 0xf;
     Key res = (r30 << 34) + (s30 << 4) + t4;
+    data.d = rndepth ? rand() % 30 + hashdepth : 25;
     PHInst.store_phash((const Key)res, data);
   }
   PHInst.endtransaction_phash();
+  sync_cout << "exercise done (" << iterations << " records)." << sync_endl;
 }
