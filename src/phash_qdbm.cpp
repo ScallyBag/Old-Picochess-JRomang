@@ -253,12 +253,12 @@ bool QDBM_PersistentHash::store_phash(const Key key, t_phash_data &data)
       rv = dpput(PersHashFile, (const char *)&key, (int)sizeof(Key), (const char *)&data, (int)sizeof(t_phash_data), DP_DOVER);
 #ifdef PHASH_DEBUG
       if (rv) {
-        printf("dpput: put %llx\n", key);
+        //printf("dpput: put %llx\n", key);
       } else {
         printf("dpput: %s\n", dperrmsg(dpecode));
       }
 #endif
-      return !rv;
+      return rv ? true : false;
     }
   }
   return false;
@@ -289,7 +289,7 @@ bool QDBM_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, 
         printf("dpput: %s\n", dperrmsg(dpecode));
       }
 #endif
-      return !rv;
+      return rv ? true : false;
     }
   }
   return false;
