@@ -89,7 +89,7 @@ private:
 class PHEntry {
 
 public:
-  void save(Key k64, uint32_t UNUSED(k), Value UNUSED(v), Bound b, Depth d, Move m, int g, Value UNUSED(ev), Value UNUSED(em), bool UNUSED(nterested)) {
+  void save(Key k64, uint32_t UNUSED(k), Value UNUSED(v), Bound b, Depth d, Move m, int g, Value UNUSED(ev), Value UNUSED(em), bool UNUSED(interested)) {
 
     key64        = (Key)k64;
     move16       = (uint16_t)m;

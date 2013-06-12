@@ -261,3 +261,205 @@ string pretty_pv(Position& pos, int depth, Value value, int64_t msecs, Move pv[]
 
   return s.str();
 }
+
+#if PA_GTB
+Value uci_to_score(std::string &str)
+{
+  Value uci = (Value)atoi(str.c_str());
+  Value v = VALUE_NONE;
+
+  if (uci > 32000) {
+    v = VALUE_MATE - (32767 - uci);
+  } else if (uci < -32000) {
+    v = -VALUE_MATE + (32767 + uci);
+  } else {
+    v = uci * int(PawnValueMg) / 100;
+  }
+  return v;
+}
+
+#include "misc.h"
+
+//#define SAN_DEBUG
+
+enum { SAN_MOVE_NORMAL, SAN_PAWN_CAPTURE };
+
+template <int MoveType> inline Move test_move(Position &pos, Square fromsquare, Square tosquare, PieceType promotion)
+{
+  Move move;
+
+  if (MoveType == SAN_MOVE_NORMAL) {
+    if (promotion != NO_PIECE_TYPE) {
+      move = make<PROMOTION>(fromsquare, tosquare, promotion);
+    } else {
+      move = make<NORMAL>(fromsquare, tosquare);
+    }
+  } else if (MoveType == SAN_PAWN_CAPTURE) {
+    if (pos.ep_square() == tosquare) {
+      move = make<ENPASSANT>(fromsquare, tosquare);
+    } else {
+      if (promotion != NO_PIECE_TYPE) {
+        move = make<PROMOTION>(fromsquare, tosquare, promotion);
+      } else {
+        move = make<NORMAL>(fromsquare, tosquare);
+      }
+    }
+  }
+  if (pos.is_pseudo_legal(move) && pos.pl_move_is_legal(move, pos.pinned_pieces())) {
+#ifdef SAN_DEBUG
+    sync_cout << "found a move: " << move_to_uci(move, false) << sync_endl;
+#endif
+    return move;
+  } else {
+#ifdef SAN_DEBUG
+    sync_cout << "invalid move: " << move_to_uci(move, false) << sync_endl;
+#endif
+    return MOVE_NONE; // invalid;
+  }
+  return MOVE_NONE;
+}
+
+Move san_to_move(Position& pos, std::string& str)
+{
+  std::string uci = str;
+  PieceType promotion = NO_PIECE_TYPE;
+  bool castles = false;
+  bool capture = false;
+  Move move = MOVE_NONE;
+  
+  size_t idx = uci.find_first_of("+#");
+  if (idx != std::string::npos) {
+    uci.erase(idx); // erase to end of the string
+  }
+  idx = uci.find_first_of("=");
+  if (idx != std::string::npos) {
+    char promo = uci.at(idx);
+    switch(promo) {
+      case 'Q': promotion = QUEEN; break;
+      case 'R': promotion = ROOK; break;
+      case 'B': promotion = BISHOP; break;
+      case 'N': promotion = KNIGHT; break;
+      default: return MOVE_NONE; // invalid
+    }
+    uci.erase(idx);
+  }
+  idx = uci.find_first_of("x");
+  if (idx != std::string::npos) {
+    capture = true;
+    uci.erase(idx, 1);
+  }
+  
+  char piece = str.at(0);
+  PieceType piecetype;
+  std::string thepiece;
+  
+  switch(piece) {
+    case 'N': piecetype = KNIGHT; break;
+    case 'B': piecetype = BISHOP; break;
+    case 'R': piecetype = ROOK; break;
+    case 'Q': piecetype = QUEEN; break;
+    case 'K': piecetype = KING; break;
+    case '0':
+    case 'O':
+      castles = true; piecetype = NO_PIECE_TYPE; break;
+    default: piecetype = PAWN;
+  }
+  
+#ifdef SAN_DEBUG
+  switch(int(piecetype)) {
+    case KNIGHT: thepiece = "knight"; break;
+    case BISHOP: thepiece = "bishop"; break;
+    case ROOK: thepiece = "rook"; break;
+    case QUEEN: thepiece = "queen"; break;
+    case KING: thepiece = "king"; break;
+    case PAWN: thepiece = "pawn"; break;
+    case NO_PIECE_TYPE: thepiece = "castles"; break;
+  }
+
+  sync_cout << "restring: " << uci << "; piece type: " << thepiece << sync_endl;
+#endif
+
+  if (castles) { // chess 960?
+    if (uci == "0-0" || uci == "O-O") {
+      if (pos.side_to_move() == WHITE) {
+        move = make<CASTLE>(SQ_E1, SQ_G1);
+      } else {
+        move = make<CASTLE>(SQ_E8, SQ_G8);
+      }
+    } else if (uci == "0-0-0" || uci == "O-O-O") {
+      if (pos.side_to_move() == WHITE) {
+        move = make<CASTLE>(SQ_E1, SQ_C1);
+      } else {
+        move = make<CASTLE>(SQ_E8, SQ_C8);
+      }
+    }
+    if (pos.is_pseudo_legal(move) && pos.pl_move_is_legal(move, pos.pinned_pieces())) {
+      return move;
+    }
+    return MOVE_NONE; // invalid
+  }
+  
+  // normal move or promotion
+  int torank = uci.at(uci.size() - 1) - '1';
+  int tofile = uci.at(uci.size() - 2) - 'a';
+  int disambig_r = -1;
+  int disambig_f = -1;
+  if (piecetype != PAWN && piecetype != KING && uci.size() > 3) {
+    char ambig = uci.at(uci.size() - 3);
+    if (ambig >= 'a' && ambig <= 'h') {
+      disambig_f = ambig - 'a';
+    } else if (ambig >= '1' && ambig <= '8') {
+      disambig_r = ambig - '1';
+    } else {
+      return MOVE_NONE; // invalid;
+    }
+  }
+
+  Square tosquare = Square((torank * 8) + tofile);
+  
+  const Square *pl = pos.piece_list(pos.side_to_move(), piecetype);
+  int piececount = pos.piece_count(pos.side_to_move(), piecetype);
+  if (piececount == 1) {
+    if (piecetype != PAWN || !capture) {
+      move = test_move<SAN_MOVE_NORMAL>(pos, *pl, tosquare, promotion);
+    } else {
+      move = test_move<SAN_PAWN_CAPTURE>(pos, *pl, tosquare, promotion);
+    }
+    if (move != MOVE_NONE) {
+      return move;
+    } else {
+      return MOVE_NONE;
+    }
+  } else if (piececount > 1) {
+    Square s;
+    while ((s = *pl++) != SQ_NONE) {
+      Square ss = SQ_NONE;
+#ifdef SAN_DEBUG
+      sync_cout << "  looking at " << char((s % 8) + 'a') << char ((s / 8) + '1') << sync_endl;
+#endif
+      if (disambig_r >=0 || disambig_f >= 0) {
+        if (disambig_r >= 0 && rank_of(s) == Rank(disambig_r)) {
+          ss = s;
+        } else if (disambig_f >= 0 && file_of(s) == File(disambig_f)) {
+          ss = s;
+        }
+      } else {
+        ss = s;
+      }
+      if (ss != SQ_NONE) {
+        if (piecetype != PAWN || !capture) {
+          move = test_move<SAN_MOVE_NORMAL>(pos, ss, tosquare, promotion);
+        } else {
+          move = test_move<SAN_PAWN_CAPTURE>(pos, ss, tosquare, promotion);
+        }
+        if (move != MOVE_NONE) {
+          return move;
+        } else {
+          ; // don't return, we just need to keep trying
+        }
+      }
+    }
+  }
+  return MOVE_NONE;
+}
+#endif

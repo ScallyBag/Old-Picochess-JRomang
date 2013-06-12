@@ -51,7 +51,7 @@ public:
   Option(const char* v, Fn* = NULL);
   Option(int v, int min, int max, Fn* = NULL);
 #if PA_GTB
-  Option(std::string defaultValue, StrVector comboValues);
+  Option(std::string defaultValue, StrVector comboValues, Fn* = NULL);
 #endif
 
   Option& operator=(const std::string& v);

@@ -163,10 +163,11 @@ void TranspositionTable<PHEntry>::to_phash() {
     if ((key = phe->fullkey())) {
       TTEntry *tte = TT.probe(key);
       if (tte && tte->type() == BOUND_EXACT && tte->depth() >= minDepth) { // double-check criteria
-        PHInst.store_phash(key, tte->value(), tte->type(), tte->depth(), tte->move(), tte->eval_value(), tte->eval_margin());
+        if (PHInst.store_phash(key, tte->value(), tte->type(), tte->depth(), tte->move(), tte->eval_value(), tte->eval_margin())) {
 #ifdef PHASH_DEBUG
         count++;
 #endif
+        }
       }
     }
 #ifdef PHASH_DEBUG
@@ -192,7 +193,6 @@ void TranspositionTable<PHEntry>::from_phash() {
 
 #ifdef PHASH_DEBUG
   struct timeval tv1, tv2;
-  unsigned count = 0;
 
   gettimeofday(&tv1, NULL);
 #endif

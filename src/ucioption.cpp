@@ -172,7 +172,7 @@ Option::Option(int v, int minv, int maxv, Fn* f) : type("spin"), min(minv), max(
 { std::ostringstream ss; ss << v; defaultValue = currentValue = ss.str(); }
 
 #if PA_GTB && defined (USE_EGTB)
-Option::Option(string def, StrVector values) : type("combo"), idx(Options.size()), defaultValue(def), currentValue(def), min(0), max(0), comboValues(values)
+Option::Option(string def, StrVector values, Fn *f) : defaultValue(def), currentValue(def), type("combo"), min(0), max(0), comboValues(values), idx(Options.size()), on_change(f)
 {}
 #endif
 

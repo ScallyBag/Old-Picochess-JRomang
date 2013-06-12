@@ -33,13 +33,162 @@ LMDB_PersistentHash LMDB;
 ////
 
 ////
-//// Functions
+//// LMDB_PHFile
+////
+
+// shouldn't be called directly
+LMDB_PHFile::LMDB_PHFile(std::string &fname, int mode) :
+  e(NULL), t(NULL), d(0), fn(""), tc(0)
+{
+  fn = fname;
+  if (!mdb_env_create(&e)) {
+    fixmapsize_phash(); // fix the file/map size as necessary
+    if (!mdb_env_open(e, fn.c_str(), MDB_NOSUBDIR | MDB_WRITEMAP, 0644)) {
+      if (!mdb_txn_begin(e, NULL, (mode == PHASH_MODE_READ) ? MDB_RDONLY : 0, &t)) {
+        if (!mdb_dbi_open(t, NULL, (mode == PHASH_MODE_WRITE) ? MDB_CREATE : 0, &d)) {
+          MDB_envinfo info;
+          MDB_stat st;
+          mdb_env_info(e, &info);
+          mdb_stat(t, d, &st);
+          mp = info.me_mapsize / st.ms_psize;
+          return;
+        }
+      }
+    }
+  }
+  close(false);
+}
+
+LMDB_PHFile::~LMDB_PHFile()
+{
+  close();
+}
+
+LMDB_PHFile *LMDB_PHFile::open(std::string &filename, int mode)
+{
+  LMDB_PHFile *file = NULL;
+  bool usePersHash = Options["Use Persistent Hash"];
+  
+  if (usePersHash) {
+    file = new LMDB_PHFile(filename, mode);
+    if (!file->env()) {
+      delete file;
+      file = NULL;
+    }
+  }
+  return file;
+}
+
+void LMDB_PHFile::close(bool commit)
+{
+  if (e) {
+    std::string lockfile = fn + "-lock";
+    if (t) {
+      if (commit)
+        mdb_txn_commit(t);
+      else
+        mdb_txn_abort(t);
+      t = NULL;
+    }
+    if (d) {
+      mdb_dbi_close(e, d);
+      d = 0;
+    }
+    e = NULL;
+    remove(lockfile.c_str());
+  }
+  tc = 0;
+  fn = "";
+}
+
+void LMDB_PHFile::fixmapsize_phash()
+{
+  if (e) {
+    int hashsize = Options["Persistent Hash Size"];
+    struct stat filestatus;
+    int filesize = 0;
+    
+    hashsize *= (1024 * 1024);
+    if (!::stat(fn.c_str(), &filestatus)) {
+      filesize = (int)filestatus.st_size;
+    }
+    if (hashsize != filesize) {
+      mdb_env_set_mapsize(e, hashsize);
+      // necessary to fix the size; otherwise the db doesn't allow access
+      mdb_env_open(e, fn.c_str(), MDB_NOSUBDIR | MDB_WRITEMAP, 0644);
+      mdb_env_close(e);
+      mdb_env_create(&e);
+      mdb_env_set_mapsize(e, hashsize);
+      // end necessary
+    }
+  }
+}
+
+int LMDB_PHFile::put(MDB_val *vKey, MDB_val *vData, int flags)
+{
+  int rv = -1;
+  
+  if (e && t && d) {
+    if (++tc > 50) {
+      mdb_txn_commit(t);
+      mdb_txn_begin(e, NULL, 0, &t);
+      tc = 0;
+    }
+    rv = mdb_put(t, d, vKey, vData, flags);
+  }
+  return rv;
+}
+
+int LMDB_PHFile::get(MDB_val *vKey, MDB_val *vData)
+{
+  if (e && t && d) {
+    return mdb_get(t, d, vKey, vData);
+  }
+  return -1;
+}
+
+int LMDB_PHFile::clear()
+{
+  if (e && t && d) {
+    return mdb_drop(t, d, 0);
+  }
+  return -1;
+}
+
+MDB_cursor *LMDB_PHFile::cursor()
+{
+  MDB_cursor *c = NULL;
+
+  if (e && t && d) {
+    mdb_cursor_open(t, d, &c);
+  }
+  return c;
+}
+
+size_t LMDB_PHFile::numentries()
+{
+  if (e && t && d) {
+    MDB_stat st;
+
+    mdb_stat(t, d, &st);
+    return st.ms_entries;
+  }
+  return 0;
+}
+
+void LMDB_PHFile::stat(MDB_stat *st)
+{
+  if (e && t && d) {
+    mdb_stat(t, d, st);
+  }
+}
+
+////
+//// LMDB_PersistentHash
 ////
 
 LMDB_PersistentHash::LMDB_PersistentHash() :
-PersHashEnv(NULL),
-PersHashTxn(NULL),
-PersHashDbi(0),
+PersHashFile(NULL),
 PersHashFileName("stockfish.hsh"),
 PersHashPrunefileName("stockfish_pruned.hsh"),
 PersHashWantsClear(false),
@@ -88,11 +237,11 @@ void LMDB_PersistentHash::quit_phash()
 
   if (usePersHash) {
     optimize_phash();
-    starttransaction_phash(PHASH_MODE_READ);
 #ifdef PHASH_DEBUG
+    starttransaction_phash(PHASH_MODE_READ);
     count_phash();
-#endif
     endtransaction_phash();
+#endif
   }
 }
 
@@ -147,113 +296,120 @@ void LMDB_PersistentHash::wantsmerge_phash()
   }
 }
 
-MDB_env *LMDB_PersistentHash::open_phash(PHASH_MODE UNUSED(mode))
+bool LMDB_PersistentHash::commit_and_rebuild(bool UNUSED(commit), bool UNUSED(optimize))
 {
-
-  bool usePersHash = Options["Use Persistent Hash"];
-  std::string filename = PersHashFileName;
-  int hashsize = Options["Persistent Hash Size"];
-  MDB_env *env = NULL;
-  
-  if (usePersHash) {
-    if (!mdb_env_create(&env)) {
-      int rv;
-      int flags = MDB_NOSUBDIR;
-      struct stat filestatus;
-      int filesize = 0;
-      if (!stat(filename.c_str(), &filestatus)) {
-        filesize = (int)filestatus.st_size;
-      }
-      if (hashsize * 1024 * 1024 != filesize) {
-        mdb_env_set_mapsize(env, hashsize * 1024 * 1024);
-        mdb_env_close(env);
-        mdb_env_create(&env);
-      }
-      // we don't need this flag for the environment, rather for the transaction
-      // if (mode == PHASH_MODE_READ) flags |= MDB_RDONLY;
-      rv = mdb_env_open(env, filename.c_str(), flags, 0644);
-      if (rv) { // fail
-        std::string lockfile = PersHashFileName + "-lock";
-        mdb_env_close(env);
-        remove(lockfile.c_str());
-        env = NULL;
-#ifdef PHASH_DEBUG
-        // note that this may fail if we are read-only and there is no file
-        printf("mdb_env_open: %s\n", mdb_strerror(rv));
+  if (PersHashFile) {
+    delete PersHashFile;
+    PersHashFile = NULL;
+  }
+#if 0
+  if (optimize) {
+    optimize_phash(); // don't do this in realtime, only at quit
+  }
 #endif
-      }
-    }
+  PersHashFile = LMDB_PHFile::open(PersHashFileName, PHASH_MODE_WRITE);
+  if (PersHashFile) {
+    return true;
   }
-  return env;
+  return false;
 }
 
-void LMDB_PersistentHash::close_phash(MDB_env *env)
-{
-  if (env) {
-    std::string lockfile = PersHashFileName + "-lock";
-    mdb_env_close(env);
-    remove(lockfile.c_str()); // not 100% sure about this; what if two versions of SF are running simultaneously?
-  }
-}
-
-int LMDB_PersistentHash::put_withpurge(MDB_txn *txn, MDB_dbi dbi, MDB_val *vKey, MDB_val *vData)
+int LMDB_PersistentHash::put_withprune(MDB_val *vKey, MDB_val *vData)
 {
   int rv = -1;
-  
-  if (txn && dbi && vKey && vData) {
-    rv = mdb_put(txn, dbi, vKey, vData, 0);
-    if (rv == MDB_MAP_FULL) {
-      int depth = Options["Persistent Hash Depth"];
-      
-      if (prune_below_phash(depth)) { // prune and try again
-        rv = mdb_put(txn, dbi, vKey, vData, 0);
-        if (rv) {
-          ; // info? backup full file and start a new one?
+  int pruned = 0;
+
+  if (PersHashFile && vKey && vData) {
+    int depth = Options["Persistent Hash Depth"];
+#if 1 // better method to handle this prophylactically
+    MDB_stat stat;
+    PersHashFile->stat(&stat);
+    if (stat.ms_branch_pages + stat.ms_leaf_pages + stat.ms_overflow_pages > (PersHashFile->maxpages() * 0.4)) {
+      do {
+        pruned = prune_below_phash(depth);
+      } while (depth++ <= 99 && !pruned);
+    }
+    rv = PersHashFile->put(vKey, vData);
+    if (rv) {
+      if (rv == MDB_MAP_FULL) {
+        sync_cout << "info string Persistent Hash catastrophic failure (out of space in PH file). Increase your Persistent Hash Size." << sync_endl;
+        sync_cout << "info string Persistent Hash setting Use Persistent Hash to false." << sync_endl;
+        Options["Use Persistent Hash"] = t_to_string("false");
+      }
+    }
+#else
+    rv = PersHashFile->put(vKey, vData);
+    if (rv) {
+      if (rv == MDB_MAP_FULL) {
+        int hashsize = Options["Persistent Hash Size"];
+
+        // double the phash size pre-purge so that we have some room to work
+        Options["Persistent Hash Size"] = t_to_string(hashsize * 2);
+        // we're going to lose the last transaction, I'm afraid
+        if (commit_and_rebuild(false)) {
+          // restore the phash size before calling prune so that the prune DB isn't 2x
+          Options["Persistent Hash Size"] = t_to_string(hashsize);
+          do {
+            pruned = prune_below_phash(depth);
+          } while (depth++ <= 99 && !pruned);
+          // commit the prune, close and reopen the DB at the old size (as possible)
+          if (commit_and_rebuild(true, true)) {
+            // try again and fail mercilessly if it doesn't work
+            rv = PersHashFile->put(vKey, vData);
+            if (rv) {
+              sync_cout << "info string Persistent Hash catastrophic failure (out of space in PH file). Increase your Persistent Hash Size." << sync_endl;
+              sync_cout << "info string Persistent Hash setting Use Persistent Hash to false." << sync_endl;
+              Options["Use Persistent Hash"] = t_to_string("false");
+            }
+          }
         }
       }
     }
+#endif
   }
   return rv;
 }
 
-void LMDB_PersistentHash::dostore_phash(const Key key, t_phash_data &data)
+bool LMDB_PersistentHash::dostore_phash(const Key key, t_phash_data &data)
 {
   MDB_val vKey;
   MDB_val vData;
-  int rv = 0;
+  int rv;
   
   vKey.mv_size = sizeof(Key);
   vKey.mv_data = (void *)(intptr_t)&key;
   vData.mv_size = sizeof(t_phash_data);
   vData.mv_data = (void *)&data;
   
-  rv = put_withpurge(PersHashTxn, PersHashDbi, &vKey, &vData);
+  rv = put_withprune(&vKey, &vData);
 #ifdef PHASH_DEBUG
   if (!rv) {
-    printf("mdb_put: put %llx\n", key);
+    //printf("mdb_put: put %llx\n", key);
   } else {
     printf("mdb_put: %s\n", mdb_strerror(rv));
   }
 #endif
+  return !rv;
 }
 
-void LMDB_PersistentHash::store_phash(const Key key, t_phash_data &data)
+bool LMDB_PersistentHash::store_phash(const Key key, t_phash_data &data)
 {
   Depth oldDepth = DEPTH_ZERO;
   
-  if (PersHashEnv && PersHashTxn && PersHashDbi) {
+  if (PersHashFile) {
     probe_phash(key, &oldDepth);
     if (data.d >= oldDepth) {
-      dostore_phash(key, data);
+      return dostore_phash(key, data);
     }
   }
+  return false;
 }
 
-void LMDB_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD)
+bool LMDB_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD)
 {
   Depth oldDepth = DEPTH_ZERO;
   
-  if (PersHashEnv && PersHashTxn && PersHashDbi) {
+  if (PersHashFile) {
     probe_phash(key, &oldDepth);
     if (d >= oldDepth) {
       t_phash_data data;
@@ -265,14 +421,15 @@ void LMDB_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, 
       data.statV = statV;
       data.kingD = kingD;
 
-      dostore_phash(key, data);
+      return dostore_phash(key, data);
     }
   }
+  return false;
 }
 
 void LMDB_PersistentHash::starttransaction_phash(PHASH_MODE mode)
 {
-  if (PersHashEnv && PersHashTxn && PersHashDbi) return;
+  if (PersHashFile) return;
   
   if (PersHashWantsClear) {
     PersHashWantsClear = false;
@@ -287,95 +444,48 @@ void LMDB_PersistentHash::starttransaction_phash(PHASH_MODE mode)
       prune_phash();
     }
   }
-  PersHashEnv = open_phash(mode);
-  if (PersHashEnv) {
-    int rv;
-    
-    rv = mdb_txn_begin(PersHashEnv, NULL, (mode == PHASH_MODE_READ) ? MDB_RDONLY : 0, &PersHashTxn);
-    if (!rv) {
-      rv = mdb_dbi_open(PersHashTxn, NULL, MDB_CREATE, &PersHashDbi);
-      if (!rv) {
-        return; // success
-      } else {
-#ifdef PHASH_DEBUG
-        printf("mdb_dbi_open: %s\n", mdb_strerror(rv));
-#endif
-        goto fail;
-      }
-    } else {
-#ifdef PHASH_DEBUG
-      printf("mdb_txn_begin: %s\n", mdb_strerror(rv));
-#endif
-      goto fail;
-    }
-  }
-  
-fail:
-  PersHashDbi = 0;
-  if (PersHashTxn) {
-    mdb_txn_abort(PersHashTxn);
-  }
-  if (PersHashEnv) {
-    close_phash(PersHashEnv);
-    PersHashEnv = NULL;
-  }  
+  PersHashFile = LMDB_PHFile::open(PersHashFileName, mode);
+  return;
 }
 
 void LMDB_PersistentHash::endtransaction_phash()
 {
-  if (PersHashEnv) {
-    if (PersHashTxn) {
-      mdb_txn_commit(PersHashTxn);
-      PersHashTxn = NULL;
-    }
-    if (PersHashDbi) {
-      mdb_dbi_close(PersHashEnv, PersHashDbi);
-      PersHashDbi = 0;
-    }
-    close_phash(PersHashEnv);
-    PersHashEnv = NULL;
+  if (PersHashFile) {
+    delete PersHashFile;
+    PersHashFile = NULL;
   }
 }
 
 int LMDB_PersistentHash::prune_below_phash(int depth)
 {
-  int count = 0;
-  
-  if (PersHashEnv && PersHashTxn && PersHashDbi) {
-    int rv;
-    MDB_cursor *cursor;
-    MDB_env *penv = NULL;
-    MDB_txn *ptxn = NULL;
-    MDB_dbi pdbi = NULL;
+  unsigned count = 0;
 
-    if (!mdb_env_create(&penv)) {
-      // default size is 10MB, maybe this should be bigger
-      if (!mdb_env_open(penv, PersHashPrunefileName.c_str(), MDB_NOSUBDIR, 0644)) {
-        if (!mdb_txn_begin(penv, NULL, 0, &ptxn)) {
-          if (!mdb_dbi_open(ptxn, NULL, MDB_CREATE, &pdbi)) {
-            ; // great
-          }
-        }
-      }
-    }
-    rv = mdb_cursor_open(PersHashTxn, PersHashDbi, &cursor);
-    if (!rv) {
+  if (PersHashFile) {
+    int rv;
+    LMDB_PHFile *pfile;
+    MDB_cursor *cursor;
+
+    pfile = LMDB_PHFile::open(PersHashPrunefileName, PHASH_MODE_WRITE);
+    cursor = PersHashFile->cursor();
+    if (cursor) {
       MDB_val vKey;
       MDB_val vData;
-      int total = 0;
-      
-      while(!mdb_cursor_get(cursor, &vKey, &vData, MDB_NEXT)) {
-        total++;
+      size_t entries;
+
+      // start at the end and work backward since we're deleting stuff.
+      entries = PersHashFile->numentries();
+      while (!mdb_cursor_get(cursor, &vKey, &vData, MDB_PREV) && count != entries) {
         if (vData.mv_size == sizeof(t_phash_data)) {
           if (((t_phash_data *)vData.mv_data)->d <= depth) {
-            if (penv && ptxn && pdbi) {
-              rv = mdb_put(ptxn, pdbi, &vKey, &vData, 0);
-              if (rv == MDB_MAP_FULL) {
-                // tant pis, shit happens; we could make a new file or change the map size if it turns out to be important.
-                mdb_txn_commit(ptxn);
-                mdb_dbi_close(penv, pdbi);
-                ptxn = NULL;
-                pdbi = 0;
+            if (pfile) {
+              rv = pfile->put(&vKey, &vData);
+              if (rv) {
+                if (rv == MDB_MAP_FULL) {
+                  // tant pis, shit happens; we could make a new file or change the map size if it turns out to be important.
+                }
+                pfile->close(true);
+                delete pfile;
+                pfile = NULL;
               }
             }
             rv = mdb_cursor_del(cursor, 0);
@@ -392,15 +502,12 @@ int LMDB_PersistentHash::prune_below_phash(int depth)
       }
       mdb_cursor_close(cursor);
 #ifdef PHASH_DEBUG
-      printf("prunebelow: pruned %d from %d\n", count, total);
+      printf("prune_below_phash: pruned %d from %ld at depth %d\n", count, entries, depth);
 #endif
     }
-    if (penv) {
-      std::string prunelock = PersHashPrunefileName + "-lock";
-      if (ptxn) mdb_txn_commit(ptxn);
-      if (pdbi) mdb_dbi_close(penv, pdbi);
-      mdb_env_close(penv);
-      remove(prunelock.c_str());
+    if (pfile) {
+      pfile->close(true);
+      delete pfile;
     }
   }
   return count;
@@ -412,84 +519,72 @@ int LMDB_PersistentHash::prune_below_phash(int depth)
 // if still too big, repeat with the next highest depth and so on until we're below the target size
 void LMDB_PersistentHash::doprune_phash()
 {
-  if (PersHashEnv && PersHashTxn && PersHashDbi) {
-    int hashDepth = Options["Persistent Hash Depth"];
+  if (PersHashFile) {
+    int depth = Options["Persistent Hash Depth"];
     unsigned pruned;
+    std::stringstream ss;
 
-    pruned = prune_below_phash(hashDepth);
-    endtransaction_phash();
+    pruned = prune_below_phash(depth);
+    // commit the prune, close and reopen the DB at the old size (as possible)
+    commit_and_rebuild(true, true);
 
-    if (pruned) {
-      optimize_phash();
-    }
-    starttransaction_phash(PHASH_MODE_WRITE);
-
-    sync_cout << "info string Persistent Hash pruned at depth " << hashDepth
-              << " [" << pruned << " record(s)]." << sync_endl;
+    sync_cout << "info string Persistent Hash pruned at depth " << depth << " [" << pruned << " record(s)]." << sync_endl;
   }
 }
 
 void LMDB_PersistentHash::doclear_phash()
 {
-  if (PersHashEnv && PersHashTxn && PersHashDbi) {
+  if (PersHashFile) {
     int rv;
     
-    rv = mdb_drop(PersHashTxn, PersHashDbi, 0);
+    rv = PersHashFile->clear();
     if (!rv) {
+#if 0 // don't do this in realtime, only at quit
       endtransaction_phash();
       optimize_phash();
       starttransaction_phash(PHASH_MODE_WRITE);
+#endif
     }
   }
 }
 
 void LMDB_PersistentHash::domerge_phash()
 {
-  if (PersHashEnv && PersHashTxn && PersHashDbi) {
+  if (PersHashFile) {
     std::string mergename = Options["Persistent Hash Merge File"];
-    std::string mergelock = mergename + "-lock";
     int mindepth = Options["Persistent Hash Depth"];
-    MDB_env *menv;
-    
-    if (!mdb_env_create(&menv)) {
-      if (!mdb_env_open(menv, mergename.c_str(), MDB_NOSUBDIR, 0644)) {
-        MDB_txn *mtxn;
-        if (!mdb_txn_begin(menv, NULL, MDB_RDONLY, &mtxn)) {
-          MDB_dbi mdbi;
-          if (!mdb_dbi_open(mtxn, NULL, 0, &mdbi)) {
-            MDB_cursor *cursor;
-            MDB_val vKey;
-            MDB_val vData;
-            int merged = 0;
-            int count = 0;
-            
-            if (!mdb_cursor_open(mtxn, mdbi, &cursor)) {
-              while (!mdb_cursor_get(cursor, &vKey, &vData, MDB_NEXT)) {
-                if (vData.mv_size == sizeof(t_phash_data)) {
-                  Depth md = (Depth)((t_phash_data *)vData.mv_data)->d;
-                  if (md >= mindepth) {
-                    Depth depth;
-                    probe_phash(*((const Key *)vKey.mv_data), &depth);
-                    if (md > depth) {
-                      if (!put_withpurge(PersHashTxn, PersHashDbi, &vKey, &vData)) {
-                        merged++;
-                      }
-                    }
-                  }
-                }
-                count++;
-              }
-              mdb_cursor_close(cursor);
-            }
-            sync_cout << "info string Persistent Hash merged " << merged << " records (from " << count << " total) from file " << mergename << "." << sync_endl;
+    LMDB_PHFile *mfile;
 
-            mdb_dbi_close(menv, mdbi);
+    mfile = LMDB_PHFile::open(mergename, PHASH_MODE_READ);
+    if (mfile) {
+      MDB_cursor *cursor;
+      MDB_val vKey;
+      MDB_val vData;
+      int merged = 0;
+      int count = 0;
+
+      cursor = mfile->cursor();
+      if (cursor) {
+        while (!mdb_cursor_get(cursor, &vKey, &vData, MDB_NEXT)) {
+          if (vData.mv_size == sizeof(t_phash_data)) {
+            Depth md = (Depth)((t_phash_data *)vData.mv_data)->d;
+            if (md >= mindepth) {
+              Depth depth;
+              probe_phash(*((const Key *)vKey.mv_data), &depth);
+              if (md > depth) {
+                if (!put_withprune(&vKey, &vData)) {
+                  merged++;
+                }
+              }
+            }
           }
-          mdb_txn_abort(mtxn);
+          count++;
         }
+        mdb_cursor_close(cursor);
       }
-      mdb_env_close(menv);
-      remove(mergelock.c_str());
+      sync_cout << "info string Persistent Hash merged " << merged << " records (from " << count << " total) from file " << mergename << "." << sync_endl;
+      mfile->close(false);
+      delete mfile;
     }
   }
 }
@@ -499,14 +594,14 @@ int LMDB_PersistentHash::probe_phash(const Key key, Depth *d)
   int rv = 0;
   
   *d = DEPTH_ZERO;
-  if (PersHashEnv && PersHashTxn && PersHashDbi) {
+  if (PersHashFile) {
     MDB_val vKey;
     MDB_val vData;
     
     vKey.mv_size = sizeof(Key);
     vKey.mv_data = (void *)(intptr_t)&key;
 
-    rv = mdb_get(PersHashTxn, PersHashDbi, &vKey, &vData);
+    rv = PersHashFile->get(&vKey, &vData);
     if (!rv) {
       if (vData.mv_size == sizeof(t_phash_data)) {
         *d = (Depth)((t_phash_data *)vData.mv_data)->d;
@@ -519,15 +614,14 @@ int LMDB_PersistentHash::probe_phash(const Key key, Depth *d)
 
 void LMDB_PersistentHash::to_tt_phash()
 {
-  if (PersHashEnv && PersHashTxn && PersHashDbi) {
-    int rv;
+  if (PersHashFile) {
     MDB_cursor *cursor;
 #ifdef PHASH_DEBUG
     int count = 0;
 #endif
     
-    rv = mdb_cursor_open(PersHashTxn, PersHashDbi, &cursor);
-    if (!rv) {
+    cursor = PersHashFile->cursor();
+    if (cursor) {
       MDB_val vKey;
       MDB_val vData;
       t_phash_data *data;
@@ -537,7 +631,7 @@ void LMDB_PersistentHash::to_tt_phash()
           data = (t_phash_data *)vData.mv_data;
           TT.store(*((Key *)vKey.mv_data), (Value)data->v, (Bound)data->t, (Depth)data->d, (Move)data->m, (Value)data->statV, (Value)data->kingD, false);
 #ifdef PHASH_DEBUG
-          printf("mdb_cursor_get: pull %llx\n", *((Key *)vKey.mv_data));
+          //printf("mdb_cursor_get: pull %llx\n", *((Key *)vKey.mv_data));
           count++;
 #endif
         }
@@ -565,42 +659,34 @@ void LMDB_PersistentHash::optimize_phash()
   std::string bakname = filename + ".bak";
   std::string baklockname = bakname + "-lock";
   int success = false;
-  MDB_env *oenv;
+  LMDB_PHFile *ofile;
 
   remove(bakname.c_str());
   remove(baklockname.c_str());
   copyfile(filename, bakname);
 
-  if (!mdb_env_create(&oenv)) {
-    if (!mdb_env_open(oenv, bakname.c_str(), MDB_NOSUBDIR, 0644)) {
-      MDB_txn *otxn;
-      if (!mdb_txn_begin(oenv, NULL, MDB_RDONLY, &otxn)) {
-        MDB_dbi odbi;
-        if (!mdb_dbi_open(otxn, NULL, 0, &odbi)) {
-          remove(filename.c_str());
-          remove(lockname.c_str());
-          starttransaction_phash(PHASH_MODE_WRITE);
-          if (PersHashEnv && PersHashTxn && PersHashDbi) {
-            MDB_cursor *cursor;
+  ofile = LMDB_PHFile::open(bakname, PHASH_MODE_READ);
+  if (ofile) {
+    remove(filename.c_str());
+    remove(lockname.c_str());
+    starttransaction_phash(PHASH_MODE_WRITE);
+    if (PersHashFile) {
+      MDB_cursor *cursor;
 
-            if (!mdb_cursor_open(otxn, odbi, &cursor)) {
-              MDB_val vKey;
-              MDB_val vData;
-              while (!mdb_cursor_get(cursor, &vKey, &vData, MDB_NEXT)) {
-                put_withpurge(PersHashTxn, PersHashDbi, &vKey, &vData);
-              }
-              mdb_cursor_close(cursor);
-              success = true;
-            }
-          }
-          endtransaction_phash();
-          mdb_dbi_close(oenv, odbi);
+      cursor = ofile->cursor();
+      if (cursor) {
+        MDB_val vKey;
+        MDB_val vData;
+        while (!mdb_cursor_get(cursor, &vKey, &vData, MDB_NEXT)) {
+          put_withprune(&vKey, &vData);
         }
-        mdb_txn_abort(otxn);
+        mdb_cursor_close(cursor);
+        success = true;
       }
     }
-    mdb_env_close(oenv);
-    remove(baklockname.c_str());
+    endtransaction_phash();
+    ofile->close(false);
+    delete ofile;
   }
   if (!success) {
     copyfile(bakname, filename);
@@ -611,14 +697,12 @@ void LMDB_PersistentHash::optimize_phash()
 
 int LMDB_PersistentHash::count_phash()
 {
-  if (PersHashEnv && PersHashTxn && PersHashDbi) {
-    MDB_stat stat;
-    
-    mdb_stat(PersHashTxn, PersHashDbi, &stat);
+  if (PersHashFile) {
+    size_t entries = PersHashFile->numentries();
 #ifdef PHASH_DEBUG
-    printf("phash file has %d entries\n", (int)stat.ms_entries);
+    printf("phash file has %d entries\n", (int)entries);
 #endif
-    return (int)stat.ms_entries;
+    return (int)entries;
   }
   return 0;
 }

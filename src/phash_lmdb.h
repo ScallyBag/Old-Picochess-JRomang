@@ -18,6 +18,39 @@
 #include "thread.h"
 #include "tt.h"
 
+struct LMDB_PHFile
+{
+  static LMDB_PHFile *open(std::string &fname, int mode = PHASH_MODE_WRITE);
+
+  LMDB_PHFile(std::string &filename, int mode = PHASH_MODE_WRITE);
+  ~LMDB_PHFile();
+
+  void close(bool commit = true);
+  int put(MDB_val *vKey, MDB_val *vData, int flags = 0);
+  int get(MDB_val *vKey, MDB_val *vData);
+  int clear();
+
+  MDB_env *env()          { return e; }
+  MDB_txn *txn()          { return t; }
+  MDB_dbi  dbi()          { return d; }
+  unsigned txct()         { return tc; }
+  std::string &filename() { return fn; }
+  size_t maxpages()       { return mp; }
+  MDB_cursor *cursor();
+  size_t numentries();
+  void stat(MDB_stat *st);
+
+private:
+  void fixmapsize_phash();
+
+  MDB_env *e;
+  MDB_txn *t;
+  MDB_dbi d;
+  std::string fn;
+  unsigned tc;
+  size_t mp;
+};
+
 class LMDB_PersistentHash : public PersistentHash
 {
   
@@ -26,8 +59,8 @@ public:
   
   virtual void init_phash();
   virtual void quit_phash();
-  virtual void store_phash(const Key key, t_phash_data &data);
-  virtual void store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD);
+  virtual bool store_phash(const Key key, t_phash_data &data);
+  virtual bool store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD);
   virtual int probe_phash(const Key key, Depth *d);
   virtual void starttransaction_phash(PHASH_MODE mode);
   virtual void endtransaction_phash();
@@ -38,8 +71,6 @@ public:
   
 private:
   int count_phash();
-  MDB_env *open_phash(PHASH_MODE mode);
-  void close_phash(MDB_env *depot);
   void clear_phash();
   void doclear_phash();
   void prune_phash();
@@ -49,18 +80,14 @@ private:
   void optimize_phash();
   int getsize_phash();
   int prune_below_phash(int depth);
-  int put_withpurge(MDB_txn *txn, MDB_dbi dbi, MDB_val *vKey, MDB_val *vData);
-  void dostore_phash(const Key key, t_phash_data &data);
+  int put_withprune(MDB_val *vKey, MDB_val *vData);
+  bool dostore_phash(const Key key, t_phash_data &data);
+  bool commit_and_rebuild(bool commit, bool optimize = false);
 
   void copyfile(std::string &srcfile, std::string &dstfile);
 
-  bool needsconvert_phash(MDB_env *depot);
-  void doconvert_phash(MDB_env *dst, MDB_env *src);
-  void convert_phash(std::string &srcname);
+  LMDB_PHFile *PersHashFile;
   
-  MDB_env *PersHashEnv;
-  MDB_txn *PersHashTxn;
-  MDB_dbi PersHashDbi;
   std::string PersHashFileName;
   std::string PersHashPrunefileName;
 

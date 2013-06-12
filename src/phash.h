@@ -11,8 +11,11 @@
 
 #include "position.h"
 #include "ucioption.h"
+#include <sstream>
 
 //#define PHASH_DEBUG
+//#define EPD_DEBUG
+
 #define USE_LMDB
 
 #ifdef UNUSED
@@ -45,11 +48,13 @@ public:
 #else
   static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_QDBM);
 #endif
+  static void import_epd(std::istringstream& is);
+  static void exercise(std::istringstream& is);
 
   virtual void init_phash() = 0;
   virtual void quit_phash() = 0;
-  virtual void store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD) = 0;
-  virtual void store_phash(const Key key, t_phash_data &data) = 0;
+  virtual bool store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD) = 0;
+  virtual bool store_phash(const Key key, t_phash_data &data) = 0;
   virtual int probe_phash(const Key key, Depth *d) = 0;
   virtual void starttransaction_phash(PHASH_MODE mode) = 0;
   virtual void endtransaction_phash() = 0;
@@ -60,5 +65,15 @@ public:
 };
 
 #define PHInst PersistentHash::getInstance()
+
+template<class T>
+std::string t_to_string(T i)
+{
+  std::stringstream ss;
+  std::string s;
+  ss << i;
+  s = ss.str();
+  return s;
+}
 
 #endif /* defined(PHASH_H_INCLUDED) */

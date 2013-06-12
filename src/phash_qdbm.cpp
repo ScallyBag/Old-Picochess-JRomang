@@ -242,14 +242,14 @@ void QDBM_PersistentHash::close_phash(DEPOT *depot)
   dpclose(depot);
 }
 
-void QDBM_PersistentHash::store_phash(const Key key, t_phash_data &data)
+bool QDBM_PersistentHash::store_phash(const Key key, t_phash_data &data)
 {
   Depth oldDepth = DEPTH_ZERO;
   
   if (PersHashFile) {
     probe_phash(key, &oldDepth);
     if (data.d >= oldDepth) {
-      int rv = 0;
+      int rv;
       rv = dpput(PersHashFile, (const char *)&key, (int)sizeof(Key), (const char *)&data, (int)sizeof(t_phash_data), DP_DOVER);
 #ifdef PHASH_DEBUG
       if (rv) {
@@ -258,11 +258,13 @@ void QDBM_PersistentHash::store_phash(const Key key, t_phash_data &data)
         printf("dpput: %s\n", dperrmsg(dpecode));
       }
 #endif
+      return !rv;
     }
   }
+  return false;
 }
 
-void QDBM_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD)
+bool QDBM_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD)
 {
   Depth oldDepth = DEPTH_ZERO;
 
@@ -270,9 +272,8 @@ void QDBM_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, 
     probe_phash(key, &oldDepth);
     if (d >= oldDepth) {
       t_phash_data data;
-      int rv = 0;
+      int rv;
 
-      rv = rv; // compiler warning
       data.v = v;
       data.t = t;
       data.d = d;
@@ -288,8 +289,10 @@ void QDBM_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, 
         printf("dpput: %s\n", dperrmsg(dpecode));
       }
 #endif
+      return !rv;
     }
   }
+  return false;
 }
 
 void QDBM_PersistentHash::starttransaction_phash(PHASH_MODE mode)
@@ -408,6 +411,8 @@ void QDBM_PersistentHash::doclear_phash()
           count++;
           printf("dpout: deleted %0llx\n", *((Key *)key));
         }
+#else
+        rv = rv; // compiler warning
 #endif
         free(key);
       }
