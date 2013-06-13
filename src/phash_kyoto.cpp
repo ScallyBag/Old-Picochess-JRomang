@@ -282,7 +282,6 @@ int KYOTO_PersistentHash::prune_below_phash(int depth)
         delete[] key;
       }
       delete c;
-      sync_cout << PersHashFile->error().message() << sync_endl;
     }
   }
   return count;
