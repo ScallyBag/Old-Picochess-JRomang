@@ -23,6 +23,8 @@
 #if PA_GTB
 #include "phash.h"
 #include "phash_qdbm.h"
+#include <ctime>
+#include <sys/stat.h>
 
 QDBM_PersistentHash QDBM;
 
@@ -199,8 +201,8 @@ void QDBM_PersistentHash::convert_phash(std::string &srcname)
   
   srcfile = dpopen(srcname.c_str(), DP_OREADER, 0);
   if (srcfile) {
-#ifdef USE_LMDB
-    // we're converting to LMDB -- it's a QDBM file, so yes, we need to convert
+#if defined(USE_LMDB) || defined(USE_KYOTO)
+    // we're converting to some other format -- it's a QDBM file, so yes, we need to convert
     needsconvert = 1;
 #else
     needsconvert = needsconvert_phash(srcfile);
@@ -210,6 +212,15 @@ void QDBM_PersistentHash::convert_phash(std::string &srcname)
   if (needsconvert) {
     std::string backupname = srcname + ".old";
     DEPOT *backupfile;
+    struct stat st;
+
+    if (!stat(backupname.c_str(), &st)) {
+      // file exists
+      std::time_t t = std::time(0);
+      std::ostringstream oss;
+      oss << std::hex << t;
+      backupname = srcname + "_" + oss.str() + ".old";
+    }
     
     rename(srcname.c_str(), backupname.c_str());
     backupfile = dpopen(backupname.c_str(),DP_OREADER, 0);
