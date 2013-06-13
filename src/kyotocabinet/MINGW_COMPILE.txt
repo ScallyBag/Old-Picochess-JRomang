@@ -1,6 +1,6 @@
 Compiling Kyoto Cabinet with MinGW
 
-Compile and install regex (in src/mingw-libgnurx-2.5.1, or from http://sourceforge.net/projects/mingw/files/Other/UserContributed/regex/mingw-regex-2.5.1/). This is a little tricky because you'll need versions for 32- and 64-bit MinGW. So first, using 64-bit MinGW:
+Compile and install regex (in src/kyotocabinet/mingw-libgnurx-2.5.1, or from http://sourceforge.net/projects/mingw/files/Other/UserContributed/regex/mingw-regex-2.5.1/). This is a little tricky because you'll need versions for 32- and 64-bit MinGW. So first, using 64-bit MinGW:
 
 	> make clean
 	> ./configure --prefix=/mingw/mingw64/x86_64-w64-mingw32 [your path may be different]
