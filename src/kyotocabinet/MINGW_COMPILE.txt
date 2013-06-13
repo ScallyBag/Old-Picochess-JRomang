@@ -1,0 +1,28 @@
+Compiling Kyoto Cabinet with MinGW
+
+Compile and install regex (in src/mingw-libgnurx-2.5.1, or from http://sourceforge.net/projects/mingw/files/Other/UserContributed/regex/mingw-regex-2.5.1/). This is a little tricky because you'll need versions for 32- and 64-bit MinGW. So first, using 64-bit MinGW:
+
+	> make clean
+	> ./configure --prefix=/mingw/mingw64/x86_64-w64-mingw32 [your path may be different]
+	> make 
+	> make install
+
+Then using 32-bit MinGW:
+
+	> make clean
+	> ./configure --prefix=/mingw/mingw32/i686-w64-mingw32
+	> make
+	> make install
+
+Now Kyoto Cabinet. Stockfish doesn't use the compression features of Kyoto Cabinet, so we're not compiling zlib into it. If you want, you can build and install zlib as above and remove the --disable-zlib flag below.
+
+	32-bit:
+	> ./configure --disable-zlib --enable-static
+	> make
+
+	64-bit: this is slightly more complicated because of type-casting problems
+	> ./configure --disable-zlib --enable-static
+	now edit the makefile and add the -fpermissive flag to CXXFLAGS
+	> make
+
+Congratulations, you did it.
