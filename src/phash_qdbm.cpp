@@ -201,7 +201,7 @@ void QDBM_PersistentHash::convert_phash(std::string &srcname)
   
   srcfile = dpopen(srcname.c_str(), DP_OREADER, 0);
   if (srcfile) {
-#if PHASH_BACKEND_PREF != PHASH_BACKEND_QDBM
+#if defined(USE_KYOTO) || defined(USE_LMDB)
     // we're converting to some other format -- it's a QDBM file, so yes, we need to convert
     needsconvert = 1;
 #else
@@ -472,15 +472,6 @@ void QDBM_PersistentHash::domerge_phash()
       sync_cout << "info string Persistent Hash merged " << merged << " records (from " << count << " total) from file " << mergename << "." << sync_endl;
     }
   }
-}
-
-int QDBM_PersistentHash::getsize_phash()
-{
-  if (PersHashFile) {
-    //return dpfsiz(PersHashFile);
-    return count_phash() * (int)sizeof(t_phash_data);
-  }
-  return 0;
 }
 
 int QDBM_PersistentHash::probe_phash(const Key key, Depth *d)

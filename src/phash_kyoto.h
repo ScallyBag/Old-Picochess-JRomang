@@ -43,7 +43,7 @@ public:
   
 private:
   int count_phash();
-  HashDB *open_phash(PHASH_MODE mode);
+  HashDB *open_phash(std::string &filename, PHASH_MODE mode);
   bool dostore_phash(const Key key, t_phash_data &data);
   void close_phash(HashDB *depot);
   void clear_phash();

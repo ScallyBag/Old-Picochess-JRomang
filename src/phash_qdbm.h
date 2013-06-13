@@ -47,7 +47,6 @@ private:
   void merge_phash();
   void domerge_phash();
   void optimize_phash();
-  int getsize_phash();
   int prune_below_phash(int depth);
   void convert_phash(std::string &filename);
   bool needsconvert_phash(DEPOT *depot);

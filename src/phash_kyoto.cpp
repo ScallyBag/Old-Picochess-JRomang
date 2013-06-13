@@ -141,10 +141,9 @@ void KYOTO_PersistentHash::wantsmerge_phash()
   }
 }
 
-HashDB *KYOTO_PersistentHash::open_phash(PHASH_MODE mode)
+HashDB *KYOTO_PersistentHash::open_phash(std::string &filename, PHASH_MODE mode)
 {
   bool usePersHash = Options["Use Persistent Hash"];
-  std::string filename = Options["Persistent Hash File"];
   int hashsize = Options["Persistent Hash Size"];
   HashDB *hash = NULL;
   
@@ -237,7 +236,8 @@ void KYOTO_PersistentHash::starttransaction_phash(PHASH_MODE mode)
       prune_phash();
     }
   }
-  PersHashFile = open_phash(mode);
+  std::string filename = Options["Persistent Hash File"];
+  PersHashFile = open_phash(filename, mode);
   if (PersHashFile) {
     PersHashFile->begin_transaction();
   }
@@ -261,18 +261,22 @@ int KYOTO_PersistentHash::prune_below_phash(int depth)
     if (c) {
       char *key;
       size_t ksize;
-      while ((key = c->get_key(&ksize))) {
-        t_phash_data data;
-        int32_t dsize = PersHashFile->get((const char *)key, ksize, (char *)&data, sizeof(t_phash_data));
+      t_phash_data data;
+      size_t dsize;
+      c->jump();
+      while((key = c->get(&ksize, (const char **)&data, &dsize))) {
         if (dsize == sizeof(t_phash_data)) {
           if (data.d <= depth) {
-            c->remove();
+            c->remove(); // steps
             count++;
+          } else {
+            c->step();
           }
         }
         delete[] key;
       }
       delete c;
+      sync_cout << PersHashFile->error().message() << sync_endl;
     }
   }
   return count;
@@ -328,9 +332,6 @@ void KYOTO_PersistentHash::doclear_phash()
   if (PersHashFile) {
     PersHashFile->clear();
     optimize_phash();
-#ifdef PHASH_DEBUG
-    count_phash();
-#endif
   }
 }
 
@@ -340,34 +341,48 @@ void KYOTO_PersistentHash::domerge_phash()
     std::string mergename = Options["Persistent Hash Merge File"];
     int mindepth = Options["Persistent Hash Depth"];
     HashDB *mergefile;
-    
-    mergefile = open_phash(PHASH_MODE_READ);
+
+    mergefile = open_phash(mergename, PHASH_MODE_READ);
     if (mergefile) {
-      int merged = 0;
-      int count = 0;
-      DB::Cursor *c = PersHashFile->cursor();
-      if (c) {
-        char *key;
-        size_t ksize;
-        while ((key = c->get_key(&ksize))) {
-          t_phash_data data;
-          int32_t dsize = PersHashFile->get((const char *)key, ksize, (char *)&data, sizeof(t_phash_data));
-          if (dsize == sizeof(t_phash_data)) {
-            if (data.d >= mindepth) {
-              Depth depth;
-              probe_phash(*((const Key *)key), &depth);
-              if (data.d > depth) {
-                PersHashFile->set((const char *)key, sizeof(Key), (const char *)&data, sizeof(t_phash_data));
-                merged++;
-              }
+      // define the visitor
+      class VisitorImpl : public DB::Visitor {
+        // call back function for an existing record
+        const char* visit_full(const char* kbuf, size_t ksiz,
+                               const char* vbuf, size_t vsiz, size_t *sp) {
+          t_phash_data *data = (t_phash_data *)vbuf;
+          if (data->d >= mindepth) {
+            Depth depth;
+            parent->probe_phash(*((const Key *)kbuf), &depth);
+            if (data->d > depth) {
+              target->set(kbuf, sizeof(Key), vbuf, sizeof(t_phash_data));
+              merged++;
             }
           }
-          delete[] key;
+          total++;
+          return NOP;
         }
-        delete c;
-      }
+        // call back function for an empty record space
+        const char* visit_empty(const char* kbuf, size_t ksiz, size_t *sp) {
+          //cerr << string(kbuf, ksiz) << " is missing" << endl;
+          return NOP;
+        }
+      public:
+        KYOTO_PersistentHash *parent;
+        HashDB *target;
+        int mindepth;
+        unsigned merged;
+        unsigned total;
+      } visitor;
+
+      visitor.parent = this;
+      visitor.target = PersHashFile;
+      visitor.mindepth = mindepth;
+      visitor.merged = 0;
+      visitor.total = 0;
+      mergefile->iterate(&visitor, false);
+
       close_phash(mergefile);
-      sync_cout << "info string Persistent Hash merged " << merged << " records (from " << count << " total) from file " << mergename << "." << sync_endl;
+      sync_cout << "info string Persistent Hash merged " << visitor.merged << " records (from " << visitor.total << " total) from file " << mergename << "." << sync_endl;
     }
   }
 }
@@ -399,29 +414,29 @@ int KYOTO_PersistentHash::probe_phash(const Key key, Depth *d)
 void KYOTO_PersistentHash::to_tt_phash()
 {
   if (PersHashFile) {
-#ifdef PHASH_DEBUG
-    int count = 0;
-#endif
-    DB::Cursor *c = PersHashFile->cursor();
-    if (c) {
-      char *key;
-      size_t ksize;
-      while ((key = c->get_key(&ksize))) {
-        t_phash_data data;
-        int32_t dsize = PersHashFile->get((const char *)key, ksize, (char *)&data, sizeof(t_phash_data));
-        if (dsize == sizeof(t_phash_data)) {
-          TT.store(*((Key *)key), (Value)data.v, (Bound)data.t, (Depth)data.d, (Move)data.m, (Value)data.statV, (Value)data.kingD, false);
-#ifdef PHASH_DEBUG
-          printf("get(): pull %llx\n", *((Key *)key));
-          count++;
-#endif
-        }
-        delete[] key;
+    // define the visitor
+    class VisitorImpl : public DB::Visitor {
+      // call back function for an existing record
+      const char* visit_full(const char* kbuf, size_t ksiz,
+                             const char* vbuf, size_t vsiz, size_t *sp) {
+        t_phash_data *data = (t_phash_data *)vbuf;
+        TT.store(*((Key *)kbuf), (Value)data->v, (Bound)data->t, (Depth)data->d, (Move)data->m, (Value)data->statV, (Value)data->kingD, false);
+        count++;
+        return NOP;
       }
-      delete c;
-    }
+      // call back function for an empty record space
+      const char* visit_empty(const char* kbuf, size_t ksiz, size_t *sp) {
+        //cerr << string(kbuf, ksiz) << " is missing" << endl;
+        return NOP;
+      }
+    public:
+      unsigned count;
+    } visitor;
+
+    visitor.count = 0;
+    PersHashFile->iterate(&visitor, false);
 #ifdef PHASH_DEBUG
-    printf("restored %d records\n", count);
+    printf("restored %d records\n", visitor.count);
 #endif
   }
 }
