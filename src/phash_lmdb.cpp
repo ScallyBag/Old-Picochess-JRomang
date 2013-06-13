@@ -22,6 +22,9 @@
 ////
 
 #include "phash.h"
+
+#ifdef USE_LMDB
+
 #include "phash_lmdb.h"
 #include "phash_qdbm.h"
 #include <sys/stat.h>
@@ -761,3 +764,5 @@ int LMDB_PersistentHash::count_phash()
   }
   return 0;
 }
+
+#endif // USE_LMDB

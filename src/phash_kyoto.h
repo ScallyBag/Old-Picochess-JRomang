@@ -13,6 +13,9 @@
 #include <string>
 
 #include "phash.h"
+
+#ifdef USE_KYOTO
+
 #include "kyotocabinet/kchashdb.h"
 #include "misc.h"
 #include "thread.h"
@@ -60,5 +63,7 @@ private:
 };
 
 extern KYOTO_PersistentHash KYOTO;
+
+#endif // USE_KYOTO
 
 #endif

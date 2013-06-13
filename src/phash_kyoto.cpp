@@ -20,8 +20,11 @@
 ////
 //// Includes
 ////
-#if PA_GTB
+
 #include "phash.h"
+
+#ifdef USE_KYOTO
+
 #include "phash_kyoto.h"
 #include "phash_qdbm.h"
 
@@ -443,4 +446,4 @@ int KYOTO_PersistentHash::count_phash()
   return (int)count;
 }
 
-#endif
+#endif // USE_KYOTO

@@ -16,9 +16,9 @@
 //#define PHASH_DEBUG
 //#define EPD_DEBUG
 
-//#define PHASH_BACKEND_PREF 0
-//#define PHASH_BACKEND_PREF 1
-#define PHASH_BACKEND_PREF 2
+// note that these are mutually exclusive
+//#define USE_LMDB
+#define USE_KYOTO
 
 #ifdef UNUSED
 #elif defined(__GNUC__)
@@ -45,13 +45,14 @@ typedef enum { PHASH_BACKEND_QDBM, PHASH_BACKEND_LMDB, PHASH_BACKEND_KYOTO } PHA
 class PersistentHash {
 
 public:
-#if PHASH_BACKEND_PREF == PHASH_BACKEND_LMDB
-  static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_LMDB);
-#elif PHASH_BACKEND_PREF == PHASH_BACKEND_QDBM
-  static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_QDBM);
-#else 
+#if defined(USE_KYOTO)
   static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_KYOTO);
+#elif defined(USE_LMDB)
+  static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_LMDB);
+#else
+  static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_QDBM);
 #endif
+
   static void import_epd(std::istringstream& is);
   static void exercise(std::istringstream& is);
 

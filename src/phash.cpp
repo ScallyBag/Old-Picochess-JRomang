@@ -29,13 +29,15 @@
 
 PersistentHash &PersistentHash::getInstance(PHASH_BACKEND backend)
 {
-  if (backend == PHASH_BACKEND_LMDB) {
-    return LMDB;
-  } else if (backend == PHASH_BACKEND_KYOTO) {
+#if defined(USE_KYOTO) || defined(USE_LMDB)
+  if (backend != PHASH_BACKEND_QDBM)
+#if defined(USE_KYOTO)
     return KYOTO;
-  } else {
-    return QDBM;
-  }
+#else
+  return LMDB;
+#endif
+#endif
+  return QDBM;
 }
 
 #define wantsToken(token) (token == "bm" || token == "ce" || token == "acd")

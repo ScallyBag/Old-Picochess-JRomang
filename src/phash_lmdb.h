@@ -13,6 +13,9 @@
 #include <string>
 
 #include "phash.h"
+
+#ifdef USE_LMDB
+
 #include "lmdb/lmdb.h"
 #include "misc.h"
 #include "thread.h"
@@ -101,5 +104,7 @@ private:
 };
 
 extern LMDB_PersistentHash LMDB;
+
+#endif // USE_LMDB
 
 #endif

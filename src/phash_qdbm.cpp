@@ -20,7 +20,7 @@
 ////
 //// Includes
 ////
-#if PA_GTB
+
 #include "phash.h"
 #include "phash_qdbm.h"
 #include <ctime>
@@ -201,7 +201,7 @@ void QDBM_PersistentHash::convert_phash(std::string &srcname)
   
   srcfile = dpopen(srcname.c_str(), DP_OREADER, 0);
   if (srcfile) {
-#if defined(USE_LMDB) || defined(USE_KYOTO)
+#if PHASH_BACKEND_PREF != PHASH_BACKEND_QDBM
     // we're converting to some other format -- it's a QDBM file, so yes, we need to convert
     needsconvert = 1;
 #else
@@ -555,5 +555,3 @@ int QDBM_PersistentHash::count_phash()
   }
   return count;
 }
-
-#endif
