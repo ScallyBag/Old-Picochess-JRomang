@@ -16,7 +16,7 @@
 
 #ifdef USE_KYOTO
 
-#include "kyotocabinet/kchashdb.h"
+#include <kchashdb.h>
 #include "misc.h"
 #include "thread.h"
 #include "tt.h"

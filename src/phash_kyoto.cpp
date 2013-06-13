@@ -27,6 +27,7 @@
 
 #include "phash_kyoto.h"
 #include "phash_qdbm.h"
+#include <sys/stat.h>
 
 using namespace kyotocabinet;
 
@@ -146,17 +147,22 @@ HashDB *KYOTO_PersistentHash::open_phash(std::string &filename, PHASH_MODE mode)
   bool usePersHash = Options["Use Persistent Hash"];
   int hashsize = Options["Persistent Hash Size"];
   HashDB *hash = NULL;
+  struct stat st;
   
   if (usePersHash) {
     hash = new HashDB;
     if (hash) {
+      if (stat(filename.c_str(), &st) != 0) { // force file creation if !exists
+        mode = PHASH_MODE_WRITE;
+      }
       if (mode == PHASH_MODE_WRITE) {
         hash->tune_options(HashDB::TSMALL);
         if (hashsize > 64) hash->tune_map((int64_t)hashsize * 1024LL * 1024LL);
       }
       if (!hash->open(filename, (mode == PHASH_MODE_WRITE) ? (HashDB::OWRITER | HashDB::OCREATE) : HashDB::OREADER)) {
-        // error
+#ifdef PHASH_DEBUG
         printf("open(): %s\n", hash->error().message());
+#endif
         delete hash;
         hash = NULL;
       }
@@ -289,7 +295,7 @@ int KYOTO_PersistentHash::prune_below_phash(int depth)
 void KYOTO_PersistentHash::doprune_phash()
 {
   if (PersHashFile) {
-    int desiredFileSize = Options["Persistent Hash Size"] * (1024 * 1024);
+    size_t desiredFileSize = Options["Persistent Hash Size"] * (1024 * 1024);
     int hashDepth = Options["Persistent Hash Depth"];
     int pruneDepth = hashDepth;
     int totalPruned = 0;
@@ -347,9 +353,9 @@ void KYOTO_PersistentHash::domerge_phash()
       // define the visitor
       class VisitorImpl : public DB::Visitor {
         // call back function for an existing record
-        const char* visit_full(const char* kbuf, size_t ksiz,
-                               const char* vbuf, size_t vsiz, size_t *sp) {
-          t_phash_data *data = (t_phash_data *)vbuf;
+        const char* visit_full(const char* kbuf, size_t UNUSED(ksiz),
+                               const char* vbuf, size_t UNUSED(vsiz), size_t *UNUSED(sp)) {
+          t_phash_data *data = (t_phash_data *)(intptr_t)vbuf;
           if (data->d >= mindepth) {
             Depth depth;
             parent->probe_phash(*((const Key *)kbuf), &depth);
@@ -362,7 +368,7 @@ void KYOTO_PersistentHash::domerge_phash()
           return NOP;
         }
         // call back function for an empty record space
-        const char* visit_empty(const char* kbuf, size_t ksiz, size_t *sp) {
+        const char* visit_empty(const char* UNUSED(kbuf), size_t UNUSED(ksiz), size_t *UNUSED(sp)) {
           //cerr << string(kbuf, ksiz) << " is missing" << endl;
           return NOP;
         }
@@ -417,15 +423,15 @@ void KYOTO_PersistentHash::to_tt_phash()
     // define the visitor
     class VisitorImpl : public DB::Visitor {
       // call back function for an existing record
-      const char* visit_full(const char* kbuf, size_t ksiz,
-                             const char* vbuf, size_t vsiz, size_t *sp) {
-        t_phash_data *data = (t_phash_data *)vbuf;
-        TT.store(*((Key *)kbuf), (Value)data->v, (Bound)data->t, (Depth)data->d, (Move)data->m, (Value)data->statV, (Value)data->kingD, false);
+      const char* visit_full(const char* kbuf, size_t UNUSED(ksiz),
+                             const char* vbuf, size_t UNUSED(vsiz), size_t *UNUSED(sp)) {
+        t_phash_data *data = (t_phash_data *)(intptr_t)vbuf;
+        TT.store(*((Key *)(intptr_t)kbuf), (Value)data->v, (Bound)data->t, (Depth)data->d, (Move)data->m, (Value)data->statV, (Value)data->kingD, false);
         count++;
         return NOP;
       }
       // call back function for an empty record space
-      const char* visit_empty(const char* kbuf, size_t ksiz, size_t *sp) {
+      const char* visit_empty(const char* UNUSED(kbuf), size_t UNUSED(ksiz), size_t *UNUSED(sp)) {
         //cerr << string(kbuf, ksiz) << " is missing" << endl;
         return NOP;
       }

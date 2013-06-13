@@ -13,7 +13,7 @@
 #include "ucioption.h"
 #include <sstream>
 
-#define PHASH_DEBUG
+//#define PHASH_DEBUG
 //#define EPD_DEBUG
 
 // note that these are mutually exclusive
