@@ -174,6 +174,7 @@ HashDB *KYOTO_PersistentHash::open_phash(std::string &filename, PHASH_MODE mode)
 void KYOTO_PersistentHash::close_phash(HashDB *hash)
 {
   hash->close();
+  delete hash;
 }
 
 bool KYOTO_PersistentHash::dostore_phash(const Key key, t_phash_data &data)
