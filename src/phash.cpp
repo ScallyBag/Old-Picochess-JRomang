@@ -92,7 +92,7 @@ void PersistentHash::import_epd(std::istringstream& is) {
         sync_cout << name << ": " << token << sync_endl;
 #endif
       }
-    } while (iss >> token && !wantsToken(token));
+    } while (iss >> token);
     if (v == VALUE_NONE && noce == "noce") {
       v = pos.side_to_move() == WHITE ? Value(VALUE_KNOWN_WIN) : Value(-VALUE_KNOWN_WIN);
     }

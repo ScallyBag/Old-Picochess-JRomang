@@ -382,15 +382,15 @@ Move san_to_move(Position& pos, std::string& str)
   if (castles) { // chess 960?
     if (uci == "0-0" || uci == "O-O") {
       if (pos.side_to_move() == WHITE) {
-        move = make<CASTLE>(SQ_E1, SQ_G1);
+        move = make<CASTLE>(SQ_E1, SQ_H1);
       } else {
-        move = make<CASTLE>(SQ_E8, SQ_G8);
+        move = make<CASTLE>(SQ_E8, SQ_H8);
       }
     } else if (uci == "0-0-0" || uci == "O-O-O") {
       if (pos.side_to_move() == WHITE) {
-        move = make<CASTLE>(SQ_E1, SQ_C1);
+        move = make<CASTLE>(SQ_E1, SQ_A1);
       } else {
-        move = make<CASTLE>(SQ_E8, SQ_C8);
+        move = make<CASTLE>(SQ_E8, SQ_A8);
       }
     }
     if (pos.is_pseudo_legal(move) && pos.pl_move_is_legal(move, pos.pinned_pieces())) {
