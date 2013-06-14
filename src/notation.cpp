@@ -342,6 +342,17 @@ Move san_to_move(Position& pos, std::string& str)
       default: return MOVE_NONE; // invalid
     }
     uci.erase(idx);
+  } else { // check the last char, is it QRBN?
+    char promo2 = uci.at(uci.size() - 1);
+    switch(promo2) {
+      case 'Q': promotion = QUEEN; break;
+      case 'R': promotion = ROOK; break;
+      case 'B': promotion = BISHOP; break;
+      case 'N': promotion = KNIGHT; break;
+      default: ; // nixda
+    }
+    if (promotion != NO_PIECE_TYPE)
+      uci.erase(uci.size() - 1);
   }
   idx = uci.find_first_of("x");
   if (idx != std::string::npos) {
