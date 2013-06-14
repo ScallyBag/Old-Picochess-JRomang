@@ -65,6 +65,7 @@ void PersistentHash::import_epd(std::istringstream& is) {
     Position pos;
     std::istringstream iss(line);
     std::string fen;
+    std::string field;
     Value v = VALUE_NONE;
     Move m = MOVE_NONE;
     Depth d = (Depth)(int)Options["Persistent Hash Depth"];
@@ -76,21 +77,33 @@ void PersistentHash::import_epd(std::istringstream& is) {
     sync_cout << pos.fen() << ": " << pos.key() << sync_endl;
 #endif
     do {
-      if (wantsToken(token)) {
-        std::string name = token;
-        iss >> token;
-        if (token.at(token.size()-1) == ';')
+      field = "";
+      do {
+        if (token.at(token.size()-1) == ';') {
           token.erase(token.size()-1);
-        if (name == "bm") {             // best move
-          m = san_to_move(pos, token);
-        } else if (name == "ce") {      // centipawn evaluation
-          v = uci_to_score(token);
-        } else if (name == "acd") {     // analysis count depth
-          d = (Depth)::atoi(token.c_str());
+          field += token;
+          break;
+        } else {
+          field += token + " ";
         }
+      } while (iss >> token);
+      if (!field.empty()) {
+        std::istringstream fss(field);
+        fss >> token;
+        if (wantsToken(token)) {
+          std::string name = token;
+          fss >> token;
+          if (name == "bm") {             // best move
+            m = san_to_move(pos, token);
+          } else if (name == "ce") {      // centipawn evaluation
+            v = uci_to_score(token);
+          } else if (name == "acd") {     // analysis count depth
+            d = (Depth)::atoi(token.c_str());
+          }
 #ifdef EPD_DEBUG
-        sync_cout << name << ": " << token << sync_endl;
+          sync_cout << name << ": " << token << sync_endl;
 #endif
+        }
       }
     } while (iss >> token);
     if (v == VALUE_NONE && noce == "noce") {
