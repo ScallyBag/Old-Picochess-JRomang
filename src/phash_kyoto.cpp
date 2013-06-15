@@ -401,9 +401,9 @@ size_t KYOTO_PersistentHash::getsize_phash()
   return 0;
 }
 
-int KYOTO_PersistentHash::probe_phash(const Key key, Depth *d)
+Move KYOTO_PersistentHash::probe_phash(const Key key, Depth *d)
 {
-  int rv = 0;
+  Move rv = MOVE_NONE;
   
   *d = DEPTH_ZERO;
   if (PersHashFile) {
@@ -411,7 +411,7 @@ int KYOTO_PersistentHash::probe_phash(const Key key, Depth *d)
     int32_t datasize = PersHashFile->get((const char *)&key, sizeof(Key), (char *)&data, sizeof(t_phash_data));
     if (datasize == sizeof(t_phash_data)) {
       *d = (Depth)data.d;
-      rv = 1;
+      rv = (Move)data.m;
     }
   }
   return rv;

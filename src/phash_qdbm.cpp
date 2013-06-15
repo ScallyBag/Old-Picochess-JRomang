@@ -474,9 +474,9 @@ void QDBM_PersistentHash::domerge_phash()
   }
 }
 
-int QDBM_PersistentHash::probe_phash(const Key key, Depth *d)
+Move QDBM_PersistentHash::probe_phash(const Key key, Depth *d)
 {
-  int rv = 0;
+  Move rv = MOVE_NONE;
   
   *d = DEPTH_ZERO;
   if (PersHashFile) {
@@ -486,7 +486,7 @@ int QDBM_PersistentHash::probe_phash(const Key key, Depth *d)
     datasize = dpgetwb(PersHashFile, (const char *)&key, (int)sizeof(Key), 0, (int)sizeof(t_phash_data), (char *)&data);
     if (datasize == sizeof(t_phash_data)) {
       *d = (Depth)data.d;
-      rv = 1;
+      rv = (Move)data.m;
     }
   }
   return rv;

@@ -227,6 +227,23 @@ void Search::think() {
       goto finalize;
   }
 
+#if PA_GTB
+  if (int hashAsBookDepth = Options["Persistent Hash As Book Depth"] && !Limits.infinite && !Limits.mate)
+  {
+    Depth depth;
+    Move hashMove;
+
+    PHInst.starttransaction_phash(PHASH_MODE_READ);
+    hashMove = PHInst.probe_phash(RootPos.key(), &depth);
+    PHInst.endtransaction_phash();
+    if (hashMove != MOVE_NONE && depth >= hashAsBookDepth)
+    {
+      std::swap(RootMoves[0], *std::find(RootMoves.begin(), RootMoves.end(), hashMove));
+      goto finalize;
+    }
+  }
+#endif
+
   if (Options["OwnBook"] && !Limits.infinite && !Limits.mate)
   {
       Move bookMove = book.probe(RootPos, Options["Book File"], Options["Best Book Move"]);

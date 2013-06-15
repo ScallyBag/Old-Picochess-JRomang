@@ -107,6 +107,7 @@ void init(OptionsMap& o) {
   o["Prune Persistent Hash"]       = Option(on_prune_phash);
   o["Persistent Hash Merge File"]  = Option("stockfish_merge.hsh");
   o["Merge Persistent Hash"]       = Option(on_merge_phash);
+  o["Persistent Hash As Book Depth"] = Option(0, 0, 99);
 #ifdef USE_EGTB
   o["UseGaviotaTb"]                = Option(true);
   o["ProbeOnlyAtRoot"]             = Option(false);
