@@ -66,8 +66,20 @@ void KYOTO_PersistentHash::init_phash()
   bool usePersHash = Options["Use Persistent Hash"];
   
   if (usePersHash) {
-    std::string persHashFilePath = Options["Persistent Hash File"];
-    std::string persHashMergePath = Options["Persistent Hash Merge File"];
+    std::string filename = Options["Persistent Hash File"];
+    std::string rawname;
+    std::string extensi;
+    size_t lastindex;
+
+    lastindex = filename.find_last_of(".");
+    if (lastindex != std::string::npos) {
+      rawname = filename.substr(0, lastindex);
+      extensi = filename.substr(lastindex, std::string::npos);
+    } else {
+      rawname = filename;
+      extensi = ".hsh";
+    }
+    PersHashPrunePath = rawname + "_pruned" + extensi;
 
     // convert from QDBM if necessary
     QDBM.init_phash();
@@ -173,8 +185,10 @@ HashDB *KYOTO_PersistentHash::open_phash(std::string &filename, PHASH_MODE mode)
 
 void KYOTO_PersistentHash::close_phash(HashDB *hash)
 {
-  hash->close();
-  delete hash;
+  if (hash) {
+    hash->close();
+    delete hash;
+  }
 }
 
 bool KYOTO_PersistentHash::dostore_phash(const Key key, t_phash_data &data)
@@ -270,10 +284,15 @@ int KYOTO_PersistentHash::prune_below_phash(int depth)
       size_t ksize;
       t_phash_data data;
       size_t dsize;
+      HashDB *prunefile = open_phash(PersHashPrunePath, PHASH_MODE_WRITE);
+
       c->jump();
       while((key = c->get(&ksize, (const char **)&data, &dsize))) {
         if (dsize == sizeof(t_phash_data)) {
           if (data.d <= depth) {
+            if (prunefile) {
+              prunefile->set((const char *)key, sizeof(Key), (const char *)&data, sizeof(t_phash_data));
+            }
             c->remove(); // steps
             count++;
           } else {
@@ -282,6 +301,7 @@ int KYOTO_PersistentHash::prune_below_phash(int depth)
         }
         delete[] key;
       }
+      close_phash(prunefile);
       delete c;
     }
   }

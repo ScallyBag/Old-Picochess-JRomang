@@ -60,6 +60,7 @@ private:
   bool PersHashWantsClear;
   bool PersHashWantsPrune;
   bool PersHashWantsMerge;
+  std::string PersHashPrunePath;
 };
 
 extern KYOTO_PersistentHash KYOTO;
