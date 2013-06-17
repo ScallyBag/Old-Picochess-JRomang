@@ -427,9 +427,38 @@ Move san_to_move(Position& pos, std::string& str)
   }
 
   Square tosquare = Square((torank * 8) + tofile);
-  
-  const Square *pl = pos.piece_list(pos.side_to_move(), piecetype);
-  int piececount = pos.piece_count(pos.side_to_move(), piecetype);
+  const Square *pl;
+  int piececount;
+
+  switch (piecetype) {
+    case PAWN:
+      pl = pos.list<PAWN>(pos.side_to_move());
+      piececount = pos.count<PAWN>(pos.side_to_move());
+      break;
+    case KNIGHT:
+      pl = pos.list<KNIGHT>(pos.side_to_move());
+      piececount = pos.count<KNIGHT>(pos.side_to_move());
+      break;
+    case BISHOP:
+      pl = pos.list<BISHOP>(pos.side_to_move());
+      piececount = pos.count<BISHOP>(pos.side_to_move());
+      break;
+    case ROOK:
+      pl = pos.list<ROOK>(pos.side_to_move());
+      piececount = pos.count<ROOK>(pos.side_to_move());
+      break;
+    case QUEEN:
+      pl = pos.list<QUEEN>(pos.side_to_move());
+      piececount = pos.count<QUEEN>(pos.side_to_move());
+      break;
+    case KING:
+      pl = pos.list<KING>(pos.side_to_move());
+      piececount = pos.count<KING>(pos.side_to_move());
+      break;
+    default:
+      return MOVE_NONE; // invalid
+  }
+
   if (piececount == 1) {
     if (piecetype != PAWN || !capture) {
       move = test_move<SAN_MOVE_NORMAL>(pos, *pl, tosquare, promotion);
