@@ -256,9 +256,10 @@ void QDBM_PersistentHash::close_phash(DEPOT *depot)
 bool QDBM_PersistentHash::store_phash(const Key key, t_phash_data &data)
 {
   Depth oldDepth = DEPTH_ZERO;
-  
+  bool isRoot;
+
   if (PersHashFile) {
-    probe_phash(key, &oldDepth);
+    probe_phash(key, oldDepth, isRoot);
     if (data.d >= oldDepth) {
       int rv;
       rv = dpput(PersHashFile, (const char *)&key, (int)sizeof(Key), (const char *)&data, (int)sizeof(t_phash_data), DP_DOVER);
@@ -278,10 +279,11 @@ bool QDBM_PersistentHash::store_phash(const Key key, t_phash_data &data)
 bool QDBM_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD)
 {
   Depth oldDepth = DEPTH_ZERO;
+  bool isRoot;
 
   if (PersHashFile) {
-    probe_phash(key, &oldDepth);
-    if (d >= oldDepth) {
+    probe_phash(key, oldDepth, isRoot);
+    if (d >= oldDepth && !(isRoot && !(t & BOUND_ROOT))) {
       t_phash_data data;
       int rv;
 
@@ -456,9 +458,10 @@ void QDBM_PersistentHash::domerge_phash()
         datasize = dpgetwb(mergefile, (const char *)key, (int)sizeof(Key), 0, (int)sizeof(t_phash_data), (char *)&data);
         if (datasize == sizeof(t_phash_data)) {
           if (data.d >= mindepth) {
-            Depth depth;            
-            probe_phash(*((const Key *)key), &depth);
-            if (data.d > depth) {
+            Depth depth;
+            bool isRoot;
+            probe_phash(*((const Key *)key), depth, isRoot);
+            if (data.d > depth && !(isRoot && !(data.t & BOUND_ROOT))) {
               dpput(PersHashFile, (const char *)key, (int)sizeof(Key), (const char *)&data, (int)sizeof(t_phash_data), DP_DOVER);
               merged++;
             }
@@ -474,18 +477,20 @@ void QDBM_PersistentHash::domerge_phash()
   }
 }
 
-Move QDBM_PersistentHash::probe_phash(const Key key, Depth *d)
+Move QDBM_PersistentHash::probe_phash(const Key key, Depth &d, bool &isRoot)
 {
   Move rv = MOVE_NONE;
   
-  *d = DEPTH_ZERO;
+  d = DEPTH_ZERO;
+  isRoot = false;
   if (PersHashFile) {
     t_phash_data data;
     int datasize = 0;
     
     datasize = dpgetwb(PersHashFile, (const char *)&key, (int)sizeof(Key), 0, (int)sizeof(t_phash_data), (char *)&data);
     if (datasize == sizeof(t_phash_data)) {
-      *d = (Depth)data.d;
+      d = (Depth)data.d;
+      isRoot = (data.t & BOUND_ROOT) ? true : false;
       rv = (Move)data.m;
     }
   }

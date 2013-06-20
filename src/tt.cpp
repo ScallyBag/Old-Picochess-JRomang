@@ -151,6 +151,7 @@ void TranspositionTable<PHEntry>::to_phash() {
   struct timeval tv1, tv2;
   unsigned entries = 0;
   unsigned count = 0;
+  unsigned rootcount = 0;
 
   gettimeofday(&tv1, NULL);
 #endif
@@ -163,9 +164,10 @@ void TranspositionTable<PHEntry>::to_phash() {
     if ((key = phe->fullkey())) {
       TTEntry *tte = TT.probe(key);
       if (tte && tte->type() == BOUND_EXACT && tte->depth() >= minDepth) { // double-check criteria
-        if (PHInst.store_phash(key, tte->value(), tte->type(), tte->depth(), tte->move(), tte->eval_value(), tte->eval_margin())) {
+        if (PHInst.store_phash(key, tte->value(), phe->fulltype(), tte->depth(), tte->move(), tte->eval_value(), tte->eval_margin())) {
 #ifdef PHASH_DEBUG
-        count++;
+          if (phe->fulltype() & BOUND_ROOT) rootcount++;
+          count++;
 #endif
         }
       }
@@ -179,7 +181,7 @@ void TranspositionTable<PHEntry>::to_phash() {
 #ifdef PHASH_DEBUG
   gettimeofday(&tv2, NULL);
   sync_cout << "\nTranspositionTable<PHEntry>::to_phash stored "
-            << count << " entries (" << entries << " total) in "
+            << count << " entries (" << rootcount << " root, " << entries << " total) in "
             << ((tv2.tv_sec * 1000.) + (tv2.tv_usec / 1000.) - (tv1.tv_sec * 1000.) + (tv1.tv_usec / 1000.))
             << " milliseconds.\n" << sync_endl;
 #endif

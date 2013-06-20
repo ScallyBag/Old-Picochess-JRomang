@@ -208,10 +208,11 @@ bool KYOTO_PersistentHash::dostore_phash(const Key key, t_phash_data &data)
 bool KYOTO_PersistentHash::store_phash(const Key key, t_phash_data &data)
 {
   Depth oldDepth = DEPTH_ZERO;
-  
+  bool isRoot;
+
   if (PersHashFile) {
-    probe_phash(key, &oldDepth);
-    if (data.d >= oldDepth) {
+    probe_phash(key, oldDepth, isRoot);
+    if (data.d >= oldDepth && !(isRoot && !(data.t & BOUND_ROOT))) {
       return dostore_phash(key, data);
     }
   }
@@ -221,10 +222,11 @@ bool KYOTO_PersistentHash::store_phash(const Key key, t_phash_data &data)
 bool KYOTO_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD)
 {
   Depth oldDepth = DEPTH_ZERO;
+  bool isRoot;
 
   if (PersHashFile) {
-    probe_phash(key, &oldDepth);
-    if (d >= oldDepth) {
+    probe_phash(key, oldDepth, isRoot);
+    if (d >= oldDepth && !(isRoot && !(t & BOUND_ROOT))) {
       t_phash_data data;
 
       data.v = v;
@@ -378,8 +380,9 @@ void KYOTO_PersistentHash::domerge_phash()
           t_phash_data *data = (t_phash_data *)(intptr_t)vbuf;
           if (data->d >= mindepth) {
             Depth depth;
-            parent->probe_phash(*((const Key *)kbuf), &depth);
-            if (data->d > depth) {
+            bool isRoot;
+            parent->probe_phash(*((const Key *)kbuf), depth, isRoot);
+            if (data->d > depth && !(isRoot && !(data->t & BOUND_ROOT))) {
               target->set(kbuf, sizeof(Key), vbuf, sizeof(t_phash_data));
               merged++;
             }
@@ -421,16 +424,18 @@ size_t KYOTO_PersistentHash::getsize_phash()
   return 0;
 }
 
-Move KYOTO_PersistentHash::probe_phash(const Key key, Depth *d)
+Move KYOTO_PersistentHash::probe_phash(const Key key, Depth &d, bool &isRoot)
 {
   Move rv = MOVE_NONE;
   
-  *d = DEPTH_ZERO;
+  d = DEPTH_ZERO;
+  isRoot = false;
   if (PersHashFile) {
     t_phash_data data;
     int32_t datasize = PersHashFile->get((const char *)&key, sizeof(Key), (char *)&data, sizeof(t_phash_data));
     if (datasize == sizeof(t_phash_data)) {
-      *d = (Depth)data.d;
+      d = (Depth)data.d;
+      isRoot = (data.t & BOUND_ROOT) ? true : false;
       rv = (Move)data.m;
     }
   }
@@ -446,8 +451,11 @@ void KYOTO_PersistentHash::to_tt_phash()
       const char* visit_full(const char* kbuf, size_t UNUSED(ksiz),
                              const char* vbuf, size_t UNUSED(vsiz), size_t *UNUSED(sp)) {
         t_phash_data *data = (t_phash_data *)(intptr_t)vbuf;
-        TT.store(*((Key *)(intptr_t)kbuf), (Value)data->v, (Bound)data->t, (Depth)data->d, (Move)data->m, (Value)data->statV, (Value)data->kingD, false);
+        TT.store(*((Key *)(intptr_t)kbuf), (Value)data->v, (Bound)(data->t & ~BOUND_ROOT), (Depth)data->d, (Move)data->m, (Value)data->statV, (Value)data->kingD, false);
+#ifdef PHASH_DEBUG
+        if (data->t & BOUND_ROOT) rootcount++;
         count++;
+#endif
         return NOP;
       }
       // call back function for an empty record space
@@ -457,12 +465,13 @@ void KYOTO_PersistentHash::to_tt_phash()
       }
     public:
       unsigned count;
+      unsigned rootcount;
     } visitor;
 
-    visitor.count = 0;
+    visitor.count = visitor.rootcount = 0;
     PersHashFile->iterate(&visitor, false);
 #ifdef PHASH_DEBUG
-    printf("restored %d records\n", visitor.count);
+    printf("restored %d records (%d root)\n", visitor.count, visitor.rootcount);
 #endif
   }
 }

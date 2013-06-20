@@ -110,7 +110,7 @@ void PersistentHash::import_epd(std::istringstream& is) {
       v = pos.side_to_move() == WHITE ? Value(VALUE_KNOWN_WIN) : Value(-VALUE_KNOWN_WIN);
     }
     if (v != VALUE_NONE && m != MOVE_NONE) {
-      if (PHInst.store_phash(pos.key(), v, BOUND_EXACT, d, m, v, VALUE_ZERO)) {
+      if (PHInst.store_phash(pos.key(), v, Bound((int)BOUND_EXACT | BOUND_ROOT), d, m, v, VALUE_ZERO)) {
         count++;
       }
     }

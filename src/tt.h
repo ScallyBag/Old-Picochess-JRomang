@@ -51,7 +51,7 @@ public:
     depth16      = (int16_t)d;
     evalValue    = (int16_t)ev;
     evalMargin   = (int16_t)em;
-    if (interested && b == BOUND_EXACT && m != MOVE_NONE && Options["Use Persistent Hash"]) {
+    if (interested && (b & ~BOUND_ROOT) == BOUND_EXACT && m != MOVE_NONE && Options["Use Persistent Hash"]) {
       if (d >= Options["Persistent Hash Depth"]) {
         phash_store(k64, v, b, d, m, ev, em);
       }
@@ -64,7 +64,7 @@ public:
   Depth depth() const       { return (Depth)depth16; }
   Move move() const         { return (Move)move16; }
   Value value() const       { return (Value)value16; }
-  Bound type() const        { return (Bound)bound; }
+  Bound type() const        { return (Bound)(bound & ~BOUND_ROOT); }
   int generation() const    { return (int)generation8; }
   Value eval_value() const  { return (Value)evalValue; }
   Value eval_margin() const { return (Value)evalMargin; }
@@ -97,7 +97,8 @@ public:
   Key fullkey() const       { return key64; }
   Depth depth() const       { return (Depth)depth16; }
   Move move() const         { return (Move)move16; }
-  Bound type() const        { return (Bound)bound; }
+  Bound type() const        { return (Bound)(bound & ~BOUND_ROOT); }
+  Bound fulltype() const    { return (Bound)bound; }
   int generation() const    { return (int)generation8; }
 
 private:

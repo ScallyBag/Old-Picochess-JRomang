@@ -232,11 +232,12 @@ void Search::think() {
   {
     Depth depth;
     Move hashMove;
+    bool isRoot;
 
     PHInst.starttransaction_phash(PHASH_MODE_READ);
-    hashMove = PHInst.probe_phash(RootPos.key(), &depth);
+    hashMove = PHInst.probe_phash(RootPos.key(), depth, isRoot);
     PHInst.endtransaction_phash();
-    if (hashMove != MOVE_NONE && depth >= hashAsBookDepth)
+    if (hashMove != MOVE_NONE && isRoot && depth >= hashAsBookDepth)
     {
       std::swap(RootMoves[0], *std::find(RootMoves.begin(), RootMoves.end(), hashMove));
       goto finalize;
@@ -366,6 +367,7 @@ namespace {
     Stack stack[MAX_PLY_PLUS_2], *ss = stack+1; // To allow referencing (ss-1)
     int depth, prevBestMoveChanges;
     Value bestValue, alpha, beta, delta;
+    int phDepth = Options["Persistent Hash Depth"];
 
 #if PA_GTB && defined(USE_EGTB)
     pos.set_tb_hits(0); // reset tbhits before doing the root search
@@ -447,6 +449,9 @@ namespace {
                 // entries have been overwritten during the search.
                 for (size_t i = 0; i <= PVIdx; i++)
                     RootMoves[i].insert_pv_in_tt(pos);
+
+                if (depth >= phDepth)
+                    PH.store(pos.key(), RootMoves[0].score, Bound((int)BOUND_EXACT | BOUND_ROOT), Depth(depth), RootMoves[0].pv[0], RootMoves[0].score, VALUE_ZERO);
 
                 // If search has been stopped return immediately. Sorting and
                 // writing PV back to TT is safe becuase RootMoves is still

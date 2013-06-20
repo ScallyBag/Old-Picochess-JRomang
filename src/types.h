@@ -174,6 +174,10 @@ enum Bound {
   BOUND_UPPER = 1,
   BOUND_LOWER = 2,
   BOUND_EXACT = BOUND_UPPER | BOUND_LOWER
+#if PA_GTB
+  ,
+  BOUND_ROOT = 0x10
+#endif
 };
 
 enum Value {
