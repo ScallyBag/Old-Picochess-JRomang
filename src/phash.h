@@ -16,8 +16,6 @@
 //#define PHASH_DEBUG
 //#define EPD_DEBUG
 
-// note that these are mutually exclusive
-//#define USE_LMDB
 #define USE_KYOTO
 
 #ifdef UNUSED
@@ -40,15 +38,13 @@ typedef struct _phash_data
 } t_phash_data;
 
 typedef enum { PHASH_MODE_READ, PHASH_MODE_WRITE } PHASH_MODE;
-typedef enum { PHASH_BACKEND_QDBM, PHASH_BACKEND_LMDB, PHASH_BACKEND_KYOTO } PHASH_BACKEND;
+typedef enum { PHASH_BACKEND_QDBM, PHASH_BACKEND_KYOTO } PHASH_BACKEND;
 
 class PersistentHash {
 
 public:
 #if defined(USE_KYOTO)
   static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_KYOTO);
-#elif defined(USE_LMDB)
-  static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_LMDB);
 #else
   static PersistentHash &getInstance(PHASH_BACKEND backend = PHASH_BACKEND_QDBM);
 #endif

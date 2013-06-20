@@ -201,7 +201,7 @@ void QDBM_PersistentHash::convert_phash(std::string &srcname)
   
   srcfile = dpopen(srcname.c_str(), DP_OREADER, 0);
   if (srcfile) {
-#if defined(USE_KYOTO) || defined(USE_LMDB)
+#if defined(USE_KYOTO)
     // we're converting to some other format -- it's a QDBM file, so yes, we need to convert
     needsconvert = 1;
 #else

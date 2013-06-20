@@ -13,8 +13,6 @@
 		F7802A06174CFDC300D3CEF8 /* bitcount.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7802A03174CFCC200D3CEF8 /* bitcount.cpp */; };
 		F784B96C1769078A007B0098 /* libkyotocabinet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F784B9691769076D007B0098 /* libkyotocabinet.a */; };
 		F784B96F176909AC007B0098 /* phash_kyoto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F784B96D176907C4007B0098 /* phash_kyoto.cpp */; };
-		F791ECC31761CBC300262B71 /* liblmdb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F7B1E7501761C97500ABCFE9 /* liblmdb.a */; };
-		F791ECCD1761CCCF00262B71 /* phash_lmdb.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F791ECCB1761CCCF00262B71 /* phash_lmdb.cpp */; };
 		F791ECD11761F13D00262B71 /* phash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F791ECD01761F13D00262B71 /* phash.cpp */; };
 		F7BE3E9F174280270021A427 /* benchmark.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7BE3E75174280270021A427 /* benchmark.cpp */; };
 		F7BE3EA0174280270021A427 /* bitbase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F7BE3E76174280270021A427 /* bitbase.cpp */; };
@@ -82,20 +80,6 @@
 			remoteGlobalIDString = F7B1E7431761C97400ABCFE9;
 			remoteInfo = kyotocabinet;
 		};
-		F791ECC01761CBBF00262B71 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = F7B1E7431761C97400ABCFE9;
-			remoteInfo = lmdb;
-		};
-		F7B1E74F1761C97500ABCFE9 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = F7B1E7441761C97400ABCFE9;
-			remoteInfo = lmdb;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -119,11 +103,8 @@
 		F784B9641769076C007B0098 /* kyotocabinet.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = kyotocabinet.xcodeproj; path = kyotocabinet/kyotocabinet.xcodeproj; sourceTree = "<group>"; };
 		F784B96D176907C4007B0098 /* phash_kyoto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = phash_kyoto.cpp; sourceTree = "<group>"; };
 		F784B96E176907DB007B0098 /* phash_kyoto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = phash_kyoto.h; sourceTree = "<group>"; };
-		F791ECCB1761CCCF00262B71 /* phash_lmdb.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = phash_lmdb.cpp; sourceTree = "<group>"; };
 		F791ECCE1761E61B00262B71 /* phash_qdbm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = phash_qdbm.h; sourceTree = "<group>"; };
-		F791ECCF1761EC4600262B71 /* phash_lmdb.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = phash_lmdb.h; sourceTree = "<group>"; };
 		F791ECD01761F13D00262B71 /* phash.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = phash.cpp; sourceTree = "<group>"; };
-		F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = lmdb.xcodeproj; path = lmdb/lmdb.xcodeproj; sourceTree = "<group>"; };
 		F7BE3E6817427FEF0021A427 /* stockfish */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = stockfish; sourceTree = BUILT_PRODUCTS_DIR; };
 		F7BE3E75174280270021A427 /* benchmark.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = benchmark.cpp; sourceTree = "<group>"; };
 		F7BE3E76174280270021A427 /* bitbase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = bitbase.cpp; sourceTree = "<group>"; };
@@ -177,7 +158,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				F784B96C1769078A007B0098 /* libkyotocabinet.a in Frameworks */,
-				F791ECC31761CBC300262B71 /* liblmdb.a in Frameworks */,
 				F757E724174F6E630034FC58 /* libqdbm.a in Frameworks */,
 				F750AF5C174F55FF00CA61BC /* libgtb.a in Frameworks */,
 			);
@@ -210,20 +190,11 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		F7B1E74C1761C97400ABCFE9 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				F7B1E7501761C97500ABCFE9 /* liblmdb.a */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		F7BE3E5F17427FEF0021A427 = {
 			isa = PBXGroup;
 			children = (
 				F750AF52174F559F00CA61BC /* gtb.xcodeproj */,
 				F784B9641769076C007B0098 /* kyotocabinet.xcodeproj */,
-				F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */,
 				F757E71C174F6E4A0034FC58 /* qdbm.xcodeproj */,
 				F7BE3E74174280270021A427 /* src */,
 				F7BE3E6917427FEF0021A427 /* Products */,
@@ -273,8 +244,6 @@
 				F7BE3E8D174280270021A427 /* pawns.h */,
 				F757E725174F6E8E0034FC58 /* phash.h */,
 				F791ECD01761F13D00262B71 /* phash.cpp */,
-				F791ECCB1761CCCF00262B71 /* phash_lmdb.cpp */,
-				F791ECCF1761EC4600262B71 /* phash_lmdb.h */,
 				F784B96D176907C4007B0098 /* phash_kyoto.cpp */,
 				F784B96E176907DB007B0098 /* phash_kyoto.h */,
 				F757E726174F6E8E0034FC58 /* phash_qdbm.cpp */,
@@ -317,7 +286,6 @@
 			);
 			dependencies = (
 				F784B96B17690784007B0098 /* PBXTargetDependency */,
-				F791ECC11761CBBF00262B71 /* PBXTargetDependency */,
 				F757E723174F6E5F0034FC58 /* PBXTargetDependency */,
 				F750AF5A174F55F900CA61BC /* PBXTargetDependency */,
 			);
@@ -355,10 +323,6 @@
 					ProjectRef = F784B9641769076C007B0098 /* kyotocabinet.xcodeproj */;
 				},
 				{
-					ProductGroup = F7B1E74C1761C97400ABCFE9 /* Products */;
-					ProjectRef = F7B1E74B1761C97400ABCFE9 /* lmdb.xcodeproj */;
-				},
-				{
 					ProductGroup = F757E71D174F6E4A0034FC58 /* Products */;
 					ProjectRef = F757E71C174F6E4A0034FC58 /* qdbm.xcodeproj */;
 				},
@@ -392,13 +356,6 @@
 			remoteRef = F784B9681769076D007B0098 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		F7B1E7501761C97500ABCFE9 /* liblmdb.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = liblmdb.a;
-			remoteRef = F7B1E74F1761C97500ABCFE9 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
 /* End PBXReferenceProxy section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -429,7 +386,6 @@
 				F7BE3EB6174296520021A427 /* egtb.cpp in Sources */,
 				F7802A06174CFDC300D3CEF8 /* bitcount.cpp in Sources */,
 				F757E727174F6E8E0034FC58 /* phash_qdbm.cpp in Sources */,
-				F791ECCD1761CCCF00262B71 /* phash_lmdb.cpp in Sources */,
 				F791ECD11761F13D00262B71 /* phash.cpp in Sources */,
 				F784B96F176909AC007B0098 /* phash_kyoto.cpp in Sources */,
 			);
@@ -452,11 +408,6 @@
 			isa = PBXTargetDependency;
 			name = kyotocabinet;
 			targetProxy = F784B96A17690784007B0098 /* PBXContainerItemProxy */;
-		};
-		F791ECC11761CBBF00262B71 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = lmdb;
-			targetProxy = F791ECC01761CBBF00262B71 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 

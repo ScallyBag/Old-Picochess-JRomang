@@ -23,19 +23,14 @@
 
 #include "phash.h"
 #include "phash_qdbm.h"
-#include "phash_lmdb.h"
 #include "phash_kyoto.h"
 #include "notation.h"
 
 PersistentHash &PersistentHash::getInstance(PHASH_BACKEND backend)
 {
-#if defined(USE_KYOTO) || defined(USE_LMDB)
-  if (backend != PHASH_BACKEND_QDBM)
 #if defined(USE_KYOTO)
+  if (backend != PHASH_BACKEND_QDBM)
     return KYOTO;
-#else
-  return LMDB;
-#endif
 #endif
   return QDBM;
 }
