@@ -64,9 +64,60 @@ void PersistentHash::import_epd(std::istringstream& is) {
     Value v = VALUE_NONE;
     Move m = MOVE_NONE;
     Depth d = (Depth)(int)Options["Persistent Hash Depth"];
+    int fensize = 0;
+    bool validfen = true;
+    size_t startpos = 0;
 
-    while (iss >> token && !wantsToken(token))
+    while (iss >> token && !wantsToken(token)) {
       fen += token + " "; // we might have some extra here
+      if (!fensize) {
+        // verify that the initial FEN block only contains valid chars
+        if (fen.find_first_not_of("PNBRQKpnbrqk12345678/ ") != std::string::npos) {
+          validfen = false; // invalid
+          break;
+        }
+        // verify that there are 7 '/' seperators in the initial FEN block
+        if (std::count(fen.begin(), fen.end(), '/') != 7) {
+          validfen = false; // invalid
+          break;
+        }
+        // verify that each rank of the initial FEN block specifies 8 squares
+        while (fen.find_first_of("/ ", startpos) != std::string::npos) {
+          int blockcount = 0;
+          while (1) {
+            char c = fen.at(startpos++);
+
+            if (c >= '1' && c <= '8') blockcount += c - '0';
+            else if (c == '/' || c == ' ') {
+              if (blockcount != 8) {
+                validfen = false;
+              }
+              break;
+            }
+            else blockcount++;
+          }
+          if (!validfen) break;
+        }
+        if (!validfen) break;
+      }
+      fensize++;
+    }
+    if (!validfen) continue;
+    if (fensize < 6) {
+      switch (fensize) {
+        case 5:
+          fen += "1";
+          break;
+        case 4:
+          fen += "0 1";
+          break;
+        case 3:
+          fen += "- 0 1";
+          break;
+        default:
+          continue; // invalid
+      }
+    }
     pos.set(fen, Options["UCI_Chess960"], Threads.main_thread());
 #ifdef EPD_DEBUG
     sync_cout << pos.fen() << ": " << pos.key() << sync_endl;
