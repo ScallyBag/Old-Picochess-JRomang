@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
   Eval::init();
   Threads.init();
   TT.set_size(Options["Hash"]);
-  PH.set_size(1);
+  PH.set_size(4);
 #if PA_GTB && defined(USE_EGTB)
   init_egtb(); // Init here, not at the top of each move. Setting uci options will check this and update if necessary.
 #endif
