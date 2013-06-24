@@ -237,7 +237,7 @@ void Search::think() {
     PHInst.starttransaction_phash(PHASH_MODE_READ);
     hashMove = PHInst.probe_phash(RootPos.key(), depth, isRoot);
     PHInst.endtransaction_phash();
-    if (hashMove != MOVE_NONE && isRoot && depth >= hashAsBookDepth)
+    if (hashMove != MOVE_NONE && isRoot && depth >= hashAsBookDepth && std::count(RootMoves.begin(), RootMoves.end(), hashMove))
     {
       std::swap(RootMoves[0], *std::find(RootMoves.begin(), RootMoves.end(), hashMove));
       goto finalize;
