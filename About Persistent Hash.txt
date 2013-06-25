@@ -1,4 +1,4 @@
-About Persistent Hash (Stockfish-3-PA_GTB-005 Release Notes)
+About Persistent Hash (Stockfish-3-PA_GTB-006 Release Notes)
 ============================================================
 
 INTRODUCTION:
@@ -14,6 +14,16 @@ KNOWN ISSUES:
 The contents of the PH file are loaded into the hash table at search start. When the PH file is very large, this can take a moment and the engine will appear to stop responding (although usually this takes less than a second, even with PH files of many MB). I haven't really checked with HUGE PH files. Anyway, it's kind of unavoidable and known.
 
 RELEASE NOTES:
+
+v006
+  - Persistent Hash:
+    - reduced record size
+    - rewritten to use new database format (Kyoto Cabinet), with automatic translation from old format (QDBM)
+    - added new "importepd" feature, see below
+    - added new "Use Persistent Hash As Book Depth" UCI option, see below
+    - pruning the PH file creates/appends to a "stockfish_pruned.hsh" backup of the discard records 
+  - further 3x repetition checking improvements
+  - update to the tip of the Stockfish upstream master branch
 
 v005 (changes since v004):
   - Persistent Hash implementation
@@ -31,6 +41,11 @@ What makes a position interesting?
 
 These criteria are fairly straightforward, although the last one is admittedly potentially problematic, since important information might get lost. Practically, I don't think it matters (PH is just a hint to the search, and none of the information in the PH file can't be reconstructed via a normal search) -- if the score is that important and has a high enough depth, it will still be there.
 
+Additionally, the Persistent Hash record distinguishes from Root node analysis and non-Root PV node analysis. In general, non-Root node analysis cannot overwrite that of Root nodes. Root node analysis will overwrite non-Root node analysis at the same depth or higher. This is an internal detail, but is relevant for the new "Use Persistent Hash As Book Depth" UCI option.
+
+COMMAND LINE OPTIONS:
+  - "importepd": typing 'importepd <filename.epd>' will attempt to import positions and analysis from EPD files. The EPD files must contain the following fields for each record: 'bm' (best move), 'ce' (centipawn evaluation) and 'acd' (analysis count depth). A final argument of 'noce' can be used to indicate that 'ce' fields may not be present -- if they are missing for a particular record, the record will be scored "Wins" for the side to move. EPD moves are always imported as Root node analysis.
+
 UCI OPTIONS:
 
 As mentioned above, there are a few UCI options to control the PH operation.
@@ -43,7 +58,8 @@ As mentioned above, there are a few UCI options to control the PH operation.
   - "Prune Persistent Hash": starting at the current Persistent Hash Depth, iterate through the PH file and delete all records at that depth level and below. If the file is still above the "Persistent Hash Size", increase the depth and repeat until the file is either below the requested size or no further records can be found to delete.
   - "Persistent Hash Merge File": the file to merge _from_ when "Merge Persistent Hash" is used. This defaults to the file "stockfish_merge.hsh" in the engine's working directory. You can change the name or set an absolute path to a different location.
   - "Merge Persistent Hash": if the file specified in "Persistent Hash Merge File" is found and vallid, any entries in the file which are a) at the "Persistent Hash Depth" or higher and b) are _deeper_ than existing entries in your current PH file (same depth is ignored) will be merged into your current PH file.
+  - "Use Persistent Hash As Book Depth": Root node records in the PH file at this depth or higher will be used as book moves. Non-Root node records are not eligible as book moves. The default is 0 (disabled).
 
 FILE SIZE: 
 
-You may have noticed that there is a file size option. This option is not used at runtime, but rather in conjunction with the "Prune Persistent Hash" button to manually keep your PH file below a desired size. When writing, there is currently no way to limit the file size of the PH file (for tech-interested, the file is in QDBM format, an open-source fast, small database implementation [http://fallabs.com/qdbm/]). It will basically grow to fill your hard drive, if you let it, albeit very slowly. For now, don't worry about it too much. Let's see who gets to 1GB first -- the entries are very compact (8 byte key + 24 bytes data + indexing entries) and shouldn't explode too quickly. Maybe it's worth calling "Prune" when closing Stockfish, but I've left that out for now.
+You may have noticed that there is a file size option. This option is not used at runtime, but rather in conjunction with the "Prune Persistent Hash" button to manually keep your PH file below a desired size. When writing, there is currently no way to limit the file size of the PH file (for tech-interested, the file is in Kyoto Cabinet format, an open-source fast, small database implementation [http://fallabs.com/kyotocabinet/]). It will basically grow to fill your hard drive, if you let it, albeit very slowly. For now, don't worry about it too much. Let's see who gets to 1GB first -- the entries are very compact (8 byte key + 11 bytes data + indexing entries) and shouldn't explode too quickly. Maybe it's worth calling "Prune" when closing Stockfish, but I've left that out for now.
