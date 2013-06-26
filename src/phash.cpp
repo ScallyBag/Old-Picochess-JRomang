@@ -63,7 +63,7 @@ void PersistentHash::import_epd(std::istringstream& is) {
     std::string field;
     Value v = VALUE_NONE;
     Move m = MOVE_NONE;
-    Depth d = (Depth)(int)Options["Persistent Hash Depth"];
+    int d = Options["Persistent Hash Depth"] * ONE_PLY;
     int fensize = 0;
     bool validfen = true;
     size_t startpos = 0;
@@ -144,7 +144,7 @@ void PersistentHash::import_epd(std::istringstream& is) {
           } else if (name == "ce") {      // centipawn evaluation
             v = uci_to_score(token);
           } else if (name == "acd") {     // analysis count depth
-            d = (Depth)::atoi(token.c_str());
+            d = ::atoi(token.c_str()) * ONE_PLY;
           }
 #ifdef EPD_DEBUG
           sync_cout << name << ": " << token << sync_endl;
@@ -156,7 +156,7 @@ void PersistentHash::import_epd(std::istringstream& is) {
       v = pos.side_to_move() == WHITE ? Value(VALUE_KNOWN_WIN) : Value(-VALUE_KNOWN_WIN);
     }
     if (v != VALUE_NONE && m != MOVE_NONE) {
-      if (PHInst.store_phash(pos.key(), v, Bound((int)BOUND_EXACT | BOUND_ROOT), d, m, v, VALUE_ZERO)) {
+      if (PHInst.store_phash(pos.key(), v, Bound((int)BOUND_EXACT | BOUND_ROOT), Depth(d), m, v, VALUE_ZERO)) {
         count++;
       }
     }
@@ -173,7 +173,7 @@ void PersistentHash::exercise(std::istringstream& is)
   t_phash_data data;
   int iterations;
   int rndepth = 1;
-  int hashdepth = Options["Persistent Hash Depth"];
+  int hashdepth = Options["Persistent Hash Depth"] * ONE_PLY;
 
   is >> iterations;
   is >> rndepth;

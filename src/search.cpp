@@ -226,7 +226,7 @@ void Search::think() {
 #if PA_GTB
   {
     int usePersistentHash = Options["Use Persistent Hash"];
-    int hashAsBookDepth = Options["Persistent Hash As Book Depth"];
+    int hashAsBookDepth = Options["Persistent Hash As Book Depth"] * ONE_PLY;
     if (usePersistentHash && (hashAsBookDepth > 0) && !Limits.infinite && !Limits.mate)
     {
       Depth depth;
@@ -238,6 +238,9 @@ void Search::think() {
       PHInst.endtransaction_phash();
       if (hashMove != MOVE_NONE && isRoot && depth >= hashAsBookDepth && std::count(RootMoves.begin(), RootMoves.end(), hashMove))
       {
+#ifdef PHASH_DEBUG
+        printf("+++++> pulled %s from PH @ depth %d (%d)\n", move_to_uci(hashMove, false).c_str(), depth, hashAsBookDepth);
+#endif
         std::swap(RootMoves[0], *std::find(RootMoves.begin(), RootMoves.end(), hashMove));
         goto finalize;
       }
@@ -367,7 +370,7 @@ namespace {
     Stack stack[MAX_PLY_PLUS_2], *ss = stack+1; // To allow referencing (ss-1)
     int depth, prevBestMoveChanges;
     Value bestValue, alpha, beta, delta;
-    int phDepth = Options["Persistent Hash Depth"];
+    int phDepth = Options["Persistent Hash Depth"] * ONE_PLY;
 
 #if PA_GTB && defined(USE_EGTB)
     pos.set_tb_hits(0); // reset tbhits before doing the root search
@@ -450,8 +453,8 @@ namespace {
                 for (size_t i = 0; i <= PVIdx; i++)
                     RootMoves[i].insert_pv_in_tt(pos);
 
-                if (depth >= phDepth)
-                    PH.store(pos.key(), RootMoves[0].score, Bound((int)BOUND_EXACT | BOUND_ROOT), Depth(depth), RootMoves[0].pv[0], RootMoves[0].score, VALUE_ZERO);
+                if (DEPTH_IS_VALID(depth * ONE_PLY, phDepth))
+                    PH.store(pos.key(), RootMoves[0].score, Bound((int)BOUND_EXACT | BOUND_ROOT), depth * ONE_PLY, RootMoves[0].pv[0], RootMoves[0].score, VALUE_ZERO);
 
                 // If search has been stopped return immediately. Sorting and
                 // writing PV back to TT is safe becuase RootMoves is still

@@ -212,7 +212,7 @@ bool KYOTO_PersistentHash::store_phash(const Key key, t_phash_data &data)
 
   if (PersHashFile) {
     probe_phash(key, oldDepth, isRoot);
-    if (data.d >= oldDepth && !(isRoot && !(data.t & BOUND_ROOT))) {
+    if (DEPTH_IS_VALID(data.d, oldDepth) && !(isRoot && !(data.t & BOUND_ROOT))) {
       return dostore_phash(key, data);
     }
   }
@@ -226,7 +226,7 @@ bool KYOTO_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d,
 
   if (PersHashFile) {
     probe_phash(key, oldDepth, isRoot);
-    if (d >= oldDepth && !(isRoot && !(t & BOUND_ROOT))) {
+    if (DEPTH_IS_VALID(d, oldDepth) && !(isRoot && !(t & BOUND_ROOT))) {
       t_phash_data data;
 
       data.v = v;
@@ -291,7 +291,7 @@ int KYOTO_PersistentHash::prune_below_phash(int depth)
       c->jump();
       while((key = c->get(&ksize, (const char **)&data, &dsize))) {
         if (dsize == sizeof(t_phash_data)) {
-          if (data.d <= depth) {
+          if ((uint16_t)data.d <= depth) { // cast to unsigned to save DEPTH_NONE entries
             if (prunefile) {
               prunefile->set((const char *)key, sizeof(Key), (const char *)&data, sizeof(t_phash_data));
             }
@@ -318,7 +318,7 @@ void KYOTO_PersistentHash::doprune_phash()
 {
   if (PersHashFile) {
     size_t desiredFileSize = Options["Persistent Hash Size"] * (1024 * 1024);
-    int hashDepth = Options["Persistent Hash Depth"];
+    int hashDepth = Options["Persistent Hash Depth"] * ONE_PLY;
     int pruneDepth = hashDepth;
     int totalPruned = 0;
     std::ostringstream ss;
@@ -331,7 +331,7 @@ void KYOTO_PersistentHash::doprune_phash()
       sync_cout << "info string Persistent Hash optimized [no pruning necessary]. Previous size: " << origFileSize << " bytes; new size: " << currentFileSize << " bytes." << sync_endl;
       return;
     }
-    while (pruneDepth < 100) {
+    while (pruneDepth < (100 * ONE_PLY)) {
       int pruned = prune_below_phash(pruneDepth);
       if (pruned) {
         optimize_phash();
@@ -350,7 +350,7 @@ void KYOTO_PersistentHash::doprune_phash()
         sync_cout << ss.str() << sync_endl;
         return;
       }
-      pruneDepth++;
+      pruneDepth += ONE_PLY;
     }
   }
 }
@@ -367,7 +367,7 @@ void KYOTO_PersistentHash::domerge_phash()
 {
   if (PersHashFile) {
     std::string mergename = Options["Persistent Hash Merge File"];
-    int mindepth = Options["Persistent Hash Depth"];
+    int mindepth = Options["Persistent Hash Depth"] * ONE_PLY;
     HashDB *mergefile;
 
     mergefile = open_phash(mergename, PHASH_MODE_READ);
@@ -378,11 +378,11 @@ void KYOTO_PersistentHash::domerge_phash()
         const char* visit_full(const char* kbuf, size_t UNUSED(ksiz),
                                const char* vbuf, size_t UNUSED(vsiz), size_t *UNUSED(sp)) {
           t_phash_data *data = (t_phash_data *)(intptr_t)vbuf;
-          if (data->d >= mindepth) {
+          if (DEPTH_IS_VALID(data->d, mindepth)) {
             Depth depth;
             bool isRoot;
             parent->probe_phash(*((const Key *)kbuf), depth, isRoot);
-            if (data->d > depth && !(isRoot && !(data->t & BOUND_ROOT))) {
+            if ((uint16_t)data->d > depth && !(isRoot && !(data->t & BOUND_ROOT))) { // cast to unsigned to save DEPTH_NONE entries
               target->set(kbuf, sizeof(Key), vbuf, sizeof(t_phash_data));
               merged++;
             }

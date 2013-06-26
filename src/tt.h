@@ -52,7 +52,7 @@ public:
     evalValue    = (int16_t)ev;
     evalMargin   = (int16_t)em;
     if (interested && (b & ~BOUND_ROOT) == BOUND_EXACT && m != MOVE_NONE && Options["Use Persistent Hash"]) {
-      if (d >= Options["Persistent Hash Depth"]) {
+      if (DEPTH_IS_VALID(d, (Options["Persistent Hash Depth"] * ONE_PLY))) {
         phash_store(k64, v, b, d, m, ev, em);
       }
     }

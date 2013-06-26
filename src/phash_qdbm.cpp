@@ -260,7 +260,7 @@ bool QDBM_PersistentHash::store_phash(const Key key, t_phash_data &data)
 
   if (PersHashFile) {
     probe_phash(key, oldDepth, isRoot);
-    if (data.d >= oldDepth) {
+    if (DEPTH_IS_VALID(data.d, oldDepth)) {
       int rv;
       rv = dpput(PersHashFile, (const char *)&key, (int)sizeof(Key), (const char *)&data, (int)sizeof(t_phash_data), DP_DOVER);
 #ifdef PHASH_DEBUG
@@ -283,7 +283,7 @@ bool QDBM_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, 
 
   if (PersHashFile) {
     probe_phash(key, oldDepth, isRoot);
-    if (d >= oldDepth && !(isRoot && !(t & BOUND_ROOT))) {
+    if (DEPTH_IS_VALID(d, oldDepth) && !(isRoot && !(t & BOUND_ROOT))) {
       t_phash_data data;
       int rv;
 
@@ -349,7 +349,7 @@ int QDBM_PersistentHash::prune_below_phash(int depth)
 
         datasize = dpgetwb(PersHashFile, (const char *)key, (int)sizeof(Key), 0, (int)sizeof(t_phash_data), (char *)&data);
         if (datasize == sizeof(t_phash_data)) {
-          if (data.d <= depth) {
+          if ((uint16_t)data.d <= depth) { // cast to unsigned to save DEPTH_NONE entries
             dpout(PersHashFile, (const char *)key, sizeof(Key));
             count++;
           }
@@ -369,7 +369,7 @@ void QDBM_PersistentHash::doprune_phash()
 {
   if (PersHashFile) {
     int desiredFileSize = Options["Persistent Hash Size"] * (1024 * 1024);
-    int hashDepth = Options["Persistent Hash Depth"];
+    int hashDepth = Options["Persistent Hash Depth"] * ONE_PLY;
     int pruneDepth = hashDepth;
     int currentFileSize;
     int totalPruned = 0;
@@ -382,7 +382,7 @@ void QDBM_PersistentHash::doprune_phash()
       sync_cout << "info string Persistent Hash optimized [no pruning necessary]. Previous size: " << origFileSize << " bytes; new size: " << currentFileSize << " bytes." << sync_endl;
       return;
     }
-    while (pruneDepth < 100) {
+    while (pruneDepth < (100 * ONE_PLY)) {
       int pruned = prune_below_phash(pruneDepth);
       if (pruned) {
         optimize_phash();
@@ -401,7 +401,7 @@ void QDBM_PersistentHash::doprune_phash()
         sync_cout << ss.str() << sync_endl;
         return;
       }
-      pruneDepth++;
+      pruneDepth += ONE_PLY;
     }
   }
 }
@@ -441,7 +441,7 @@ void QDBM_PersistentHash::domerge_phash()
 {
   if (PersHashFile) {
     std::string mergename = Options["Persistent Hash Merge File"];
-    int mindepth = Options["Persistent Hash Depth"];
+    int mindepth = Options["Persistent Hash Depth"] * ONE_PLY;
     DEPOT *mergefile;
     
     mergefile = dpopen(mergename.c_str(), DP_OREADER, 0);
@@ -457,11 +457,11 @@ void QDBM_PersistentHash::domerge_phash()
         
         datasize = dpgetwb(mergefile, (const char *)key, (int)sizeof(Key), 0, (int)sizeof(t_phash_data), (char *)&data);
         if (datasize == sizeof(t_phash_data)) {
-          if (data.d >= mindepth) {
+          if (DEPTH_IS_VALID(data.d, mindepth)) {
             Depth depth;
             bool isRoot;
             probe_phash(*((const Key *)key), depth, isRoot);
-            if (data.d > depth && !(isRoot && !(data.t & BOUND_ROOT))) {
+            if ((uint16_t)data.d > depth && !(isRoot && !(data.t & BOUND_ROOT))) { // cast to unsigned to save DEPTH_NONE entries
               dpput(PersHashFile, (const char *)key, (int)sizeof(Key), (const char *)&data, (int)sizeof(t_phash_data), DP_DOVER);
               merged++;
             }

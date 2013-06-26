@@ -31,7 +31,7 @@ typedef struct _phash_data
 {
   int16_t   v;
   uint8_t   t;
-  uint16_t  d;
+  int16_t   d;
   uint16_t  m;
   int16_t   statV;
   int16_t   kingD;
@@ -39,6 +39,8 @@ typedef struct _phash_data
 
 typedef enum { PHASH_MODE_READ, PHASH_MODE_WRITE } PHASH_MODE;
 typedef enum { PHASH_BACKEND_QDBM, PHASH_BACKEND_KYOTO } PHASH_BACKEND;
+
+#define DEPTH_IS_VALID(test_d, min_d) (test_d >= min_d || test_d == DEPTH_NONE)
 
 class PersistentHash {
 
