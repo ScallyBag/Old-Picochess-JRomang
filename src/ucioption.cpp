@@ -102,7 +102,7 @@ void init(OptionsMap& o) {
   o["Use Persistent Hash"]         = Option(false);
   o["Persistent Hash File"]        = Option("stockfish.hsh");
   o["Clear Persistent Hash"]       = Option(on_clear_phash);
-  o["Persistent Hash Depth"]       = Option(24, 10, 99);
+  o["Persistent Hash Depth"]       = Option(20, 10, 99);
   o["Persistent Hash Size"]        = Option(32, 4, 1024);
   o["Prune Persistent Hash"]       = Option(on_prune_phash);
   o["Persistent Hash Merge File"]  = Option("stockfish_merge.hsh");
