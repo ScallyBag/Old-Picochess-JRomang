@@ -224,19 +224,23 @@ void Search::think() {
   }
 
 #if PA_GTB
-  if (int hashAsBookDepth = Options["Persistent Hash As Book Depth"] && !Limits.infinite && !Limits.mate)
   {
-    Depth depth;
-    Move hashMove;
-    bool isRoot;
-
-    PHInst.starttransaction_phash(PHASH_MODE_READ);
-    hashMove = PHInst.probe_phash(RootPos.key(), depth, isRoot);
-    PHInst.endtransaction_phash();
-    if (hashMove != MOVE_NONE && isRoot && depth >= hashAsBookDepth && std::count(RootMoves.begin(), RootMoves.end(), hashMove))
+    int usePersistentHash = Options["Use Persistent Hash"];
+    int hashAsBookDepth = Options["Persistent Hash As Book Depth"];
+    if (usePersistentHash && (hashAsBookDepth > 0) && !Limits.infinite && !Limits.mate)
     {
-      std::swap(RootMoves[0], *std::find(RootMoves.begin(), RootMoves.end(), hashMove));
-      goto finalize;
+      Depth depth;
+      Move hashMove;
+      bool isRoot;
+
+      PHInst.starttransaction_phash(PHASH_MODE_READ);
+      hashMove = PHInst.probe_phash(RootPos.key(), depth, isRoot);
+      PHInst.endtransaction_phash();
+      if (hashMove != MOVE_NONE && isRoot && depth >= hashAsBookDepth && std::count(RootMoves.begin(), RootMoves.end(), hashMove))
+      {
+        std::swap(RootMoves[0], *std::find(RootMoves.begin(), RootMoves.end(), hashMove));
+        goto finalize;
+      }
     }
   }
 #endif
