@@ -20,8 +20,8 @@ v006
     - reduced record size
     - rewritten to use new database format (Kyoto Cabinet), with automatic translation from old format (QDBM)
     - added new "importepd" feature, see below
-    - added new "Use Persistent Hash As Book Depth" UCI option, see below
-    - pruning the PH file creates/appends to a "stockfish_pruned.hsh" backup of the discard records 
+    - added new "Persistent Hash As Book Depth" UCI option, see below
+    - pruning the PH file creates/appends to a "stockfish_pruned.hsh" backup of the discarded records 
   - further 3x repetition checking improvements
   - update to the tip of the Stockfish upstream master branch
 
@@ -41,7 +41,7 @@ What makes a position interesting?
 
 These criteria are fairly straightforward, although the last one is admittedly potentially problematic, since important information might get lost. Practically, I don't think it matters (PH is just a hint to the search, and none of the information in the PH file can't be reconstructed via a normal search) -- if the score is that important and has a high enough depth, it will still be there.
 
-Additionally, the Persistent Hash record distinguishes from Root node analysis and non-Root PV node analysis. In general, non-Root node analysis cannot overwrite that of Root nodes. Root node analysis will overwrite non-Root node analysis at the same depth or higher. This is an internal detail, but is relevant for the new "Use Persistent Hash As Book Depth" UCI option.
+Additionally, the Persistent Hash record distinguishes from Root node analysis and non-Root PV node analysis. In general, non-Root node analysis cannot overwrite that of Root nodes. Root node analysis will overwrite non-Root node analysis at the same depth or higher. This is an internal detail, but is relevant for the new "Persistent Hash As Book Depth" UCI option.
 
 COMMAND LINE OPTIONS:
   - "importepd": typing 'importepd <filename.epd>' will attempt to import positions and analysis from EPD files. The EPD files must contain the following fields for each record: 'bm' (best move), 'ce' (centipawn evaluation) and 'acd' (analysis count depth). A final argument of 'noce' can be used to indicate that 'ce' fields may not be present -- if they are missing for a particular record, the record will be scored "Wins" for the side to move. EPD moves are always imported as Root node analysis.
@@ -58,7 +58,7 @@ As mentioned above, there are a few UCI options to control the PH operation.
   - "Prune Persistent Hash": starting at the current Persistent Hash Depth, iterate through the PH file and delete all records at that depth level and below. If the file is still above the "Persistent Hash Size", increase the depth and repeat until the file is either below the requested size or no further records can be found to delete.
   - "Persistent Hash Merge File": the file to merge _from_ when "Merge Persistent Hash" is used. This defaults to the file "stockfish_merge.hsh" in the engine's working directory. You can change the name or set an absolute path to a different location.
   - "Merge Persistent Hash": if the file specified in "Persistent Hash Merge File" is found and vallid, any entries in the file which are a) at the "Persistent Hash Depth" or higher and b) are _deeper_ than existing entries in your current PH file (same depth is ignored) will be merged into your current PH file.
-  - "Use Persistent Hash As Book Depth": Root node records in the PH file at this depth or higher will be used as book moves. Non-Root node records are not eligible as book moves. The default is 0 (disabled).
+  - "Persistent Hash As Book Depth": Root node records in the PH file at this depth or higher will be used as book moves (if "Use Persistent Hash" is enabled, of course). Non-Root node records are not eligible as book moves. The default is 0 (disabled).
 
 FILE SIZE: 
 
