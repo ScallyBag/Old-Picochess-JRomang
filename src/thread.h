@@ -78,7 +78,7 @@ struct SplitPoint {
   Mutex mutex;
   volatile uint64_t slavesMask;
   volatile int64_t nodes;
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
   volatile int64_t tbhits;
 #endif
   volatile Value alpha;

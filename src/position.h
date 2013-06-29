@@ -181,7 +181,7 @@ public:
   void set_nodes_searched(int64_t n);
   bool is_draw(bool CheckThreeFold) const;
   
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
   int64_t tb_hits() const;
   void set_tb_hits(int64_t n);
 #endif
@@ -228,7 +228,7 @@ private:
   Thread* thisThread;
   StateInfo* st;
   int chess960;
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
   int64_t tbhits;
   int64_t tbhits_root;
 #endif
@@ -423,7 +423,7 @@ inline Thread* Position::this_thread() const {
   return thisThread;
 }
 
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
 inline int64_t Position::tb_hits() const {
   return tbhits;
 }

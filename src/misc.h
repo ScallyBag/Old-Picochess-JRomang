@@ -60,7 +60,7 @@ private:
 };
 
 
-#if PA_GTB
+#ifdef PA_GTB
 #include <iostream>
 #include <sstream>
 

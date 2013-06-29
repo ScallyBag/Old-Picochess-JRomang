@@ -23,7 +23,7 @@
 
 #include "misc.h"
 #include "thread.h"
-#if PA_GTB
+#ifdef PA_GTB
 #include "bitcount.h"
 #endif
 
@@ -37,7 +37,7 @@ using namespace std;
 /// date, in the format DD-MM-YY, are used as a version number.
 
 static const string Version = "";
-#if PA_GTB
+#ifdef PA_GTB
 #ifdef USE_EGTB
 static const string Tag = "PA_GTB";
 #else
@@ -57,7 +57,7 @@ const string engine_info(bool to_uci) {
 
   const string months("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec");
   const string cpu64(Is64Bit ? " 64" : "");
-#if PA_GTB
+#ifdef PA_GTB
   string popcnt(HasPopCnt ? " SSE4.2" : "");
 #else
   const string popcnt(HasPopCnt ? " SSE4.2" : "");

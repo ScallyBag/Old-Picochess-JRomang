@@ -22,7 +22,7 @@
 
 #include <map>
 #include <string>
-#if PA_GTB
+#ifdef PA_GTB
 #include <vector>
 
 typedef std::vector<std::string> StrVector;
@@ -50,7 +50,7 @@ public:
   Option(bool v, Fn* = NULL);
   Option(const char* v, Fn* = NULL);
   Option(int v, int min, int max, Fn* = NULL);
-#if PA_GTB
+#ifdef PA_GTB
   Option(std::string defaultValue, StrVector comboValues, Fn* = NULL);
 #endif
 
@@ -63,7 +63,7 @@ private:
 
   std::string defaultValue, currentValue, type;
   int min, max;
-#if PA_GTB
+#ifdef PA_GTB
   StrVector comboValues;
 #endif
   size_t idx;

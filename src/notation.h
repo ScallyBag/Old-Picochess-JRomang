@@ -31,7 +31,7 @@ Move move_from_uci(const Position& pos, std::string& str);
 const std::string move_to_uci(Move m, bool chess960);
 const std::string move_to_san(Position& pos, Move m);
 std::string pretty_pv(Position& pos, int depth, Value score, int64_t msecs, Move pv[]);
-#if PA_GTB
+#ifdef PA_GTB
 Value uci_to_score(std::string &str);
 Move san_to_move(Position& pos, std::string& str);
 #endif

@@ -27,7 +27,7 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
-#if PA_GTB
+#ifdef PA_GTB
 #include "phash.h"
 #endif
 
@@ -43,7 +43,7 @@ void on_eval(const Option&) { Eval::init(); }
 void on_threads(const Option&) { Threads.read_uci_options(); }
 void on_hash_size(const Option& o) { TT.set_size(o); }
 void on_clear_hash(const Option&) { TT.clear(); }
-#if PA_GTB
+#ifdef PA_GTB
   void on_clear_phash(const Option&) { PHInst.wantsclear_phash(); }
   void on_prune_phash(const Option&) { PHInst.wantsprune_phash(); }
   void on_merge_phash(const Option&) { PHInst.wantsmerge_phash(); }
@@ -98,7 +98,7 @@ void init(OptionsMap& o) {
   o["Slow Mover"]                  = Option(100, 10, 1000);
   o["UCI_Chess960"]                = Option(false);
   o["UCI_AnalyseMode"]             = Option(false, on_eval);
-#if PA_GTB
+#ifdef PA_GTB
   o["Use Persistent Hash"]         = Option(false);
   o["Persistent Hash File"]        = Option("stockfish.hsh");
   o["Clear Persistent Hash"]       = Option(on_clear_phash);
@@ -145,7 +145,7 @@ std::ostream& operator<<(std::ostream& os, const OptionsMap& om) {
               if (o.type == "spin")
                   os << " min " << o.min << " max " << o.max;
 
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
               if (o.type == "combo")
               {
                 for (StrVector::const_iterator itc = it->second.comboValues.begin(); itc != it->second.comboValues.end(); ++itc)
@@ -172,7 +172,7 @@ Option::Option(Fn* f) : type("button"), min(0), max(0), idx(Options.size()), on_
 Option::Option(int v, int minv, int maxv, Fn* f) : type("spin"), min(minv), max(maxv), idx(Options.size()), on_change(f)
 { std::ostringstream ss; ss << v; defaultValue = currentValue = ss.str(); }
 
-#if PA_GTB && defined (USE_EGTB)
+#if defined(PA_GTB) && defined (USE_EGTB)
 Option::Option(string def, StrVector values, Fn *f) : defaultValue(def), currentValue(def), type("combo"), min(0), max(0), comboValues(values), idx(Options.size()), on_change(f)
 {}
 #endif
@@ -180,12 +180,12 @@ Option::Option(string def, StrVector values, Fn *f) : defaultValue(def), current
 Option::operator int() const {
   assert(   type == "check"
          || type == "spin"
-#if PA_GTB && defined (USE_EGTB)
+#if defined(PA_GTB) && defined (USE_EGTB)
          || type == "combo"
 #endif
          );
   return ((   type == "spin"
-#if PA_GTB && defined (USE_EGTB)
+#if defined(PA_GTB) && defined (USE_EGTB)
            || type == "combo"
 #endif
            ) ? atoi(currentValue.c_str()) : currentValue == "true");

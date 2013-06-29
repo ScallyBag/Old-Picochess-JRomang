@@ -29,7 +29,7 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
-#if PA_GTB
+#ifdef PA_GTB
 #include "phash.h"
 #ifdef USE_EGTB
 #include "egtb.h"
@@ -118,7 +118,7 @@ void UCI::loop(const string& args) {
       else if (token == "d")          sync_cout << pos.pretty() << sync_endl;
       else if (token == "isready")    sync_cout << "readyok" << sync_endl;
       else if (token == "eval")       sync_cout << Eval::trace(pos) << sync_endl;
-#if PA_GTB
+#ifdef PA_GTB
       else if (token == "importepd")  PersistentHash::import_epd(is);
 #ifdef PHASH_DEBUG
       else if (token == "exercise")   PersistentHash::exercise(is);
@@ -192,7 +192,7 @@ namespace {
     else
         sync_cout << "No such option: " << name << sync_endl;
 
-#if PA_GTB
+#ifdef PA_GTB
     PHInst.init_phash();
 #ifdef USE_EGTB
     init_egtb();

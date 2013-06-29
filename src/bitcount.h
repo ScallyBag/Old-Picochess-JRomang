@@ -30,7 +30,7 @@ enum BitCountType {
   CNT_32,
   CNT_32_MAX15,
   CNT_HW_POPCNT
-#if PA_GTB
+#ifdef PA_GTB
   ,
   CNT_PA_GTB_FULL,
   CNT_PA_GTB_MAX15
@@ -40,7 +40,7 @@ enum BitCountType {
 /// Determine at compile time the best popcount<> specialization according if
 /// platform is 32 or 64 bits, to the maximum number of nonzero bits to count
 /// and if hardware popcnt instruction is available.
-#if PA_GTB
+#ifdef PA_GTB
 const BitCountType Full  = CNT_PA_GTB_FULL;
 const BitCountType Max15  = CNT_PA_GTB_MAX15;
 #else
@@ -111,7 +111,7 @@ inline int popcount<CNT_HW_POPCNT>(Bitboard b) {
 #endif
 }
 
-#if PA_GTB
+#ifdef PA_GTB
 inline void initPopCnt();
 inline int popCntAvailable();
 

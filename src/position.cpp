@@ -167,7 +167,7 @@ Position& Position::operator=(const Position& pos) {
   startState = *st;
   st = &startState;
   nodes = 0;
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
   tbhits = 0;
 #endif
 
@@ -1418,7 +1418,7 @@ void Position::flip() {
   sideToMove = ~pos.side_to_move();
   thisThread = pos.this_thread();
   nodes = pos.nodes_searched();
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
   tbhits = pos.tb_hits();
 #endif
   chess960 = pos.is_chess960();

@@ -27,7 +27,7 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
-#if PA_GTB
+#ifdef PA_GTB
 #include "bitcount.h"
 #include "phash.h"
 #ifdef USE_EGTB
@@ -39,14 +39,14 @@ int main(int argc, char* argv[]) {
 
   setvbuf(stdout,NULL,_IONBF,0);
 
-#if PA_GTB
+#ifdef PA_GTB
   initPopCnt();
 #endif
 
   std::cout << engine_info() << std::endl;
 
   UCI::init(Options);
-#if PA_GTB
+#ifdef PA_GTB
   PHInst.init_phash();
 #endif
   Bitboards::init();
@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
   Threads.init();
   TT.set_size(Options["Hash"]);
   PH.set_size(4);
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
   init_egtb(); // Init here, not at the top of each move. Setting uci options will check this and update if necessary.
 #endif
 
@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
 
   UCI::loop(args);
 
-#if PA_GTB
+#ifdef PA_GTB
   PHInst.quit_phash();
 #ifdef USE_EGTB
   close_egtb();

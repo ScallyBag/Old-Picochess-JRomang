@@ -48,7 +48,7 @@ static const char* Defaults[] = {
   "r1q2rk1/2p1bppp/2Pp4/p6b/Q1PNp3/4B3/PP1R1PPP/2K4R w - - 2 18",
   "4k2r/1pb2ppp/1p2p3/1R1p4/3P4/2r1PN2/P4PPP/1R4K1 b - - 3 22",
   "3q2k1/pb3p1p/4pbp1/2r5/PpN2N2/1P2P2P/5PP1/Q2R2K1 b - - 4 26",
-#if PA_GTB
+#ifdef PA_GTB
   // add some tb positions
   "8/k7/8/4Kn2/8/P7/8/1n6 b - - 0 1",               // 17. 5-man. mate 115  bm Ne7  (f5e7)
   "8/1k6/1p1r4/5K2/8/8/8/2R5 w - - 0 1",            // 18. 5-man. cp 0      bm Ke4  (f5e4)

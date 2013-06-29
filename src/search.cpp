@@ -34,7 +34,7 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
-#if PA_GTB
+#ifdef PA_GTB
 #include "bitcount.h"
 #include "phash.h"
 #ifdef USE_EGTB
@@ -106,7 +106,7 @@ namespace {
   void id_loop(Position& pos);
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
-#if PA_GTB
+#ifdef PA_GTB
   template <NodeType NT>
   inline bool ok_to_use_TT(const TTEntry* tte, Depth depth, Value alpha, Value beta, int ply) {
 
@@ -223,7 +223,7 @@ void Search::think() {
       goto finalize;
   }
 
-#if PA_GTB
+#ifdef PA_GTB
   {
     int usePersistentHash = Options["Use Persistent Hash"];
     int hashAsBookDepth = Options["Persistent Hash As Book Depth"] * ONE_PLY;
@@ -281,7 +281,7 @@ void Search::think() {
           << std::endl;
   }
   
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
   if (Options["UseGaviotaTb"] && popcount<Full>(RootPos.pieces()) <= MaxEgtbPieces)
   {
     int success;
@@ -372,7 +372,7 @@ namespace {
     Value bestValue, alpha, beta, delta;
     int phDepth = Options["Persistent Hash Depth"] * ONE_PLY;
 
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
     pos.set_tb_hits(0); // reset tbhits before doing the root search
 #endif
     memset(ss-1, 0, 4 * sizeof(Stack));
@@ -386,7 +386,7 @@ namespace {
 
     PVSize = Options["MultiPV"];
     Skill skill(Options["Skill Level"]);
-#if PA_GTB
+#ifdef PA_GTB
     UsePersistentHash = Options["Use Persistent Hash"];
 #ifdef USE_EGTB
     UseGaviotaTb = Options["UseGaviotaTb"];
@@ -394,7 +394,7 @@ namespace {
 #endif
 #endif
 
-#if PA_GTB
+#ifdef PA_GTB
     if (UsePersistentHash) {
       PH.from_phash();
     }
@@ -565,7 +565,7 @@ namespace {
                     Signals.stop = true;
             }
         }
-#if PA_GTB
+#ifdef PA_GTB
       if (UsePersistentHash) {
         PH.to_phash();
       }
@@ -607,7 +607,7 @@ namespace {
     bool captureOrPromotion, dangerous, doFullDepthSearch;
     int moveCount, playedMoveCount;
 
-#if PA_GTB
+#ifdef PA_GTB
     // before doing anything, check for a draw.
     // only do the full check at the root, 2x check at lower nodes gives the best results,
     // in terms of the engine avoiding drawn lines. in qsearch, a full search seems to be ok.
@@ -680,7 +680,7 @@ namespace {
     // we should also update RootMoveList to avoid bogus output.
     if (   !RootNode
         && tte
-#if PA_GTB
+#ifdef PA_GTB
         && ttValue != VALUE_NONE // Only in case of TT access race
         && ok_to_use_TT<PvNode ? PV : NonPV>(tte, depth, alpha, beta, ss->ply))
 #else
@@ -705,7 +705,7 @@ namespace {
         return ttValue;
     }
 
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
     if (UseGaviotaTb && !ProbeOnlyAtRoot && !RootNode && popcount<Full>(pos.pieces()) <= MaxEgtbPieces) {
       int probed = 0;
       bool wantsprobe, hard, exact;
@@ -949,7 +949,7 @@ split_point_start: // At split points actual search starts from here
       {
           Signals.firstRootMove = (moveCount == 1);
 
-#if PA_GTB
+#ifdef PA_GTB
           if (Time::now() - SearchTime > 3000)
 #else
           if (thisThread == Threads.main_thread() && Time::now() - SearchTime > 3000)
@@ -1314,7 +1314,7 @@ split_point_start: // At split points actual search starts from here
     ttValue = tte ? value_from_tt(tte->value(),ss->ply) : VALUE_NONE;
 
     if (   tte
-#if PA_GTB
+#ifdef PA_GTB
         && ttValue != VALUE_NONE // Only in case of TT access race
         && ok_to_use_TT<PvNode ? PV : NonPV>(tte, ttDepth, alpha, beta, ss->ply))
 #else
@@ -1713,7 +1713,7 @@ split_point_start: // At split points actual search starts from here
           << " nps "       << pos.nodes_searched() * 1000 / elapsed
           << " time "      << elapsed
           << " multipv "   << i + 1
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
           << " tbhits "    << pos.tb_hits()
 #endif
           << " pv";
@@ -1728,7 +1728,7 @@ split_point_start: // At split points actual search starts from here
 } // namespace
 
 
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
 void RootMove::extract_pv_from_tb(Position& pos) {
   
   StateInfo state[MAX_PLY_PLUS_2], *st = state;
@@ -1903,7 +1903,7 @@ void Thread::idle_loop() {
           activePosition = NULL;
           sp->slavesMask &= ~(1ULL << idx);
           sp->nodes += pos.nodes_searched();
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
           sp->tbhits += pos.tb_hits();
 #endif
 

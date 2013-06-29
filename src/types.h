@@ -71,7 +71,7 @@
 #  define FORCE_INLINE  inline
 #endif
 
-#if PA_GTB
+#ifdef PA_GTB
 extern bool HasPopCnt;
 #else
 #if defined(USE_POPCNT)
@@ -91,7 +91,7 @@ typedef uint64_t Key;
 typedef uint64_t Bitboard;
 
 const int MAX_MOVES      = 192;
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
 const int MAX_PLY        = 254;
 #else
 const int MAX_PLY        = 100;
@@ -155,7 +155,7 @@ enum Bound {
   BOUND_UPPER,
   BOUND_LOWER,
   BOUND_EXACT = BOUND_UPPER | BOUND_LOWER
-#if PA_GTB
+#ifdef PA_GTB
   ,
   BOUND_ROOT = 0x10
 #endif

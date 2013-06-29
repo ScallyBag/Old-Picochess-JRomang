@@ -262,7 +262,7 @@ string pretty_pv(Position& pos, int depth, Value value, int64_t msecs, Move pv[]
   return s.str();
 }
 
-#if PA_GTB
+#ifdef PA_GTB
 Value uci_to_score(std::string &str)
 {
   Value uci = (Value)atoi(str.c_str());

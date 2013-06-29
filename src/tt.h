@@ -22,7 +22,7 @@
 
 #include "misc.h"
 #include "types.h"
-#if PA_GTB
+#ifdef PA_GTB
 #include "phash.h"
 #include "ucioption.h"
 #endif

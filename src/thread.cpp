@@ -279,7 +279,7 @@ void Thread::split(Position& pos, Stack* ss, Value alpha, Value beta, Value* bes
   sp.moveCount = moveCount;
   sp.pos = &pos;
   sp.nodes = 0;
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
   sp.tbhits = 0;
 #endif
   sp.cutoff = false;
@@ -335,7 +335,7 @@ void Thread::split(Position& pos, Stack* ss, Value alpha, Value beta, Value* bes
   activeSplitPoint = sp.parentSplitPoint;
   activePosition = &pos;
   pos.set_nodes_searched(pos.nodes_searched() + sp.nodes);
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
   pos.set_tb_hits(pos.tb_hits() + sp.tbhits);
 #endif
   *bestMove = sp.bestMove;

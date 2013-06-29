@@ -64,7 +64,7 @@ struct RootMove {
   bool operator<(const RootMove& m) const { return score > m.score; } // Ascending sort
   bool operator==(const Move& m) const { return pv[0] == m; }
 
-#if PA_GTB && defined(USE_EGTB)
+#if defined(PA_GTB) && defined(USE_EGTB)
   void extract_pv_from_tb(Position& pos);
 #endif
   void extract_pv_from_tt(Position& pos);

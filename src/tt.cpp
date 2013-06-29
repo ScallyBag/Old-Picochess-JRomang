@@ -21,7 +21,7 @@
 #include <iostream>
 
 #include "bitboard.h"
-#if PA_GTB
+#ifdef PA_GTB
 #include "phash.h"
 #endif
 #include "tt.h"
