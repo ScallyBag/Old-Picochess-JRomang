@@ -114,7 +114,7 @@ namespace {
     const Value v = value_from_tt(tte->value(), ply);
     
     return
-    PvNode ?    tte->type() == BOUND_EXACT
+    PvNode ?    tte->bound() == BOUND_EXACT
     && (   tte->depth() >= depth
         || v >= VALUE_MATE_IN_MAX_PLY
         || v <= VALUE_MATED_IN_MAX_PLY)
@@ -122,8 +122,8 @@ namespace {
     :    (   tte->depth() >= depth
           || v >= std::max(VALUE_MATE_IN_MAX_PLY, beta)
           || v <= std::min(VALUE_MATED_IN_MAX_PLY, alpha))
-    && (   ((tte->type() & BOUND_LOWER) && v >= beta)
-        || ((tte->type() & BOUND_UPPER) && v <= alpha));
+    && (   ((tte->bound() & BOUND_LOWER) && v >= beta)
+        || ((tte->bound() & BOUND_UPPER) && v <= alpha));
   }
   bool UsePersistentHash;
 #if defined(USE_EGTB)
@@ -607,12 +607,14 @@ namespace {
     bool captureOrPromotion, dangerous, doFullDepthSearch;
     int moveCount, playedMoveCount;
 
+#if PA_GTB
     // before doing anything, check for a draw.
     // only do the full check at the root, 2x check at lower nodes gives the best results,
     // in terms of the engine avoiding drawn lines. in qsearch, a full search seems to be ok.
     if (pos.is_draw(RootNode)) {
       return DrawValue[pos.side_to_move()];
     }
+#endif
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -684,9 +686,9 @@ namespace {
 #else
         && tte->depth() >= depth
         && ttValue != VALUE_NONE // Only in case of TT access race
-        && (           PvNode ?  tte->type() == BOUND_EXACT
-            : ttValue >= beta ? (tte->type() & BOUND_LOWER)
-                              : (tte->type() & BOUND_UPPER)))
+        && (           PvNode ?  tte->bound() == BOUND_EXACT
+            : ttValue >= beta ? (tte->bound() &  BOUND_LOWER)
+                              : (tte->bound() &  BOUND_UPPER)))
 #endif
     {
         TT.refresh(tte);
@@ -739,8 +741,8 @@ namespace {
 
         // Can ttValue be used as a better position evaluation?
         if (ttValue != VALUE_NONE)
-            if (   ((tte->type() & BOUND_LOWER) && ttValue > eval)
-                || ((tte->type() & BOUND_UPPER) && ttValue < eval))
+            if (   ((tte->bound() & BOUND_LOWER) && ttValue > eval)
+                || ((tte->bound() & BOUND_UPPER) && ttValue < eval))
                 eval = ttValue;
     }
     else
@@ -913,7 +915,7 @@ split_point_start: // At split points actual search starts from here
                            &&  depth >= (PvNode ? 6 * ONE_PLY : 8 * ONE_PLY)
                            &&  ttMove != MOVE_NONE
                            && !excludedMove // Recursive singular search is not allowed
-                           && (tte->type() & BOUND_LOWER)
+                           && (tte->bound() & BOUND_LOWER)
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
 
     // Step 11. Loop through moves
@@ -1318,9 +1320,9 @@ split_point_start: // At split points actual search starts from here
 #else
         && tte->depth() >= ttDepth
         && ttValue != VALUE_NONE // Only in case of TT access race
-        && (           PvNode ?  tte->type() == BOUND_EXACT
-            : ttValue >= beta ? (tte->type() & BOUND_LOWER)
-                              : (tte->type() & BOUND_UPPER)))
+        && (           PvNode ?  tte->bound() == BOUND_EXACT
+            : ttValue >= beta ? (tte->bound() &  BOUND_LOWER)
+                              : (tte->bound() &  BOUND_UPPER)))
 #endif
     {
         ss->currentMove = ttMove; // Can be MOVE_NONE
@@ -1763,7 +1765,7 @@ void RootMove::extract_pv_from_tb(Position& pos) {
 void RootMove::extract_pv_from_tt(Position& pos) {
 
   StateInfo state[MAX_PLY_PLUS_2], *st = state;
-  TTEntry* tte;
+  const TTEntry* tte;
   int ply = 0;
   Move m = pv[0];
 
@@ -1796,7 +1798,7 @@ void RootMove::extract_pv_from_tt(Position& pos) {
 void RootMove::insert_pv_in_tt(Position& pos) {
 
   StateInfo state[MAX_PLY_PLUS_2], *st = state;
-  TTEntry* tte;
+  const TTEntry* tte;
   int ply = 0;
 
   do {

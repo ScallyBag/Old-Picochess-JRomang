@@ -51,7 +51,7 @@ void TranspositionTable<T>::set_size(size_t mbSize) {
 
   hashMask = size - ClusterSize;
   free(mem);
-  mem = malloc(size * sizeof(T) + CACHE_LINE_SIZE - 1);
+  mem = calloc(size * sizeof(T) + CACHE_LINE_SIZE - 1, 1);
 
   if (!mem)
   {
@@ -61,7 +61,6 @@ void TranspositionTable<T>::set_size(size_t mbSize) {
   }
 
   table = (T*)((uintptr_t(mem) + CACHE_LINE_SIZE - 1) & ~(CACHE_LINE_SIZE - 1));
-  clear(); // Operator new is not guaranteed to initialize memory to zero
 }
 
 
@@ -73,6 +72,24 @@ template<class T>
 void TranspositionTable<T>::clear() {
 
   memset(table, 0, (hashMask + ClusterSize) * sizeof(T));
+}
+
+
+/// TranspositionTable::probe() looks up the current position in the
+/// transposition table. Returns a pointer to the TTEntry or NULL if
+/// position is not found.
+
+template<class T>
+const T* TranspositionTable<T>::probe(const Key key) const {
+
+  const T* tte = first_entry(key);
+  uint32_t key32 = key >> 32;
+
+  for (unsigned i = 0; i < ClusterSize; i++, tte++)
+      if (tte->key() == key32)
+          return tte;
+
+  return NULL;
 }
 
 
@@ -104,41 +121,22 @@ void TranspositionTable<T>::store(const Key key, Value v, Bound t, Depth d, Move
   {
       if (!tte->key() || tte->key() == key32) // Empty or overwrite old
       {
-          // Preserve any existing ttMove
-          if (m == MOVE_NONE)
-              m = tte->move();
+          if (!m)
+              m = tte->move(); // Preserve any existing ttMove
 
-          tte->save(key, key32, v, t, d, m, generation, statV, kingD, interested);
-          return;
+          replace = tte;
+          break;
       }
 
       // Implement replace strategy
       c1 = (replace->generation() == generation ?  2 : 0);
-      c2 = (tte->generation() == generation || tte->type() == BOUND_EXACT ? -2 : 0);
+      c2 = (tte->generation() == generation || tte->bound() == BOUND_EXACT ? -2 : 0);
       c3 = (tte->depth() < replace->depth() ?  1 : 0);
 
       if (c1 + c2 + c3 > 0)
           replace = tte;
   }
   replace->save(key, key32, v, t, d, m, generation, statV, kingD, interested);
-}
-
-
-/// TranspositionTable::probe() looks up the current position in the
-/// transposition table. Returns a pointer to the TTEntry or NULL if
-/// position is not found.
-
-template<class T>
-T* TranspositionTable<T>::probe(const Key key) const {
-
-  T* tte = first_entry(key);
-  uint32_t key32 = key >> 32;
-
-  for (unsigned i = 0; i < ClusterSize; i++, tte++)
-      if (tte->key() == key32)
-          return tte;
-
-  return NULL;
 }
 
 
@@ -162,9 +160,9 @@ void TranspositionTable<PHEntry>::to_phash() {
     PHEntry *phe = table + i;
     Key key;
     if ((key = phe->fullkey())) {
-      TTEntry *tte = TT.probe(key);
+      const TTEntry *tte = TT.probe(key);
       if ( tte &&
-          (tte->type() == BOUND_EXACT) &&
+          (tte->bound() == BOUND_EXACT) &&
           (DEPTH_IS_VALID(tte->depth(), minDepth)))
       {
         if (PHInst.store_phash(key, tte->value(), phe->fulltype(), tte->depth(), tte->move(), tte->eval_value(), tte->eval_margin())) {
