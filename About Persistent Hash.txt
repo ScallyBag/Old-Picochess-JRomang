@@ -1,4 +1,4 @@
-About Persistent Hash (Stockfish-3-PA_GTB-006 Release Notes)
+About Persistent Hash (Stockfish-3-PA_GTB-007 Release Notes)
 ============================================================
 
 INTRODUCTION:
@@ -14,6 +14,9 @@ KNOWN ISSUES:
 The contents of the PH file are loaded into the hash table at search start. When the PH file is very large, this can take a moment and the engine will appear to stop responding (although usually this takes less than a second, even with PH files of many MB). I haven't really checked with HUGE PH files. Anyway, it's kind of unavoidable and known.
 
 RELEASE NOTES:
+
+v007
+  - update to the tip of the Stockfish upstream master branch
 
 v006
   - Persistent Hash:
