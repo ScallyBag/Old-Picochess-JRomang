@@ -284,8 +284,8 @@ Value egtb_probe_root(Position &pos, Move *return_move, int *success)
   }
   
   
-  MoveStack stack[192];
-  MoveStack *moves, *end;
+  ExtMove stack[192];
+  ExtMove *moves, *end;
   StateInfo st;
   
   // Generate at least all legal moves.
@@ -306,7 +306,7 @@ Value egtb_probe_root(Position &pos, Move *return_move, int *success)
     pos.do_move(move, st, ci, pos.move_gives_check(move, ci));
     v = w = 0;
     if (pos.checkers()) {
-      MoveStack s[192];
+      ExtMove s[192];
       if (generate<LEGAL>(pos, s) == s)
         v = VALUE_MATE;
     }

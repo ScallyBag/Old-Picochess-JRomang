@@ -43,7 +43,7 @@ const string engine_info(bool to_uci) {
   stringstream s, date(__DATE__); // From compiler, format is "Sep 21 2008"
 
 #if PA_GTB
-  s << "Stockfish PA_GTB" << Version << setfill('0');
+  s << "Stockfish PA_GTB " << Version << setfill('0');
 #else
   s << "Stockfish " << Version << setfill('0');
 #endif

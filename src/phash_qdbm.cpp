@@ -93,7 +93,7 @@ void QDBM_PersistentHash::clear_phash()
 
 void QDBM_PersistentHash::wantsclear_phash()
 {
-  MainThread *t = Threads.main_thread();
+  MainThread *t = Threads.main();
   if (t->thinking) {
     PersHashWantsClear = true;
   } else {
@@ -110,7 +110,7 @@ void QDBM_PersistentHash::prune_phash()
 
 void QDBM_PersistentHash::wantsprune_phash()
 {
-  MainThread *t = Threads.main_thread();
+  MainThread *t = Threads.main();
   if (t->thinking) {
     PersHashWantsPrune = true;
   } else {
@@ -127,7 +127,7 @@ void QDBM_PersistentHash::merge_phash()
 
 void QDBM_PersistentHash::wantsmerge_phash()
 {
-  MainThread *t = Threads.main_thread();
+  MainThread *t = Threads.main();
   if (t->thinking) {
     PersHashWantsMerge = true;
   } else {

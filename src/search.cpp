@@ -1722,7 +1722,7 @@ moves_loop: // When in check and at SpNode search starts from here
 #if defined(PA_GTB) && defined(USE_EGTB)
 void RootMove::extract_pv_from_tb(Position& pos) {
   
-  StateInfo state[MAX_PLY_PLUS_2], *st = state;
+  StateInfo state[MAX_PLY_PLUS_3], *st = state;
   int ply = 0;
   Move m = pv[0];
   int success;

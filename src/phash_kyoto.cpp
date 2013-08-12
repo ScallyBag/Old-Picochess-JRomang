@@ -112,7 +112,7 @@ void KYOTO_PersistentHash::clear_phash()
 
 void KYOTO_PersistentHash::wantsclear_phash()
 {
-  MainThread *t = Threads.main_thread();
+  MainThread *t = Threads.main();
   if (t->thinking) {
     PersHashWantsClear = true;
   } else {
@@ -129,7 +129,7 @@ void KYOTO_PersistentHash::prune_phash()
 
 void KYOTO_PersistentHash::wantsprune_phash()
 {
-  MainThread *t = Threads.main_thread();
+  MainThread *t = Threads.main();
   if (t->thinking) {
     PersHashWantsPrune = true;
   } else {
@@ -146,7 +146,7 @@ void KYOTO_PersistentHash::merge_phash()
 
 void KYOTO_PersistentHash::wantsmerge_phash()
 {
-  MainThread *t = Threads.main_thread();
+  MainThread *t = Threads.main();
   if (t->thinking) {
     PersHashWantsMerge = true;
   } else {

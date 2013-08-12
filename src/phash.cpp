@@ -118,7 +118,7 @@ void PersistentHash::import_epd(std::istringstream& is) {
           continue; // invalid
       }
     }
-    pos.set(fen, Options["UCI_Chess960"], Threads.main_thread());
+    pos.set(fen, Options["UCI_Chess960"], Threads.main());
 #ifdef EPD_DEBUG
     sync_cout << pos.fen() << ": " << pos.key() << sync_endl;
 #endif
