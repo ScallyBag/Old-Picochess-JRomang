@@ -71,7 +71,7 @@ void TranspositionTable<T>::set_size(size_t mbSize) {
 template<class T>
 void TranspositionTable<T>::clear() {
 
-  memset(table, 0, (hashMask + ClusterSize) * sizeof(T));
+  std::memset(table, 0, (hashMask + ClusterSize) * sizeof(T));
 }
 
 

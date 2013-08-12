@@ -73,7 +73,7 @@ namespace {
 
   // Futility lookup tables (initialized at startup) and their access functions
   Value FutilityMargins[16][64]; // [depth][moveNumber]
-  int FutilityMoveCounts[32];    // [depth]
+  int FutilityMoveCounts[2][32]; // [improving][depth]
 
   inline Value futility_margin(Depth d, int mn) {
 
@@ -82,11 +82,11 @@ namespace {
   }
 
   // Reduction lookup tables (initialized at startup) and their access function
-  int8_t Reductions[2][64][64]; // [pv][depth][moveNumber]
+  int8_t Reductions[2][2][64][64]; // [pv][improving][depth][moveNumber]
 
-  template <bool PvNode> inline Depth reduction(Depth d, int mn) {
+  template <bool PvNode> inline Depth reduction(bool i, Depth d, int mn) {
 
-    return (Depth) Reductions[PvNode][std::min(int(d) / ONE_PLY, 63)][std::min(mn, 63)];
+    return (Depth) Reductions[PvNode][i][std::min(int(d) / ONE_PLY, 63)][std::min(mn, 63)];
   }
 
   size_t PVSize, PVIdx;
@@ -168,8 +168,14 @@ void Search::init() {
   {
       double    pvRed = log(double(hd)) * log(double(mc)) / 3.0;
       double nonPVRed = 0.33 + log(double(hd)) * log(double(mc)) / 2.25;
-      Reductions[1][hd][mc] = (int8_t) (   pvRed >= 1.0 ? floor(   pvRed * int(ONE_PLY)) : 0);
-      Reductions[0][hd][mc] = (int8_t) (nonPVRed >= 1.0 ? floor(nonPVRed * int(ONE_PLY)) : 0);
+      Reductions[1][1][hd][mc] = (int8_t) (   pvRed >= 1.0 ? floor(   pvRed * int(ONE_PLY)) : 0);
+      Reductions[0][1][hd][mc] = (int8_t) (nonPVRed >= 1.0 ? floor(nonPVRed * int(ONE_PLY)) : 0);
+
+      Reductions[1][0][hd][mc] = Reductions[1][1][hd][mc];
+      Reductions[0][0][hd][mc] = Reductions[0][1][hd][mc];
+
+      if (Reductions[0][0][hd][mc] > 2 * ONE_PLY)
+          Reductions[0][0][hd][mc] += ONE_PLY;
   }
 
   // Init futility margins array
@@ -178,7 +184,11 @@ void Search::init() {
 
   // Init futility move count array
   for (d = 0; d < 32; d++)
-      FutilityMoveCounts[d] = int(3.001 + 0.3 * pow(double(d), 1.8));
+  {
+      FutilityMoveCounts[1][d] = int(3.001 + 0.3 * pow(double(d), 1.8));
+      FutilityMoveCounts[0][d] = d < 5 ? FutilityMoveCounts[1][d]
+                                       : 3 * FutilityMoveCounts[1][d] / 4;
+  }
 }
 
 
@@ -272,7 +282,7 @@ void Search::think() {
   else
       DrawValue[WHITE] = DrawValue[BLACK] = VALUE_DRAW;
 
-  if (Options["Use Search Log"])
+  if (Options["Write Search Log"])
   {
       Log log(Options["Search Log Filename"]);
       log << "\nSearching: "  << RootPos.fen()
@@ -307,7 +317,7 @@ void Search::think() {
   for (size_t i = 0; i < Threads.size(); i++)
       Threads[i]->maxPly = 0;
 
-  Threads.sleepWhileIdle = Options["Use Sleeping Threads"];
+  Threads.sleepWhileIdle = Options["Idle Threads Sleep"];
 
   // Set best timer interval to avoid lagging under time pressure. Timer is
   // used to check for remaining available thinking time.
@@ -323,7 +333,7 @@ void Search::think() {
   Threads.timer->msec = 0; // Stop the timer
   Threads.sleepWhileIdle = true; // Send idle threads to sleep
 
-  if (Options["Use Search Log"])
+  if (Options["Write Search Log"])
   {
       Time::point elapsed = Time::now() - SearchTime + 1;
 
@@ -370,7 +380,7 @@ namespace {
 
   void id_loop(Position& pos) {
 
-    Stack stack[MAX_PLY_PLUS_2], *ss = stack+1; // To allow referencing (ss-1)
+    Stack stack[MAX_PLY_PLUS_3], *ss = stack+2; // To allow referencing (ss-2)
     int depth, prevBestMoveChanges;
     Value bestValue, alpha, beta, delta;
     int phDepth = Options["Persistent Hash Depth"] * ONE_PLY;
@@ -378,7 +388,7 @@ namespace {
 #if defined(PA_GTB) && defined(USE_EGTB)
     pos.set_tb_hits(0); // reset tbhits before doing the root search
 #endif
-    memset(ss-1, 0, 4 * sizeof(Stack));
+    std::memset(ss-2, 0, 5 * sizeof(Stack));
     (ss-1)->currentMove = MOVE_NULL; // Hack to skip update gains
 
     depth = BestMoveChanges = 0;
@@ -463,6 +473,12 @@ namespace {
                 if (Signals.stop)
                     return;
 
+                // When failing high/low give some update (without cluttering
+                // the UI) before to research.
+                if (  (bestValue <= alpha || bestValue >= beta)
+                    && Time::now() - SearchTime > 3000)
+                    sync_cout << uci_pv(pos, depth, alpha, beta) << sync_endl;
+
                 // In case of failing low/high increase aspiration window and
                 // research, otherwise exit the loop.
                 if (bestValue <= alpha)
@@ -481,10 +497,6 @@ namespace {
                 delta += delta / 2;
 
                 assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
-
-                // Give some update (without cluttering the UI) before to research
-                if (Time::now() - SearchTime > 3000)
-                    sync_cout << uci_pv(pos, depth, alpha, beta) << sync_endl;
             }
 
             // Sort the PV lines searched so far and update the GUI
@@ -498,7 +510,7 @@ namespace {
         if (skill.enabled() && skill.time_to_pick(depth))
             skill.pick_move();
 
-        if (Options["Use Search Log"])
+        if (Options["Write Search Log"])
         {
             RootMove& rm = RootMoves[0];
             if (skill.best != MOVE_NONE)
@@ -564,8 +576,6 @@ namespace {
         PH.to_phash();
       }
 #endif
-      
-
     }
   }
 
@@ -597,7 +607,7 @@ namespace {
     Depth ext, newDepth;
     Value bestValue, value, ttValue;
     Value eval, nullValue, futilityValue;
-    bool inCheck, givesCheck, pvMove, singularExtensionNode;
+    bool inCheck, givesCheck, pvMove, singularExtensionNode, improving;
     bool captureOrPromotion, dangerous, doFullDepthSearch;
     int moveCount, quietCount;
 
@@ -612,7 +622,6 @@ namespace {
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
-    moveCount = quietCount = 0;
     inCheck = pos.checkers();
 
     if (SpNode)
@@ -630,6 +639,7 @@ namespace {
         goto moves_loop;
     }
 
+    moveCount = quietCount = 0;
     bestValue = -VALUE_INFINITE;
     ss->currentMove = threatMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->ply = (ss-1)->ply + 1;
@@ -761,7 +771,7 @@ namespace {
         Gains.update(pos.piece_on(to), to, -(ss-1)->staticEval - ss->staticEval);
     }
 
-    // Step 6. Razoring (is omitted in PV nodes)
+    // Step 6. Razoring (skipped when in check)
     if (   !PvNode
         &&  depth < 4 * ONE_PLY
         &&  eval + razor_margin(depth) < beta
@@ -777,7 +787,7 @@ namespace {
             return v;
     }
 
-    // Step 7. Static null move pruning (is omitted in PV nodes)
+    // Step 7. Static null move pruning (skipped when in check)
     // We're betting that the opponent doesn't have a move that will reduce
     // the score by more than futility_margin(depth) if we do a null move.
     if (   !PvNode
@@ -848,7 +858,7 @@ namespace {
         }
     }
 
-    // Step 9. ProbCut (is omitted in PV nodes)
+    // Step 9. ProbCut (skipped when in check)
     // If we have a very good capture (i.e. SEE > seeValues[captured_piece_type])
     // and a reduced search returns a value much above beta, we can (almost) safely
     // prune the previous move.
@@ -879,7 +889,7 @@ namespace {
             }
     }
 
-    // Step 10. Internal iterative deepening
+    // Step 10. Internal iterative deepening (skipped when in check)
     if (   depth >= (PvNode ? 5 * ONE_PLY : 8 * ONE_PLY)
         && ttMove == MOVE_NONE
         && (PvNode || ss->staticEval + Value(256) >= beta))
@@ -900,9 +910,13 @@ moves_loop: // When in check and at SpNode search starts from here
     Move countermoves[] = { Countermoves[pos.piece_on(prevMoveSq)][prevMoveSq].first,
                             Countermoves[pos.piece_on(prevMoveSq)][prevMoveSq].second };
 
-    MovePicker mp(pos, ttMove, depth, History, countermoves, ss, PvNode ? -VALUE_INFINITE : beta);
+    MovePicker mp(pos, ttMove, depth, History, countermoves, ss);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
+    improving =   ss->staticEval >= (ss-2)->staticEval
+               || ss->staticEval == VALUE_NONE
+               ||(ss-2)->staticEval == VALUE_NONE;
+
     singularExtensionNode =   !RootNode
                            && !SpNode
                            &&  depth >= (PvNode ? 6 * ONE_PLY : 8 * ONE_PLY)
@@ -945,7 +959,7 @@ moves_loop: // When in check and at SpNode search starts from here
 #ifdef PA_GTB
           if (Time::now() - SearchTime > 3000)
 #else
-          if (thisThread == Threads.main_thread() && Time::now() - SearchTime > 3000)
+          if (thisThread == Threads.main() && Time::now() - SearchTime > 3000)
 #endif
               sync_cout << "info depth " << depth / ONE_PLY
                         << " currmove " << move_to_uci(move, pos.is_chess960())
@@ -1003,7 +1017,7 @@ moves_loop: // When in check and at SpNode search starts from here
       {
           // Move count based pruning
           if (   depth < 16 * ONE_PLY
-              && moveCount >= FutilityMoveCounts[depth]
+              && moveCount >= FutilityMoveCounts[improving][depth]
               && (!threatMove || !refutes(pos, move, threatMove)))
           {
               if (SpNode)
@@ -1015,7 +1029,7 @@ moves_loop: // When in check and at SpNode search starts from here
           // Value based pruning
           // We illogically ignore reduction condition depth >= 3*ONE_PLY for predicted depth,
           // but fixing this made program slightly weaker.
-          Depth predictedDepth = newDepth - reduction<PvNode>(depth, moveCount);
+          Depth predictedDepth = newDepth - reduction<PvNode>(improving, depth, moveCount);
           futilityValue =  ss->staticEval + ss->evalMargin + futility_margin(predictedDepth, moveCount)
                          + Gains[pos.piece_moved(move)][to_sq(move)];
 
@@ -1074,7 +1088,7 @@ moves_loop: // When in check and at SpNode search starts from here
           &&  move != ss->killers[0]
           &&  move != ss->killers[1])
       {
-          ss->reduction = reduction<PvNode>(depth, moveCount);
+          ss->reduction = reduction<PvNode>(improving, depth, moveCount);
 
           if (!PvNode && cutNode)
               ss->reduction += ONE_PLY;
@@ -1268,7 +1282,7 @@ moves_loop: // When in check and at SpNode search starts from here
     Key posKey;
     Move ttMove, move, bestMove;
     Value bestValue, value, ttValue, futilityValue, futilityBase, oldAlpha;
-    bool givesCheck, enoughMaterial, evasionPrunable;
+    bool givesCheck, evasionPrunable;
     Depth ttDepth;
 
     // To flag BOUND_EXACT a node with eval above alpha and no available moves
@@ -1315,7 +1329,6 @@ moves_loop: // When in check and at SpNode search starts from here
     {
         ss->staticEval = ss->evalMargin = VALUE_NONE;
         bestValue = futilityBase = -VALUE_INFINITE;
-        enoughMaterial = false;
     }
     else
     {
@@ -1343,7 +1356,6 @@ moves_loop: // When in check and at SpNode search starts from here
             alpha = bestValue;
 
         futilityBase = ss->staticEval + ss->evalMargin + Value(128);
-        enoughMaterial = pos.non_pawn_material(pos.side_to_move()) > RookValueMg;
     }
 
     // Initialize a MovePicker object for the current position, and prepare
@@ -1365,7 +1377,6 @@ moves_loop: // When in check and at SpNode search starts from here
           && !InCheck
           && !givesCheck
           &&  move != ttMove
-          &&  enoughMaterial
           &&  type_of(move) != PROMOTION
           && !pos.is_passed_pawn_push(move))
       {
@@ -1390,8 +1401,7 @@ moves_loop: // When in check and at SpNode search starts from here
       }
 
       // Detect non-capture evasions that are candidate to be pruned
-      evasionPrunable =   !PvNode
-                       &&  InCheck
+      evasionPrunable =    InCheck
                        &&  bestValue > VALUE_MATED_IN_MAX_PLY
                        && !pos.is_capture(move)
                        && !pos.can_castle(pos.side_to_move());
@@ -1605,7 +1615,7 @@ moves_loop: // When in check and at SpNode search starts from here
                        | (attacks_bb<BISHOP>(m2to, occ) & pos.pieces(color_of(pc), QUEEN, BISHOP));
 
         // Verify attackers are triggered by our move and not already existing
-        if (xray && (xray ^ (xray & pos.attacks_from<QUEEN>(m2to))))
+        if (unlikely(xray) && (xray & ~pos.attacks_from<QUEEN>(m2to)))
             return true;
     }
 
@@ -1745,7 +1755,7 @@ void RootMove::extract_pv_from_tb(Position& pos) {
 
 void RootMove::extract_pv_from_tt(Position& pos) {
 
-  StateInfo state[MAX_PLY_PLUS_2], *st = state;
+  StateInfo state[MAX_PLY_PLUS_3], *st = state;
   const TTEntry* tte;
   int ply = 0;
   Move m = pv[0];
@@ -1778,7 +1788,7 @@ void RootMove::extract_pv_from_tt(Position& pos) {
 
 void RootMove::insert_pv_in_tt(Position& pos) {
 
-  StateInfo state[MAX_PLY_PLUS_2], *st = state;
+  StateInfo state[MAX_PLY_PLUS_3], *st = state;
   const TTEntry* tte;
   int ply = 0;
 
@@ -1848,14 +1858,15 @@ void Thread::idle_loop() {
           Threads.mutex.lock();
 
           assert(searching);
+          assert(activeSplitPoint);
           SplitPoint* sp = activeSplitPoint;
 
           Threads.mutex.unlock();
 
-          Stack stack[MAX_PLY_PLUS_2], *ss = stack+1; // To allow referencing (ss-1)
+          Stack stack[MAX_PLY_PLUS_3], *ss = stack+2; // To allow referencing (ss-2)
           Position pos(*sp->pos, this);
 
-          memcpy(ss-1, sp->ss-1, 4 * sizeof(Stack));
+          std::memcpy(ss-2, sp->ss-2, 5 * sizeof(Stack));
           ss->splitPoint = sp;
 
           sp->mutex.lock();

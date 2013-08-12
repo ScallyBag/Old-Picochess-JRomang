@@ -17,7 +17,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if !defined(TT_H_INCLUDED)
+#ifndef TT_H_INCLUDED
 #define TT_H_INCLUDED
 
 #include "misc.h"
@@ -164,11 +164,4 @@ inline void TranspositionTable<T>::refresh(const T* tte) const {
   const_cast<T*>(tte)->set_generation(generation);
 }
 
-
-// These declarations are mandatory, or the compiler will optimize the specialization out!
-template<>
-void TranspositionTable<PHEntry>::from_phash();
-template<>
-void TranspositionTable<PHEntry>::to_phash();
-
-#endif // !defined(TT_H_INCLUDED)
+#endif // #ifndef TT_H_INCLUDED

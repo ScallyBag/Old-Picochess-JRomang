@@ -17,7 +17,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if !defined(NOTATION_H_INCLUDED)
+#ifndef NOTATION_H_INCLUDED
 #define NOTATION_H_INCLUDED
 
 #include <string>
@@ -36,4 +36,4 @@ Value uci_to_score(std::string &str);
 Move san_to_move(Position& pos, std::string& str);
 #endif
 
-#endif // !defined(NOTATION_H_INCLUDED)
+#endif // #ifndef NOTATION_H_INCLUDED

@@ -23,29 +23,12 @@
 
 #include "misc.h"
 #include "thread.h"
-#ifdef PA_GTB
-#include "bitcount.h"
-#endif
-
-#if defined(__hpux)
-#    include <sys/pstat.h>
-#endif
 
 using namespace std;
 
-/// Version number. If Version is left empty, then Tag plus current
-/// date, in the format DD-MM-YY, are used as a version number.
-
+/// Version number. If Version is left empty, then compile date, in the
+/// format DD-MM-YY, is shown in engine_info.
 static const string Version = "";
-#ifdef PA_GTB
-#ifdef USE_EGTB
-static const string Tag = "PA_GTB";
-#else
-static const string Tag = "PA";
-#endif
-#else
-static const string Tag = "";
-#endif
 
 
 /// engine_info() returns the full name of the current Stockfish version. This
@@ -56,37 +39,27 @@ static const string Tag = "";
 const string engine_info(bool to_uci) {
 
   const string months("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec");
-  const string cpu64(Is64Bit ? " 64" : "");
-#ifdef PA_GTB
-  string popcnt(HasPopCnt ? " SSE4.2" : "");
-#else
-  const string popcnt(HasPopCnt ? " SSE4.2" : "");
-#endif
-
   string month, day, year;
   stringstream s, date(__DATE__); // From compiler, format is "Sep 21 2008"
 
-  s << "Stockfish " << Version;
+#if PA_GTB
+  s << "Stockfish PA_GTB" << Version << setfill('0');
+#else
+  s << "Stockfish " << Version << setfill('0');
+#endif
 
   if (Version.empty())
   {
       date >> month >> day >> year;
-
-      s << Tag << string(Tag.empty() ? "" : " ") << setfill('0') << setw(2) << day
-        << setw(2) << (1 + months.find(month) / 4) << year.substr(2);
+      s << setw(2) << day << setw(2) << (1 + months.find(month) / 4) << year.substr(2);
   }
 
-  s << cpu64 << popcnt << (to_uci ? "\nid author ": " by ")
+  s << (Is64Bit ? " 64" : "")
+    << (HasPopCnt ? " SSE4.2" : "")
+    << (to_uci ? "\nid author ": " by ")
     << "Tord Romstad, Marco Costalba and Joona Kiiski";
 
   return s.str();
-}
-
-
-/// Convert system time to milliseconds. That's all we need.
-
-Time::point Time::now() {
-  sys_time_t t; system_time(&t); return time_to_msec(t);
 }
 
 
@@ -191,37 +164,12 @@ std::ostream& operator<<(std::ostream& os, SyncCout sc) {
 void start_logger(bool b) { Logger::start(b); }
 
 
-/// cpu_count() tries to detect the number of CPU cores
-
-int cpu_count() {
-
-#if defined(_WIN32)
-  SYSTEM_INFO s;
-  GetSystemInfo(&s);
-  return s.dwNumberOfProcessors;
-#else
-
-#  if defined(_SC_NPROCESSORS_ONLN)
-  return sysconf(_SC_NPROCESSORS_ONLN);
-#  elif defined(__hpux)
-  struct pst_dynamic psd;
-  if (pstat_getdynamic(&psd, sizeof(psd), (size_t)1, 0) == -1)
-      return 1;
-  return psd.psd_proc_cnt;
-#  else
-  return 1;
-#  endif
-
-#endif
-}
-
-
 /// timed_wait() waits for msec milliseconds. It is mainly an helper to wrap
 /// conversion from milliseconds to struct timespec, as used by pthreads.
 
 void timed_wait(WaitCondition& sleepCond, Lock& sleepLock, int msec) {
 
-#if defined(_WIN32)
+#ifdef _WIN32
   int tm = msec;
 #else
   timespec ts, *tm = &ts;
@@ -238,7 +186,7 @@ void timed_wait(WaitCondition& sleepCond, Lock& sleepLock, int msec) {
 /// prefetch() preloads the given address in L1/L2 cache. This is a non
 /// blocking function and do not stalls the CPU waiting for data to be
 /// loaded from memory, that can be quite slow.
-#if defined(NO_PREFETCH)
+#ifdef NO_PREFETCH
 
 void prefetch(char*) {}
 
