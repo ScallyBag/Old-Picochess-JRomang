@@ -164,4 +164,10 @@ inline void TranspositionTable<T>::refresh(const T* tte) const {
   const_cast<T*>(tte)->set_generation(generation);
 }
 
+// These declarations are mandatory, or the compiler will optimize the specialization out!
+template<>
+void TranspositionTable<PHEntry>::from_phash();
+template<>
+void TranspositionTable<PHEntry>::to_phash();
+
 #endif // #ifndef TT_H_INCLUDED
