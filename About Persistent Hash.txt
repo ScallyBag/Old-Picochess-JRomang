@@ -1,4 +1,4 @@
-About Persistent Hash (Stockfish-3-PA_GTB-007 Release Notes)
+About Persistent Hash (Stockfish-4-PA_GTB-001 Release Notes)
 ============================================================
 
 INTRODUCTION:
@@ -15,10 +15,16 @@ The contents of the PH file are loaded into the hash table at search start. When
 
 RELEASE NOTES:
 
-v007
+v4-001
+  - update to the tip of the Stockfish upstream master branch (now at v4)
+
+v3-008
+  - fix a regression in v3-007 with Persistent Hash
+
+v3-007
   - update to the tip of the Stockfish upstream master branch
 
-v006
+v3-006
   - Persistent Hash:
     - reduced record size
     - rewritten to use new database format (Kyoto Cabinet), with automatic translation from old format (QDBM)
@@ -28,7 +34,7 @@ v006
   - further 3x repetition checking improvements
   - update to the tip of the Stockfish upstream master branch
 
-v005 (changes since v004):
+v3-005 (changes since v004):
   - Persistent Hash implementation
   - non-main threads can publish their currmovenumber
   - 3x repetition is checked all the time
