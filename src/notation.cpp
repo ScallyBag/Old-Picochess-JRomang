@@ -133,7 +133,7 @@ const string move_to_san(Position& pos, Move m) {
           while (b)
           {
               Move move = make_move(pop_lsb(&b), to);
-              if (!pos.pl_move_is_legal(move, pos.pinned_pieces()))
+              if (!pos.legal(move, pos.pinned_pieces()))
                   others ^= from_sq(move);
           }
 
@@ -149,10 +149,10 @@ const string move_to_san(Position& pos, Move m) {
                   san += square_to_string(from);
           }
       }
-      else if (pos.is_capture(m))
+      else if (pos.capture(m))
           san = file_to_char(file_of(from));
 
-      if (pos.is_capture(m))
+      if (pos.capture(m))
           san += 'x';
 
       san += square_to_string(to);
@@ -161,7 +161,7 @@ const string move_to_san(Position& pos, Move m) {
           san += string("=") + PieceToChar[WHITE][promotion_type(m)];
   }
 
-  if (pos.move_gives_check(m, CheckInfo(pos)))
+  if (pos.gives_check(m, CheckInfo(pos)))
   {
       StateInfo st;
       pos.do_move(m, st);
@@ -207,7 +207,7 @@ static string score_to_string(Value v) {
       s << "-#" << (VALUE_MATE + v) / 2;
 
   else
-      s << setprecision(2) << fixed << showpos << float(v) / PawnValueMg;
+      s << setprecision(2) << fixed << showpos << double(v) / PawnValueMg;
 
   return s.str();
 }
@@ -305,7 +305,7 @@ template <int MoveType> inline Move test_move(Position &pos, Square fromsquare, 
       }
     }
   }
-  if (pos.is_pseudo_legal(move) && pos.pl_move_is_legal(move, pos.pinned_pieces())) {
+  if (pos.pseudo_legal(move) && pos.legal(move, pos.pinned_pieces())) {
 #ifdef SAN_DEBUG
     sync_cout << "found a move: " << move_to_uci(move, false) << sync_endl;
 #endif
@@ -404,7 +404,7 @@ Move san_to_move(Position& pos, std::string& str)
         move = make<CASTLE>(SQ_E8, SQ_A8);
       }
     }
-    if (pos.is_pseudo_legal(move) && pos.pl_move_is_legal(move, pos.pinned_pieces())) {
+    if (pos.pseudo_legal(move) && pos.legal(move, pos.pinned_pieces())) {
       return move;
     }
     return MOVE_NONE; // invalid

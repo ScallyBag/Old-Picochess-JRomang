@@ -85,7 +85,7 @@ const T* TranspositionTable<T>::probe(const Key key) const {
   const T* tte = first_entry(key);
   uint32_t key32 = key >> 32;
 
-  for (unsigned i = 0; i < ClusterSize; i++, tte++)
+  for (unsigned i = 0; i < ClusterSize; ++i, ++tte)
       if (tte->key() == key32)
           return tte;
 
@@ -102,14 +102,14 @@ const T* TranspositionTable<T>::probe(const Key key) const {
 /// a previous search, or if the depth of t1 is bigger than the depth of t2.
 
 template<class T>
-void TranspositionTable<T>::store(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD) {
+void TranspositionTable<T>::store(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value evalM) {
 
-  TranspositionTable<T>::store(key, v, t, d, m, statV, kingD, true);
+  TranspositionTable<T>::store(key, v, t, d, m, statV, evalM, true);
 }
 
 
 template<class T>
-void TranspositionTable<T>::store(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD, bool interested) {
+void TranspositionTable<T>::store(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value evalM, bool interested) {
 
   int c1, c2, c3;
   T *tte, *replace;
@@ -117,7 +117,7 @@ void TranspositionTable<T>::store(const Key key, Value v, Bound t, Depth d, Move
 
   tte = replace = first_entry(key);
 
-  for (unsigned i = 0; i < ClusterSize; i++, tte++)
+  for (unsigned i = 0; i < ClusterSize; ++i, ++tte)
   {
       if (!tte->key() || tte->key() == key32) // Empty or overwrite old
       {
@@ -136,7 +136,7 @@ void TranspositionTable<T>::store(const Key key, Value v, Bound t, Depth d, Move
       if (c1 + c2 + c3 > 0)
           replace = tte;
   }
-  replace->save(key, key32, v, t, d, m, generation, statV, kingD, interested);
+  replace->save(key, key32, v, t, d, m, generation, statV, evalM, interested);
 }
 
 

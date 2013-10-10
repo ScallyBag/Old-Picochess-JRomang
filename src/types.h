@@ -92,13 +92,13 @@ const bool Is64Bit = false;
 typedef uint64_t Key;
 typedef uint64_t Bitboard;
 
-const int MAX_MOVES      = 192;
+const int MAX_MOVES      = 256;
 #if defined(PA_GTB) && defined(USE_EGTB)
 const int MAX_PLY        = 254;
 #else
 const int MAX_PLY        = 100;
 #endif
-const int MAX_PLY_PLUS_3 = MAX_PLY + 3;
+const int MAX_PLY_PLUS_6 = MAX_PLY + 6;
 
 /// A move needs 16 bits to be stored
 ///
@@ -208,7 +208,7 @@ enum Depth {
   DEPTH_ZERO          =  0 * ONE_PLY,
   DEPTH_QS_CHECKS     = -1 * ONE_PLY,
   DEPTH_QS_NO_CHECKS  = -2 * ONE_PLY,
-  DEPTH_QS_RECAPTURES = -7 * ONE_PLY,
+  DEPTH_QS_RECAPTURES = -5 * ONE_PLY,
 
   DEPTH_NONE = -127 * ONE_PLY
 };
@@ -286,15 +286,15 @@ inline T operator-(const T d1, const T d2) { return T(int(d1) - int(d2)); } \
 inline T operator*(int i, const T d) { return T(i * int(d)); }              \
 inline T operator*(const T d, int i) { return T(int(d) * i); }              \
 inline T operator-(const T d) { return T(-int(d)); }                        \
-inline T& operator+=(T& d1, const T d2) { d1 = d1 + d2; return d1; }        \
-inline T& operator-=(T& d1, const T d2) { d1 = d1 - d2; return d1; }        \
-inline T& operator*=(T& d, int i) { d = T(int(d) * i); return d; }
+inline T& operator+=(T& d1, const T d2) { return d1 = d1 + d2; }            \
+inline T& operator-=(T& d1, const T d2) { return d1 = d1 - d2; }            \
+inline T& operator*=(T& d, int i) { return d = T(int(d) * i); }
 
 #define ENABLE_OPERATORS_ON(T) ENABLE_SAFE_OPERATORS_ON(T)                  \
-inline T operator++(T& d, int) { d = T(int(d) + 1); return d; }             \
-inline T operator--(T& d, int) { d = T(int(d) - 1); return d; }             \
+inline T& operator++(T& d) { return d = T(int(d) + 1); }                    \
+inline T& operator--(T& d) { return d = T(int(d) - 1); }                    \
 inline T operator/(const T d, int i) { return T(int(d) / i); }              \
-inline T& operator/=(T& d, int i) { d = T(int(d) / i); return d; }
+inline T& operator/=(T& d, int i) { return d = T(int(d) / i); }
 
 ENABLE_OPERATORS_ON(Value)
 ENABLE_OPERATORS_ON(PieceType)

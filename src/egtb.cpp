@@ -301,9 +301,9 @@ Value egtb_probe_root(Position &pos, Move *return_move, int *success)
   int v, w;
   for (moves = stack; moves < end; moves++) {
     Move move = moves->move;
-    if (!pos.pl_move_is_legal(move, ci.pinned))
+    if (!pos.legal(move, ci.pinned))
       continue;
-    pos.do_move(move, st, ci, pos.move_gives_check(move, ci));
+    pos.do_move(move, st, ci, pos.gives_check(move, ci));
     v = w = 0;
     if (pos.checkers()) {
       ExtMove s[192];

@@ -157,14 +157,14 @@ bool Thread::cutoff_occurred() const {
 }
 
 
-// Thread::is_available_to() checks whether the thread is available to help the
+// Thread::available_to() checks whether the thread is available to help the
 // thread 'master' at a split point. An obvious requirement is that thread must
 // be idle. With more than two threads, this is not sufficient: If the thread is
 // the master of some split point, it is only available as a slave to the slaves
 // which are busy searching the split point at the top of slaves split point
 // stack (the "helpful master concept" in YBWC terminology).
 
-bool Thread::is_available_to(Thread* master) const {
+bool Thread::available_to(const Thread* master) const {
 
   if (searching)
       return false;
@@ -238,10 +238,10 @@ void ThreadPool::read_uci_options() {
 // slave_available() tries to find an idle thread which is available as a slave
 // for the thread 'master'.
 
-Thread* ThreadPool::available_slave(Thread* master) const {
+Thread* ThreadPool::available_slave(const Thread* master) const {
 
   for (const_iterator it = begin(); it != end(); ++it)
-      if ((*it)->is_available_to(master))
+      if ((*it)->available_to(master))
           return *it;
 
   return NULL;
@@ -258,7 +258,7 @@ Thread* ThreadPool::available_slave(Thread* master) const {
 // search() then split() returns.
 
 template <bool Fake>
-void Thread::split(Position& pos, Stack* ss, Value alpha, Value beta, Value* bestValue,
+void Thread::split(Position& pos, const Stack* ss, Value alpha, Value beta, Value* bestValue,
                    Move* bestMove, Depth depth, Move threatMove, int moveCount,
                    MovePicker* movePicker, int nodeType, bool cutNode) {
 
@@ -299,7 +299,7 @@ void Thread::split(Position& pos, Stack* ss, Value alpha, Value beta, Value* bes
   Threads.mutex.lock();
   sp.mutex.lock();
 
-  splitPointsSize++;
+  ++splitPointsSize;
   activeSplitPoint = &sp;
   activePosition = NULL;
 
@@ -333,13 +333,13 @@ void Thread::split(Position& pos, Stack* ss, Value alpha, Value beta, Value* bes
 
       // We have returned from the idle loop, which means that all threads are
       // finished. Note that setting 'searching' and decreasing splitPointsSize is
-      // done under lock protection to avoid a race with Thread::is_available_to().
+      // done under lock protection to avoid a race with Thread::available_to().
       Threads.mutex.lock();
       sp.mutex.lock();
   }
 
   searching = true;
-  splitPointsSize--;
+  --splitPointsSize;
   activeSplitPoint = sp.parentSplitPoint;
   activePosition = &pos;
   pos.set_nodes_searched(pos.nodes_searched() + sp.nodes);
@@ -354,8 +354,8 @@ void Thread::split(Position& pos, Stack* ss, Value alpha, Value beta, Value* bes
 }
 
 // Explicit template instantiations
-template void Thread::split<false>(Position&, Stack*, Value, Value, Value*, Move*, Depth, Move, int, MovePicker*, int, bool);
-template void Thread::split< true>(Position&, Stack*, Value, Value, Value*, Move*, Depth, Move, int, MovePicker*, int, bool);
+template void Thread::split<false>(Position&, const Stack*, Value, Value, Value*, Move*, Depth, Move, int, MovePicker*, int, bool);
+template void Thread::split< true>(Position&, const Stack*, Value, Value, Value*, Move*, Depth, Move, int, MovePicker*, int, bool);
 
 
 // wait_for_think_finished() waits for main thread to go to sleep then returns

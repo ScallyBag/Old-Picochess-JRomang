@@ -113,7 +113,7 @@ namespace {
                 + RedundantQueen * pieceCount[Us][QUEEN];
 
     // Second-degree polynomial material imbalance by Tord Romstad
-    for (pt1 = NO_PIECE_TYPE; pt1 <= QUEEN; pt1++)
+    for (pt1 = NO_PIECE_TYPE; pt1 <= QUEEN; ++pt1)
     {
         pc = pieceCount[Us][pt1];
         if (!pc)
@@ -121,7 +121,7 @@ namespace {
 
         v = LinearCoefficients[pt1];
 
-        for (pt2 = NO_PIECE_TYPE; pt2 <= pt1; pt2++)
+        for (pt2 = NO_PIECE_TYPE; pt2 <= pt1; ++pt2)
             v +=  QuadraticCoefficientsSameColor[pt1][pt2] * pieceCount[Us][pt2]
                 + QuadraticCoefficientsOppositeColor[pt1][pt2] * pieceCount[Them][pt2];
 
@@ -240,7 +240,8 @@ Entry* probe(const Position& pos, Table& entries, Endgames& endgames) {
       }
   }
 
-  // No pawns makes it difficult to win, even with a material advantage
+  // No pawns makes it difficult to win, even with a material advantage. This
+  // catches some trivial draws like KK, KBK and KNK
   if (!pos.count<PAWN>(WHITE) && npm_w - npm_b <= BishopValueMg)
   {
       e->factor[WHITE] = (uint8_t)
