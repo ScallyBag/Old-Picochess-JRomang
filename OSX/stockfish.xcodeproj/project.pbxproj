@@ -484,7 +484,6 @@
 					IS_64BIT,
 					USE_BSFQ,
 				);
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				HEADER_SEARCH_PATHS = "../src/kyotocabinet/**";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -507,7 +506,6 @@
 					IS_64BIT,
 					USE_BSFQ,
 				);
-				GCC_VERSION = com.apple.compilers.llvmgcc42;
 				HEADER_SEARCH_PATHS = "../src/kyotocabinet/**";
 				MACOSX_DEPLOYMENT_TARGET = 10.5;
 				PRODUCT_NAME = "$(TARGET_NAME)";
