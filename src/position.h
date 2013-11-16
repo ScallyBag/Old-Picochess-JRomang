@@ -108,7 +108,7 @@ public:
   // Checking
   Bitboard checkers() const;
   Bitboard discovered_check_candidates() const;
-  Bitboard pinned_pieces() const;
+  Bitboard pinned_pieces(Color toMove) const;
 
   // Attacks to/from a given square
   Bitboard attackers_to(Square s) const;
@@ -180,7 +180,7 @@ private:
 
   // Helper functions
   void do_castle(Square kfrom, Square kto, Square rfrom, Square rto);
-  Bitboard hidden_checkers(Square ksq, Color c) const;
+  Bitboard hidden_checkers(Square ksq, Color c, Color toMove) const;
   void put_piece(Square s, Color c, PieceType pt);
   void remove_piece(Square s, Color c, PieceType pt);
   void move_piece(Square from, Square to, Color c, PieceType pt);
@@ -325,11 +325,11 @@ inline Bitboard Position::checkers() const {
 }
 
 inline Bitboard Position::discovered_check_candidates() const {
-  return hidden_checkers(king_square(~sideToMove), sideToMove);
+  return hidden_checkers(king_square(~sideToMove), sideToMove, sideToMove);
 }
 
-inline Bitboard Position::pinned_pieces() const {
-  return hidden_checkers(king_square(sideToMove), ~sideToMove);
+inline Bitboard Position::pinned_pieces(Color toMove) const {
+  return hidden_checkers(king_square(toMove), ~toMove, toMove);
 }
 
 inline bool Position::pawn_passed(Color c, Square s) const {
@@ -414,6 +414,7 @@ inline void Position::put_piece(Square s, Color c, PieceType pt) {
   byTypeBB[ALL_PIECES] |= s;
   byTypeBB[pt] |= s;
   byColorBB[c] |= s;
+  pieceCount[c][ALL_PIECES]++;
   index[s] = pieceCount[c][pt]++;
   pieceList[c][pt][index[s]] = s;
 }
@@ -442,6 +443,7 @@ inline void Position::remove_piece(Square s, Color c, PieceType pt) {
   byTypeBB[pt] ^= s;
   byColorBB[c] ^= s;
   /* board[s] = NO_PIECE; */ // Not needed, will be overwritten by capturing
+  pieceCount[c][ALL_PIECES]--;
   Square lastSquare = pieceList[c][pt][--pieceCount[c][pt]];
   index[lastSquare] = index[s];
   pieceList[c][pt][index[lastSquare]] = lastSquare;

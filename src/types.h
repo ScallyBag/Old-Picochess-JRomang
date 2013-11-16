@@ -335,11 +335,11 @@ inline bool operator<(const ExtMove& f, const ExtMove& s) {
 }
 
 inline Color operator~(Color c) {
-  return Color(c ^ 1);
+  return Color(c ^ BLACK);
 }
 
 inline Square operator~(Square s) {
-  return Square(s ^ 56); // Vertical flip SQ_A1 -> SQ_A8
+  return Square(s ^ SQ_A8); // Vertical flip SQ_A1 -> SQ_A8
 }
 
 inline Square operator|(File f, Rank r) {
@@ -381,10 +381,6 @@ inline File file_of(Square s) {
 
 inline Rank rank_of(Square s) {
   return Rank(s >> 3);
-}
-
-inline Square mirror(Square s) {
-  return Square(s ^ 7); // Horizontal flip SQ_A1 -> SQ_H1
 }
 
 inline Square relative_square(Color c, Square s) {

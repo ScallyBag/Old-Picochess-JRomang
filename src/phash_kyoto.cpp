@@ -219,7 +219,7 @@ bool KYOTO_PersistentHash::store_phash(const Key key, t_phash_data &data)
   return false;
 }
 
-bool KYOTO_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD)
+bool KYOTO_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV)
 {
   Depth oldDepth = DEPTH_ZERO;
   bool isRoot;
@@ -234,7 +234,7 @@ bool KYOTO_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d,
       data.d = d;
       data.m = m;
       data.statV = statV;
-      data.kingD = kingD;
+      data.kingD = 0;
 
       return dostore_phash(key, data);
     }
@@ -451,7 +451,7 @@ void KYOTO_PersistentHash::to_tt_phash()
       const char* visit_full(const char* kbuf, size_t UNUSED(ksiz),
                              const char* vbuf, size_t UNUSED(vsiz), size_t *UNUSED(sp)) {
         t_phash_data *data = (t_phash_data *)(intptr_t)vbuf;
-        TT.store(*((Key *)(intptr_t)kbuf), (Value)data->v, (Bound)(data->t & ~BOUND_ROOT), (Depth)data->d, (Move)data->m, (Value)data->statV, (Value)data->kingD, false);
+        TT.store(*((Key *)(intptr_t)kbuf), (Value)data->v, (Bound)(data->t & ~BOUND_ROOT), (Depth)data->d, (Move)data->m, (Value)data->statV, false);
 #ifdef PHASH_DEBUG
         if (data->t & BOUND_ROOT) rootcount++;
         count++;

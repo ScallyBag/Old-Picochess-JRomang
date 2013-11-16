@@ -133,7 +133,7 @@ const string move_to_san(Position& pos, Move m) {
           while (b)
           {
               Move move = make_move(pop_lsb(&b), to);
-              if (!pos.legal(move, pos.pinned_pieces()))
+              if (!pos.legal(move, pos.pinned_pieces(pos.side_to_move())))
                   others ^= from_sq(move);
           }
 
@@ -305,7 +305,7 @@ template <int MoveType> inline Move test_move(Position &pos, Square fromsquare, 
       }
     }
   }
-  if (pos.pseudo_legal(move) && pos.legal(move, pos.pinned_pieces())) {
+  if (pos.pseudo_legal(move) && pos.legal(move, pos.pinned_pieces(pos.side_to_move()))) {
 #ifdef SAN_DEBUG
     sync_cout << "found a move: " << move_to_uci(move, false) << sync_endl;
 #endif
@@ -404,7 +404,7 @@ Move san_to_move(Position& pos, std::string& str)
         move = make<CASTLE>(SQ_E8, SQ_A8);
       }
     }
-    if (pos.pseudo_legal(move) && pos.legal(move, pos.pinned_pieces())) {
+    if (pos.pseudo_legal(move) && pos.legal(move, pos.pinned_pieces(pos.side_to_move()))) {
       return move;
     }
     return MOVE_NONE; // invalid

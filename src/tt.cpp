@@ -30,9 +30,9 @@ TranspositionTable<TTEntry> TT; // Our global transposition table
 TranspositionTable<PHEntry> PH;
 
 
-void TTEntry::phash_store(Key k64, Value v, Bound b, Depth d, Move m, Value ev, Value em) {
+void TTEntry::phash_store(Key k64, Value v, Bound b, Depth d, Move m, Value ev) {
 
-  PH.store(k64, v, b, d, m, ev, em, true);
+  PH.store(k64, v, b, d, m, ev, true);
 }
 
 /// TranspositionTable::set_size() sets the size of the transposition table,
@@ -102,14 +102,14 @@ const T* TranspositionTable<T>::probe(const Key key) const {
 /// a previous search, or if the depth of t1 is bigger than the depth of t2.
 
 template<class T>
-void TranspositionTable<T>::store(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value evalM) {
+void TranspositionTable<T>::store(const Key key, Value v, Bound b, Depth d, Move m, Value statV) {
 
-  TranspositionTable<T>::store(key, v, t, d, m, statV, evalM, true);
+  TranspositionTable<T>::store(key, v, b, d, m, statV, true);
 }
 
 
 template<class T>
-void TranspositionTable<T>::store(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value evalM, bool interested) {
+void TranspositionTable<T>::store(const Key key, Value v, Bound b, Depth d, Move m, Value statV, bool interested) {
 
   int c1, c2, c3;
   T *tte, *replace;
@@ -136,9 +136,8 @@ void TranspositionTable<T>::store(const Key key, Value v, Bound t, Depth d, Move
       if (c1 + c2 + c3 > 0)
           replace = tte;
   }
-  replace->save(key, key32, v, t, d, m, generation, statV, evalM, interested);
+  replace->save(key, key32, v, b, d, m, generation, statV, interested);
 }
-
 
 // TranspositionTable<PHEntry> overrides for TranspositionTable::to_phash() 
 
@@ -165,7 +164,7 @@ void TranspositionTable<PHEntry>::to_phash() {
           (tte->bound() == BOUND_EXACT) &&
           (DEPTH_IS_VALID(tte->depth(), minDepth)))
       {
-        if (PHInst.store_phash(key, tte->value(), phe->fulltype(), tte->depth(), tte->move(), tte->eval_value(), tte->eval_margin())) {
+        if (PHInst.store_phash(key, tte->value(), phe->fulltype(), tte->depth(), tte->move(), tte->eval_value())) {
 #ifdef PHASH_DEBUG
           if (phe->fulltype() & BOUND_ROOT) rootcount++;
           count++;
@@ -189,7 +188,6 @@ void TranspositionTable<PHEntry>::to_phash() {
   }
 #endif
 }
-
 
 /// TranspositionTable::from_phash()
 

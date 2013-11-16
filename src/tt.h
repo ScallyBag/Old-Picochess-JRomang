@@ -40,7 +40,7 @@
 
 struct TTEntry {
 
-  void save(Key k64, uint32_t k, Value v, Bound b, Depth d, Move m, int g, Value ev, Value em, bool interested) {
+  void save(Key k64, uint32_t k, Value v, Bound b, Depth d, Move m, int g, Value ev, bool interested) {
 
     key32        = (uint32_t)k;
     move16       = (uint16_t)m;
@@ -49,10 +49,9 @@ struct TTEntry {
     value16      = (int16_t)v;
     depth16      = (int16_t)d;
     evalValue    = (int16_t)ev;
-    evalMargin   = (int16_t)em;
     if (interested && (b & ~BOUND_ROOT) == BOUND_EXACT && m != MOVE_NONE && Options["Use Persistent Hash"]) {
       if (DEPTH_IS_VALID(d, (Options["Persistent Hash Depth"] * ONE_PLY))) {
-        phash_store(k64, v, b, d, m, ev, em);
+        phash_store(k64, v, b, d, m, ev);
       }
     }
   }
@@ -65,21 +64,20 @@ struct TTEntry {
   Bound bound() const       { return (Bound)(bound8 & ~BOUND_ROOT); }
   int generation() const    { return (int)generation8; }
   Value eval_value() const  { return (Value)evalValue; }
-  Value eval_margin() const { return (Value)evalMargin; }
 
 private:
-  void phash_store(Key k64, Value v, Bound b, Depth d, Move m, Value ev, Value em);
+  void phash_store(Key k64, Value v, Bound b, Depth d, Move m, Value ev);
 
   uint32_t key32;
   uint16_t move16;
   uint8_t bound8, generation8;
-  int16_t value16, depth16, evalValue, evalMargin;
+  int16_t value16, depth16, evalValue;
 };
 
 
 struct PHEntry {
 
-  void save(Key k64, uint32_t UNUSED(k), Value UNUSED(v), Bound b, Depth d, Move m, int g, Value UNUSED(ev), Value UNUSED(em), bool UNUSED(interested)) {
+  void save(Key k64, uint32_t UNUSED(k), Value UNUSED(v), Bound b, Depth d, Move m, int g, Value UNUSED(ev), bool UNUSED(interested)) {
 
     key64        = (Key)k64;
     move16       = (uint16_t)m;
@@ -128,8 +126,8 @@ public:
   void refresh(const T* tte) const;
   void set_size(size_t mbSize);
   void clear();
-  void store(const Key key, Value v, Bound type, Depth d, Move m, Value statV, Value kingD);
-  void store(const Key key, Value v, Bound type, Depth d, Move m, Value statV, Value kingD, bool interested);
+  void store(const Key key, Value v, Bound type, Depth d, Move m, Value statV);
+  void store(const Key key, Value v, Bound type, Depth d, Move m, Value statV, bool interested);
   void from_phash() {}
   void to_phash() {}
 

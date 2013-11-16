@@ -98,7 +98,7 @@ CheckInfo::CheckInfo(const Position& pos) {
   Color them = ~pos.side_to_move();
   ksq = pos.king_square(them);
 
-  pinned = pos.pinned_pieces();
+  pinned = pos.pinned_pieces(pos.side_to_move());
   dcCandidates = pos.discovered_check_candidates();
 
   checkSq[PAWN]   = pos.attacks_from<PAWN>(ksq, them);
@@ -425,7 +425,7 @@ const string Position::pretty(Move move) const {
 /// pieces, according to the call parameters. Pinned pieces protect our king,
 /// discovery check pieces attack the enemy king.
 
-Bitboard Position::hidden_checkers(Square ksq, Color c) const {
+Bitboard Position::hidden_checkers(Square ksq, Color c, Color toMove) const {
 
   Bitboard b, pinners, result = 0;
 
@@ -438,7 +438,7 @@ Bitboard Position::hidden_checkers(Square ksq, Color c) const {
       b = between_bb(ksq, pop_lsb(&pinners)) & pieces();
 
       if (!more_than_one(b))
-          result |= b & pieces(sideToMove);
+          result |= b & pieces(toMove);
   }
   return result;
 }
@@ -480,7 +480,7 @@ Bitboard Position::attacks_from(Piece p, Square s, Bitboard occ) {
 bool Position::legal(Move m, Bitboard pinned) const {
 
   assert(is_ok(m));
-  assert(pinned == pinned_pieces());
+  assert(pinned == pinned_pieces(sideToMove));
 
   Color us = sideToMove;
   Square from = from_sq(m);
@@ -518,7 +518,7 @@ bool Position::legal(Move m, Bitboard pinned) const {
   // is moving along the ray towards or away from the king.
   return   !pinned
         || !(pinned & from)
-        ||  squares_aligned(from, to_sq(m), king_square(us));
+        ||  aligned(from, to_sq(m), king_square(us));
 }
 
 
@@ -661,7 +661,7 @@ bool Position::gives_check(Move m, const CheckInfo& ci) const {
   {
       // For pawn and king moves we need to verify also direction
       if (   (pt != PAWN && pt != KING)
-          || !squares_aligned(from, to, king_square(~sideToMove)))
+          || !aligned(from, to, king_square(~sideToMove)))
           return true;
   }
 
@@ -1070,7 +1070,7 @@ int Position::see(Move m, int asymmThreshold) const {
 
   from = from_sq(m);
   to = to_sq(m);
-  swapList[0] = PieceValue[MG][type_of(piece_on(to))];
+  swapList[0] = PieceValue[MG][piece_on(to)];
   stm = color_of(piece_on(from));
   occupied = pieces() ^ from;
 
@@ -1137,7 +1137,7 @@ int Position::see(Move m, int asymmThreshold) const {
   // Having built the swap list, we negamax through it to find the best
   // achievable score from the point of view of the side to move.
   while (--slIndex)
-      swapList[slIndex-1] = std::min(-swapList[slIndex], swapList[slIndex-1]);
+      swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
 
   return swapList[0];
 }

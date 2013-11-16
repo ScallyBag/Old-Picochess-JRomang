@@ -32,7 +32,7 @@ public:
   virtual void init_phash();
   virtual void quit_phash();
   virtual bool store_phash(const Key key, t_phash_data &data);
-  virtual bool store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD);
+  virtual bool store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV);
   virtual Move probe_phash(const Key key, Depth &d, bool &isRoot);
   virtual void starttransaction_phash(PHASH_MODE mode);
   virtual void endtransaction_phash();

@@ -276,7 +276,7 @@ bool QDBM_PersistentHash::store_phash(const Key key, t_phash_data &data)
   return false;
 }
 
-bool QDBM_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD)
+bool QDBM_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV)
 {
   Depth oldDepth = DEPTH_ZERO;
   bool isRoot;
@@ -292,7 +292,7 @@ bool QDBM_PersistentHash::store_phash(const Key key, Value v, Bound t, Depth d, 
       data.d = d;
       data.m = m;
       data.statV = statV;
-      data.kingD = kingD;
+      data.kingD = 0;
 
       rv = dpput(PersHashFile, (const char *)&key, (int)sizeof(Key), (const char *)&data, (int)sizeof(t_phash_data), DP_DOVER);
 #ifdef PHASH_DEBUG
@@ -513,7 +513,7 @@ void QDBM_PersistentHash::to_tt_phash()
         
         datasize = dpgetwb(PersHashFile, (const char *)key, (int)sizeof(Key), 0, (int)sizeof(t_phash_data), (char *)&data);
         if (datasize == sizeof(t_phash_data)) {
-          TT.store(*((Key *)key), (Value)data.v, (Bound)data.t, (Depth)data.d, (Move)data.m, (Value)data.statV, (Value)data.kingD, false);
+          TT.store(*((Key *)key), (Value)data.v, (Bound)data.t, (Depth)data.d, (Move)data.m, (Value)data.statV, false);
 #ifdef PHASH_DEBUG
           printf("dpgetwb: pull %llx\n", *((Key *)key));
           count++;

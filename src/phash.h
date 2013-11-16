@@ -56,7 +56,7 @@ public:
 
   virtual void init_phash() = 0;
   virtual void quit_phash() = 0;
-  virtual bool store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV, Value kingD) = 0;
+  virtual bool store_phash(const Key key, Value v, Bound t, Depth d, Move m, Value statV) = 0;
   virtual bool store_phash(const Key key, t_phash_data &data) = 0;
   virtual Move probe_phash(const Key key, Depth &d, bool &isRoot) = 0;
   virtual void starttransaction_phash(PHASH_MODE mode) = 0;
