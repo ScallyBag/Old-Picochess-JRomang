@@ -27,7 +27,6 @@
 #include "position.h"
 #include "search.h"
 #include "thread.h"
-#include "tt.h"
 #include "ucioption.h"
 #ifdef PA_GTB
 #include "phash.h"
@@ -114,7 +113,7 @@ void UCI::loop(const string& args) {
           Search::RootColor = pos.side_to_move(); // Ensure it is set
           sync_cout << Eval::trace(pos) << sync_endl;
       }
-      else if (token == "ucinewgame") TT.clear();
+      else if (token == "ucinewgame") { /* Avoid returning "Unknown command" */ }
       else if (token == "go")         go(pos, is);
       else if (token == "position")   position(pos, is);
       else if (token == "setoption")  setoption(is);
