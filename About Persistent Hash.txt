@@ -1,4 +1,4 @@
-About Persistent Hash (Stockfish-4-PA_GTB-001 Release Notes)
+About Persistent Hash (Stockfish-DD-PA_GTB Release Notes)
 ============================================================
 
 INTRODUCTION:
@@ -14,6 +14,12 @@ KNOWN ISSUES:
 The contents of the PH file are loaded into the hash table at search start. When the PH file is very large, this can take a moment and the engine will appear to stop responding (although usually this takes less than a second, even with PH files of many MB). I haven't really checked with HUGE PH files. Anyway, it's kind of unavoidable and known.
 
 RELEASE NOTES:
+
+vDD
+  - update to the Don Dailey memorial release of the Stockfish upstream master branch
+
+v4-002
+  - update to the tip of the Stockfish upstream master branch
 
 v4-001
   - update to the tip of the Stockfish upstream master branch (now at v4)
