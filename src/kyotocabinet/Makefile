@@ -50,8 +50,8 @@ CPPFLAGS = -I. -I$(INCLUDEDIR) -I/usr/local/include -DNDEBUG -D_GNU_SOURCE=1 -D_
   -D_KC_PREFIX="\"$(prefix)\"" -D_KC_INCLUDEDIR="\"$(INCLUDEDIR)\"" \
   -D_KC_LIBDIR="\"$(LIBDIR)\"" -D_KC_BINDIR="\"$(BINDIR)\"" -D_KC_LIBEXECDIR="\"$(LIBEXECDIR)\"" \
   -D_KC_APPINC="\"-I$(INCLUDEDIR)\"" -D_KC_APPLIBS="\"-L$(LIBDIR) -lkyotocabinet -lregex -lstdc++ -lpthread -lm \""
-CFLAGS = -march=native -g -O2 -Wall -ansi -pedantic -fPIC -fsigned-char -g0 -O2 -Wno-unused-but-set-variable -Wno-unused-but-set-parameter
-CXXFLAGS = -march=native -g -O2 -Wall -fPIC -fsigned-char -g0 -O2 -Wno-unused-but-set-variable -Wno-unused-but-set-parameter
+CFLAGS = -march=corei7 -g -O2 -Wall -ansi -pedantic -fPIC -fsigned-char -g0 -O2 -Wno-unused-but-set-variable -Wno-unused-but-set-parameter
+CXXFLAGS = -march=corei7 -g -O2 -Wall -fPIC -fsigned-char -g0 -O2 -Wno-unused-but-set-variable -Wno-unused-but-set-parameter
 CXXFLAGS += -fpermissive
 LDFLAGS = -L. -L$(LIBDIR) -L/usr/local/lib
 CMDLDFLAGS =  -static
