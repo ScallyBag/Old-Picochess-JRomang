@@ -59,9 +59,7 @@ struct Stack {
   Move killers[2];
   Depth reduction;
   Value staticEval;
-  Value evalMargin;
   int skipNullMove;
-  int futilityMoveCount;
 };
 
 
