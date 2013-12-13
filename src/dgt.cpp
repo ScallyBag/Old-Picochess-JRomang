@@ -1516,7 +1516,7 @@ namespace DGT
     cout << "The board was found - code: " << BoardDescriptor << endl;
     sleep (3);
     dgtnixUpdate ();
-    dgtnixPrintMessageOnClock ("pic017", true, DGTNIX_RIGHT_DOT); //Display version number
+    dgtnixPrintMessageOnClock ("pic018", true, DGTNIX_RIGHT_DOT); //Display version number
 
     //Engine options
     UCI::loop ("setoption name Hash value 512");
@@ -1576,9 +1576,10 @@ namespace DGT
             //Test if we reached the computer move fen
             if (!searching && !computerMoveFENReached && (computerMoveFEN.find (s.substr (0, s.find (' '))) != string::npos))
               {
-                if (playMode!=ANALYSIS && playMode!=TRAINING) {
-                    dgtnixPrintMessageOnClock (" done ", true, false);
-                  }
+                // Commenting out the done message for now. It does not seem stable yet after testing perhaps due to the delay of the PrintMessageOnClock method
+                //if (playMode!=ANALYSIS && playMode!=TRAINING) {
+                //    dgtnixPrintMessageOnClock (" done ", true, false);
+                //  }
                 computerMoveFENReached = true;
                 //Add fischer increment time to the player's clock
                 if (computerPlays != WHITE) wTime += fischerInc;
