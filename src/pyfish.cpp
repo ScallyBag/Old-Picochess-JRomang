@@ -10,6 +10,8 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
+#include "notation.h"
+
 
 using namespace std;
 
@@ -30,15 +32,36 @@ extern "C" PyObject* stockfish_info(PyObject* self)
 
 extern "C" PyObject* stockfish_position(PyObject* self, PyObject *args)
 {
-  //http://code.activestate.com/lists/python-list/31841/
-    PyObject *o;
-    char *s;
-    if (!PyArg_ParseTuple(args, "sO", &s,  &o)) {
-      return NULL;
+    //http://code.activestate.com/lists/python-list/31841/
+    PyObject *listObj;
+    const char *fen;
+    if (!PyArg_ParseTuple(args, "sO!", &fen,  &PyList_Type, &listObj)) {
+        return NULL;
     }
-    cout<<"initial:"<< s<<endl;
+
+    if(strcmp(fen,"startpos")==0) fen=StartFEN;
+    pos->set(fen, Options["UCI_Chess960"], Threads.main());
+    SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
+
+    // parse the move list
+    int numMoves = PyList_Size(listObj);
+    for (int i=0; i<numMoves ; i++) {
+        string moveStr( PyString_AsString( PyList_GetItem(listObj, i)) );
+        Move m;
+        if((m = move_from_uci(*pos, moveStr)) != MOVE_NONE)
+        {
+            SetupStates->push(StateInfo());
+            pos->do_move(m, SetupStates->top());
+        }
+        else {
+            cout<<"Invalid move:"<<moveStr<<endl;
+            break; //TODO raise error
+        }
+
+    }
+
     Py_RETURN_NONE;
-}       
+}
 
 static char stockfish_docs[] =
     "helloworld( ): Any message you want to put here!!\n";
