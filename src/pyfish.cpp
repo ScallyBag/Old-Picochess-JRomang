@@ -2,6 +2,8 @@
 
 #include <sstream>
 #include <iostream>
+#include <vector>
+#include <algorithm>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -21,9 +23,8 @@ const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 // Keep track of position keys along the setup moves (from start position to the
 // position just before to start searching). Needed by repetition draw detection.
 Search::StateStackPtr SetupStates;
-
-
 Position *pos;
+vector<PyObject*> observers;
 
 extern "C" PyObject* stockfish_info(PyObject* self)
 {
@@ -84,6 +85,36 @@ extern "C" PyObject* stockfish_position(PyObject* self, PyObject *args)
     Py_RETURN_NONE;
 }
 
+extern "C" PyObject* stockfish_addObserver(PyObject* self, PyObject *args)
+{
+      PyObject *observer;
+      if (!PyArg_ParseTuple(args, "O", &observer)) {
+        return NULL;
+      }
+      Py_INCREF(observer);
+      observers.push_back(observer);
+      Py_RETURN_NONE;
+}
+
+extern "C" PyObject* stockfish_removeObserver(PyObject* self, PyObject *args)
+{
+      PyObject *observer;
+      if (!PyArg_ParseTuple(args, "O", &observer)) {
+        return NULL;
+      }
+      observers.erase(remove(observers.begin(), observers.end(), observer), observers.end());
+      Py_XDECREF(observer);
+      Py_RETURN_NONE;
+}
+
+extern "C" PyObject* stockfish_notifyObservers(PyObject* self, PyObject *args)
+{
+  //http://docs.python.org/release/1.5.2/ext/callingPython.html
+  for (vector<PyObject*>::iterator it = observers.begin() ; it != observers.end(); ++it)
+    PyEval_CallObject(*it, args);
+  Py_RETURN_NONE;
+}
+
 // go() is called when engine receives the "go" UCI command. The function sets
 // the thinking time and other parameters from the input string, and starts
 // the search.
@@ -107,11 +138,14 @@ static char stockfish_docs[] =
     "helloworld( ): Any message you want to put here!!\n";
 
 static PyMethodDef stockfish_funcs[] = {
+    {"addObserver", (PyCFunction)stockfish_addObserver, METH_VARARGS, stockfish_docs},
+    {"notifyObservers", (PyCFunction)stockfish_notifyObservers, METH_VARARGS, stockfish_docs},
+    {"removeObserver", (PyCFunction)stockfish_removeObserver, METH_VARARGS, stockfish_docs},
     {"flip", (PyCFunction)stockfish_flip, METH_NOARGS, stockfish_docs},
     {"go", (PyCFunction)stockfish_go, METH_KEYWORDS, stockfish_docs},
     {"info", (PyCFunction)stockfish_info, METH_NOARGS, stockfish_docs},
     {"position", (PyCFunction)stockfish_position, METH_VARARGS, stockfish_docs},
-    {"setOption", (PyCFunction)stockfish_setOption, METH_VARARGS, stockfish_docs},
+    {"setOption", (PyCFunction)stockfish_setOption, METH_VARARGS, stockfish_docs},   
     {NULL}
 };
 
