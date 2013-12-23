@@ -30,9 +30,30 @@ extern "C" PyObject* stockfish_info(PyObject* self)
     return Py_BuildValue("s", engine_info().c_str());
 }
 
+extern "C" PyObject* stockfish_flip(PyObject* self)
+{
+    pos->flip();
+    Py_RETURN_NONE;
+}
+
+extern "C" PyObject* stockfish_setOption(PyObject* self, PyObject *args)
+{
+    const char *name;
+    PyObject *valueObj;
+    if (!PyArg_ParseTuple(args, "sO", &name, &valueObj)) {
+        return NULL;
+    }
+
+    if (Options.count(name))
+        Options[name] = string(PyString_AsString(PyObject_Str(valueObj)));
+    else
+        sync_cout << "No such option: " << name << sync_endl; //TODO raise exception
+
+    Py_RETURN_NONE;
+}
+
 extern "C" PyObject* stockfish_position(PyObject* self, PyObject *args)
 {
-    //http://code.activestate.com/lists/python-list/31841/
     PyObject *listObj;
     const char *fen;
     if (!PyArg_ParseTuple(args, "sO!", &fen,  &PyList_Type, &listObj)) {
@@ -63,12 +84,34 @@ extern "C" PyObject* stockfish_position(PyObject* self, PyObject *args)
     Py_RETURN_NONE;
 }
 
+// go() is called when engine receives the "go" UCI command. The function sets
+// the thinking time and other parameters from the input string, and starts
+// the search.
+
+extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwargs) {
+    Search::LimitsType limits;
+    vector<Move> searchMoves;
+    PyObject *listSearchMoves;
+
+    const char *kwlist[] = {"searchmoves", "wtime", "btime", "winc", "binc", "movestogo", "depth", "nodes", "movetime", "mate", "infinite", "ponder", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O!iiiiiiiiiii", const_cast<char **>(kwlist), &PyList_Type, &listSearchMoves,
+                                     &(limits.time[WHITE]), &(limits.time[BLACK]), &(limits.inc[WHITE]), &(limits.inc[BLACK]),
+                                     &(limits.movestogo), &(limits.depth), &(limits.nodes), &(limits.movetime), &(limits.mate), &(limits.infinite), &(limits.ponder)))
+        return NULL;
+
+    Threads.start_thinking(*pos, limits, searchMoves, SetupStates);
+    Py_RETURN_NONE;
+}
+
 static char stockfish_docs[] =
     "helloworld( ): Any message you want to put here!!\n";
 
 static PyMethodDef stockfish_funcs[] = {
+    {"flip", (PyCFunction)stockfish_flip, METH_NOARGS, stockfish_docs},
+    {"go", (PyCFunction)stockfish_go, METH_KEYWORDS, stockfish_docs},
     {"info", (PyCFunction)stockfish_info, METH_NOARGS, stockfish_docs},
     {"position", (PyCFunction)stockfish_position, METH_VARARGS, stockfish_docs},
+    {"setOption", (PyCFunction)stockfish_setOption, METH_VARARGS, stockfish_docs},
     {NULL}
 };
 
