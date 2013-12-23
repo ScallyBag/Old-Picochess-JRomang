@@ -17,6 +17,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <Python.h>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -139,7 +140,7 @@ public:
 
 /// Used to serialize access to std::cout to avoid multiple threads to write at
 /// the same time.
-
+std::stringstream strout;
 std::ostream& operator<<(std::ostream& os, SyncCout sc) {
 
   static Mutex m;
@@ -148,7 +149,11 @@ std::ostream& operator<<(std::ostream& os, SyncCout sc) {
       m.lock();
 
   if (sc == io_unlock)
+  { 
+      stockfish_notifyObservers(strout.str());
+      strout.str("");
       m.unlock();
+  }
 
   return os;
 }

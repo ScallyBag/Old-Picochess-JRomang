@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <fstream>
+#include <streambuf>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -16,6 +18,7 @@
 
 
 using namespace std;
+
 
 // FEN string of the initial position, normal chess
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -87,38 +90,54 @@ extern "C" PyObject* stockfish_position(PyObject* self, PyObject *args)
 
 extern "C" PyObject* stockfish_addObserver(PyObject* self, PyObject *args)
 {
-      PyObject *observer;
-      if (!PyArg_ParseTuple(args, "O", &observer)) {
+    PyObject *observer;
+    if (!PyArg_ParseTuple(args, "O", &observer)) {
         return NULL;
-      }
-      Py_INCREF(observer);
-      observers.push_back(observer);
-      Py_RETURN_NONE;
+    }
+    Py_INCREF(observer);
+    observers.push_back(observer);
+    Py_RETURN_NONE;
 }
 
 extern "C" PyObject* stockfish_removeObserver(PyObject* self, PyObject *args)
 {
-      PyObject *observer;
-      if (!PyArg_ParseTuple(args, "O", &observer)) {
+    PyObject *observer;
+    if (!PyArg_ParseTuple(args, "O", &observer)) {
         return NULL;
-      }
-      observers.erase(remove(observers.begin(), observers.end(), observer), observers.end());
-      Py_XDECREF(observer);
-      Py_RETURN_NONE;
+    }
+    observers.erase(remove(observers.begin(), observers.end(), observer), observers.end());
+    Py_XDECREF(observer);
+    Py_RETURN_NONE;
 }
-
+/*
 extern "C" PyObject* stockfish_notifyObservers(PyObject* self, PyObject *args)
 {
   //http://docs.python.org/release/1.5.2/ext/callingPython.html
   for (vector<PyObject*>::iterator it = observers.begin() ; it != observers.end(); ++it)
     PyEval_CallObject(*it, args);
   Py_RETURN_NONE;
+}*/
+
+void stockfish_notifyObservers(string s)
+{
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+
+    //http://docs.python.org/release/1.5.2/ext/callingPython.html
+    PyObject *arglist;
+    arglist=Py_BuildValue("(s)", s.c_str());
+    for (vector<PyObject*>::iterator it = observers.begin() ; it != observers.end(); ++it)
+        PyObject_CallObject(*it, arglist);
+
+    Py_DECREF(arglist);
+    //Py_RETURN_NONE;
+
+    PyGILState_Release(gstate);
 }
 
 // go() is called when engine receives the "go" UCI command. The function sets
 // the thinking time and other parameters from the input string, and starts
 // the search.
-
 extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwargs) {
     Search::LimitsType limits;
     vector<Move> searchMoves;
@@ -139,20 +158,19 @@ static char stockfish_docs[] =
 
 static PyMethodDef stockfish_funcs[] = {
     {"addObserver", (PyCFunction)stockfish_addObserver, METH_VARARGS, stockfish_docs},
-    {"notifyObservers", (PyCFunction)stockfish_notifyObservers, METH_VARARGS, stockfish_docs},
+    //{"notifyObservers", (PyCFunction)stockfish_notifyObservers, METH_VARARGS, stockfish_docs},
     {"removeObserver", (PyCFunction)stockfish_removeObserver, METH_VARARGS, stockfish_docs},
     {"flip", (PyCFunction)stockfish_flip, METH_NOARGS, stockfish_docs},
     {"go", (PyCFunction)stockfish_go, METH_KEYWORDS, stockfish_docs},
     {"info", (PyCFunction)stockfish_info, METH_NOARGS, stockfish_docs},
     {"position", (PyCFunction)stockfish_position, METH_VARARGS, stockfish_docs},
-    {"setOption", (PyCFunction)stockfish_setOption, METH_VARARGS, stockfish_docs},   
+    {"setOption", (PyCFunction)stockfish_setOption, METH_VARARGS, stockfish_docs},
     {NULL}
 };
 
 PyMODINIT_FUNC initstockfish(void)
 {
-    Py_InitModule3("stockfish", stockfish_funcs,
-                   "Extension module example!");
+    Py_InitModule3("stockfish", stockfish_funcs, "Extension module example!");
 
     UCI::init(Options);
     Bitboards::init();
@@ -165,4 +183,10 @@ PyMODINIT_FUNC initstockfish(void)
     TT.set_size(Options["Hash"]);
 
     pos=new Position(StartFEN, false, Threads.main());
+
+    // Make sure the GIL has been created since we need to acquire it in our
+    // callback to safely call into the python application.
+    if (! PyEval_ThreadsInitialized()) {
+        PyEval_InitThreads();
+    }
 }

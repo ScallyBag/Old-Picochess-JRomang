@@ -23,6 +23,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include "types.h"
 
@@ -61,8 +62,10 @@ private:
 
 enum SyncCout { io_lock, io_unlock };
 std::ostream& operator<<(std::ostream&, SyncCout);
+extern std::stringstream strout;
+extern void stockfish_notifyObservers(std::string s);
 
-#define sync_cout std::cout << io_lock
+#define sync_cout strout << io_lock
 #define sync_endl std::endl << io_unlock
 
 #endif // #ifndef MISC_H_INCLUDED
