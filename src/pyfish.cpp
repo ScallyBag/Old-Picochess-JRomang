@@ -40,6 +40,22 @@ extern "C" PyObject* stockfish_flip(PyObject* self)
     Py_RETURN_NONE;
 }
 
+extern "C" PyObject* stockfish_stop(PyObject* self)
+{
+    Search::Signals.stop = true;
+    Threads.main()->notify_one(); // Could be sleeping
+    Py_RETURN_NONE;
+}
+
+extern "C" PyObject* stockfish_ponderhit(PyObject* self)
+{
+    if (Search::Signals.stopOnPonderhit)
+	stockfish_stop(self);
+    else
+        Search::Limits.ponder = false;
+    Py_RETURN_NONE;
+}
+
 extern "C" PyObject* stockfish_setOption(PyObject* self, PyObject *args)
 {
     const char *name;
@@ -158,13 +174,14 @@ static char stockfish_docs[] =
 
 static PyMethodDef stockfish_funcs[] = {
     {"addObserver", (PyCFunction)stockfish_addObserver, METH_VARARGS, stockfish_docs},
-    //{"notifyObservers", (PyCFunction)stockfish_notifyObservers, METH_VARARGS, stockfish_docs},
     {"removeObserver", (PyCFunction)stockfish_removeObserver, METH_VARARGS, stockfish_docs},
     {"flip", (PyCFunction)stockfish_flip, METH_NOARGS, stockfish_docs},
     {"go", (PyCFunction)stockfish_go, METH_KEYWORDS, stockfish_docs},
     {"info", (PyCFunction)stockfish_info, METH_NOARGS, stockfish_docs},
+    {"ponderhit", (PyCFunction)stockfish_ponderhit, METH_NOARGS, stockfish_docs},
     {"position", (PyCFunction)stockfish_position, METH_VARARGS, stockfish_docs},
     {"setOption", (PyCFunction)stockfish_setOption, METH_VARARGS, stockfish_docs},
+    {"stop", (PyCFunction)stockfish_stop, METH_NOARGS, stockfish_docs},
     {NULL}
 };
 
