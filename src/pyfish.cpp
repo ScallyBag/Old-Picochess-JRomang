@@ -50,7 +50,7 @@ extern "C" PyObject* stockfish_stop(PyObject* self)
 extern "C" PyObject* stockfish_ponderhit(PyObject* self)
 {
     if (Search::Signals.stopOnPonderhit)
-	stockfish_stop(self);
+        stockfish_stop(self);
     else
         Search::Limits.ponder = false;
     Py_RETURN_NONE;
@@ -125,6 +125,20 @@ extern "C" PyObject* stockfish_removeObserver(PyObject* self, PyObject *args)
     Py_XDECREF(observer);
     Py_RETURN_NONE;
 }
+
+extern "C" PyObject* stockfish_legalMoves(PyObject* self)
+{
+    PyObject* list = PyList_New(0);
+
+    for (MoveList<LEGAL> it(*pos); *it; ++it)
+    {
+        PyObject *move=Py_BuildValue("s", move_to_uci(*it,false).c_str());
+        PyList_Append(list, move);
+        Py_XDECREF(move);
+    }
+    return list;
+}
+
 /*
 extern "C" PyObject* stockfish_notifyObservers(PyObject* self, PyObject *args)
 {
@@ -178,6 +192,7 @@ static PyMethodDef stockfish_funcs[] = {
     {"flip", (PyCFunction)stockfish_flip, METH_NOARGS, stockfish_docs},
     {"go", (PyCFunction)stockfish_go, METH_KEYWORDS, stockfish_docs},
     {"info", (PyCFunction)stockfish_info, METH_NOARGS, stockfish_docs},
+    {"legalMoves", (PyCFunction)stockfish_legalMoves, METH_NOARGS, stockfish_docs},
     {"ponderhit", (PyCFunction)stockfish_ponderhit, METH_NOARGS, stockfish_docs},
     {"position", (PyCFunction)stockfish_position, METH_VARARGS, stockfish_docs},
     {"setOption", (PyCFunction)stockfish_setOption, METH_VARARGS, stockfish_docs},
