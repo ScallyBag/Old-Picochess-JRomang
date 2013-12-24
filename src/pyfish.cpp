@@ -19,7 +19,6 @@
 
 using namespace std;
 
-
 // FEN string of the initial position, normal chess
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -28,6 +27,22 @@ const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 Search::StateStackPtr SetupStates;
 Position *pos;
 vector<PyObject*> observers;
+
+
+extern "C" PyObject* stockfish_getOptions(PyObject* self)
+{
+    PyObject* dict = PyDict_New();
+    for (UCI::OptionsMap::iterator iter = Options.begin(); iter != Options.end(); ++iter)
+    {
+        PyObject *dict_key=Py_BuildValue("s", (*iter).first.c_str());
+        PyObject *dict_value=((*iter).second.type == "spin" ?
+                              Py_BuildValue("(sssii)",(*iter).second.currentValue.c_str(),(*iter).second.type.c_str(),(*iter).second.defaultValue.c_str(),(*iter).second.min,(*iter).second.max):
+                              Py_BuildValue("(sss)",(*iter).second.currentValue.c_str(),(*iter).second.type.c_str(),(*iter).second.defaultValue.c_str())
+                             );
+        PyDict_SetItem(dict,dict_key,dict_value);
+    }
+    return dict;
+}
 
 extern "C" PyObject* stockfish_info(PyObject* self)
 {
@@ -139,15 +154,6 @@ extern "C" PyObject* stockfish_legalMoves(PyObject* self)
     return list;
 }
 
-/*
-extern "C" PyObject* stockfish_notifyObservers(PyObject* self, PyObject *args)
-{
-  //http://docs.python.org/release/1.5.2/ext/callingPython.html
-  for (vector<PyObject*>::iterator it = observers.begin() ; it != observers.end(); ++it)
-    PyEval_CallObject(*it, args);
-  Py_RETURN_NONE;
-}*/
-
 void stockfish_notifyObservers(string s)
 {
     PyGILState_STATE gstate;
@@ -196,6 +202,7 @@ static PyMethodDef stockfish_funcs[] = {
     {"ponderhit", (PyCFunction)stockfish_ponderhit, METH_NOARGS, stockfish_docs},
     {"position", (PyCFunction)stockfish_position, METH_VARARGS, stockfish_docs},
     {"setOption", (PyCFunction)stockfish_setOption, METH_VARARGS, stockfish_docs},
+    {"getOptions", (PyCFunction)stockfish_getOptions, METH_NOARGS, stockfish_docs},
     {"stop", (PyCFunction)stockfish_stop, METH_NOARGS, stockfish_docs},
     {NULL}
 };

@@ -50,7 +50,7 @@ public:
   operator int() const;
   operator std::string() const;
 
-private:
+//private:
   friend std::ostream& operator<<(std::ostream&, const OptionsMap&);
 
   std::string defaultValue, currentValue, type;
