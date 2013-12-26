@@ -42,4 +42,6 @@ private:
   std::string fileName;
 };
 
+Key polyglot_key(const Position& pos);
+
 #endif // #ifndef BOOK_H_INCLUDED

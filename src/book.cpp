@@ -318,6 +318,8 @@ namespace {
     0xF8D626AAAF278509ULL
   }};
 
+} // namespace  
+  
   // polyglot_key() returns the PolyGlot hash key of the given position
   Key polyglot_key(const Position& pos) {
 
@@ -346,8 +348,6 @@ namespace {
 
     return key;
   }
-
-} // namespace
 
 PolyglotBook::PolyglotBook() : rkiss(Time::now() % 10000) {}
 

@@ -17,6 +17,7 @@
 #include "tt.h"
 #include "ucioption.h"
 #include "notation.h"
+#include "book.h"
 
 
 using namespace std;
@@ -49,6 +50,11 @@ extern "C" PyObject* stockfish_getOptions(PyObject* self)
 extern "C" PyObject* stockfish_info(PyObject* self)
 {
     return Py_BuildValue("s", engine_info().c_str());
+}
+
+extern "C" PyObject* stockfish_key(PyObject* self)
+{
+    return Py_BuildValue("L", polyglot_key(*pos));
 }
 
 extern "C" PyObject* stockfish_flip(PyObject* self)
@@ -307,6 +313,7 @@ static PyMethodDef stockfish_funcs[] = {
     {"flip", (PyCFunction)stockfish_flip, METH_NOARGS, stockfish_docs},
     {"go", (PyCFunction)stockfish_go, METH_KEYWORDS, stockfish_docs},
     {"info", (PyCFunction)stockfish_info, METH_NOARGS, stockfish_docs},
+    {"key", (PyCFunction)stockfish_key, METH_NOARGS, stockfish_docs},
     {"legalMoves", (PyCFunction)stockfish_legalMoves, METH_NOARGS, stockfish_docs},
     {"toSAN", (PyCFunction)stockfish_toSAN, METH_VARARGS, stockfish_docs},
     {"ponderhit", (PyCFunction)stockfish_ponderhit, METH_NOARGS, stockfish_docs},
