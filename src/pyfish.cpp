@@ -204,7 +204,7 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
             string san;
             if(type_of(m)==CASTLE)
             {
-                if(file_of(to)==FILE_G) san="O-O";
+                if(file_of(to)==FILE_H) san="O-O";
                 else san="O-O-O";
             }
             else
