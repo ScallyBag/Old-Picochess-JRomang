@@ -164,6 +164,7 @@ extern "C" PyObject* stockfish_legalMoves(PyObject* self)
 
 void stockfish_notifyObservers(string s)
 {
+    if(Search::Signals.stop) return;
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
 
