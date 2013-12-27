@@ -247,7 +247,7 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
                 if(captured)
                 {
                     if(pieceType==PAWN) san+=('a'+(char)file_of(from));
-                    san+="x"+pieceNames[type_of(captured)];
+                    san+="x";
                 }
 
                 //destination
