@@ -321,7 +321,7 @@ namespace {
 } // namespace  
   
   // polyglot_key() returns the PolyGlot hash key of the given position
-  Key polyglot_key(const Position& pos) {
+  Key PolyglotBook::polyglot_key(const Position& pos) {
 
     Key key = 0;
     Bitboard b = pos.pieces();

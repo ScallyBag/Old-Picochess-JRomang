@@ -54,7 +54,7 @@ extern "C" PyObject* stockfish_info(PyObject* self)
 
 extern "C" PyObject* stockfish_key(PyObject* self)
 {
-    return Py_BuildValue("L", polyglot_key(*pos));
+    return Py_BuildValue("L", PolyglotBook::polyglot_key(*pos));
 }
 
 extern "C" PyObject* stockfish_flip(PyObject* self)

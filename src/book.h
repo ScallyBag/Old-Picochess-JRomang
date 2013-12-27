@@ -31,6 +31,7 @@ public:
   PolyglotBook();
  ~PolyglotBook();
   Move probe(const Position& pos, const std::string& fName, bool pickBest);
+  static Key polyglot_key(const Position& pos);
 
 private:
   template<typename T> PolyglotBook& operator>>(T& n);
@@ -41,7 +42,5 @@ private:
   RKISS rkiss;
   std::string fileName;
 };
-
-Key polyglot_key(const Position& pos);
 
 #endif // #ifndef BOOK_H_INCLUDED
