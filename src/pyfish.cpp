@@ -238,8 +238,8 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
                             if(file_of(from)==file_of(*it)) sameFile=true;
                             if(rank_of(from)==rank_of(*it)) sameRank=true;
                         }
-                        if(sameFile) san+=('a'+(char)file_of(from));
-                        else if(sameRank) san+=('1'+(char)rank_of(from));
+                        if(sameRank || (!sameRank && !sameFile)) san+=('a'+(char)file_of(from));
+                        if(sameFile) san+=('1'+(char)rank_of(from));
                     }
 
                 }
