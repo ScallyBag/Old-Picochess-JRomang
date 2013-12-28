@@ -245,7 +245,7 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
                 }
 
                 //capture
-                if(captured)
+                if(captured || (type_of(m)==ENPASSANT))
                 {
                     if(pieceType==PAWN) san+=('a'+(char)file_of(from));
                     san+="x";
