@@ -164,19 +164,14 @@ extern "C" PyObject* stockfish_legalMoves(PyObject* self)
 
 void stockfish_notifyObservers(string s)
 {
-    if(Search::Signals.stop) return;
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
 
-    //http://docs.python.org/release/1.5.2/ext/callingPython.html
-    PyObject *arglist;
-    arglist=Py_BuildValue("(s)", s.c_str());
+    PyObject *arglist=Py_BuildValue("(s)", s.c_str());
     for (vector<PyObject*>::iterator it = observers.begin() ; it != observers.end(); ++it)
         PyObject_CallObject(*it, arglist);
 
     Py_DECREF(arglist);
-    //Py_RETURN_NONE;
-
     PyGILState_Release(gstate);
 }
 
@@ -294,6 +289,13 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
     Search::LimitsType limits;
     vector<Move> searchMoves;
     PyObject *listSearchMoves;
+
+    if(Search::Signals.stop)
+    {
+        Py_BEGIN_ALLOW_THREADS
+        sleep(1);
+        Py_END_ALLOW_THREADS
+    }
 
     const char *kwlist[] = {"searchmoves", "wtime", "btime", "winc", "binc", "movestogo", "depth", "nodes", "movetime", "mate", "infinite", "ponder", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O!iiiiiiiiiii", const_cast<char **>(kwlist), &PyList_Type, &listSearchMoves,
