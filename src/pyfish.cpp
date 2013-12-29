@@ -22,6 +22,8 @@
 
 using namespace std;
 
+namespace
+{
 // FEN string of the initial position, normal chess
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -30,7 +32,9 @@ const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 Search::StateStackPtr SetupStates;
 Position *pos;
 vector<PyObject*> observers;
-
+Lock bestmoveLock;
+WaitCondition bestmoveCondition;
+}
 
 extern "C" PyObject* stockfish_getOptions(PyObject* self)
 {
@@ -171,6 +175,8 @@ void stockfish_notifyObservers(string s)
     for (vector<PyObject*>::iterator it = observers.begin() ; it != observers.end(); ++it)
         PyObject_CallObject(*it, arglist);
 
+    if(!s.compare(0,8,"bestmove")) cond_signal(bestmoveCondition);
+
     Py_DECREF(arglist);
     PyGILState_Release(gstate);
 }
@@ -293,7 +299,7 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
     if(Search::Signals.stop)
     {
         Py_BEGIN_ALLOW_THREADS
-        sleep(1);
+        cond_wait(bestmoveCondition,bestmoveLock);
         Py_END_ALLOW_THREADS
     }
 
@@ -340,6 +346,9 @@ PyMODINIT_FUNC initstockfish(void)
     Eval::init();
     Threads.init();
     TT.set_size(Options["Hash"]);
+
+    lock_init(bestmoveLock);
+    cond_init(bestmoveCondition);
 
     pos=new Position(StartFEN, false, Threads.main());
 
