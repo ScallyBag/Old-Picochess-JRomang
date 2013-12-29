@@ -69,8 +69,15 @@ extern "C" PyObject* stockfish_flip(PyObject* self)
 
 extern "C" PyObject* stockfish_stop(PyObject* self)
 {
-    Search::Signals.stop = true;
-    Threads.main()->notify_one(); // Could be sleeping
+    if(Threads.main()->thinking)
+    {
+        Search::Signals.stop = true;
+        Threads.main()->notify_one(); // Could be sleeping
+
+        Py_BEGIN_ALLOW_THREADS
+        cond_wait(bestmoveCondition,bestmoveLock);
+        Py_END_ALLOW_THREADS
+    }
     Py_RETURN_NONE;
 }
 
@@ -295,13 +302,6 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
     Search::LimitsType limits;
     vector<Move> searchMoves;
     PyObject *listSearchMoves;
-
-    if(Search::Signals.stop)
-    {
-        Py_BEGIN_ALLOW_THREADS
-        cond_wait(bestmoveCondition,bestmoveLock);
-        Py_END_ALLOW_THREADS
-    }
 
     const char *kwlist[] = {"searchmoves", "wtime", "btime", "winc", "binc", "movestogo", "depth", "nodes", "movetime", "mate", "infinite", "ponder", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O!iiiiiiiiiii", const_cast<char **>(kwlist), &PyList_Type, &listSearchMoves,
