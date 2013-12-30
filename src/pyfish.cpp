@@ -30,7 +30,7 @@ const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 // Keep track of position keys along the setup moves (from start position to the
 // position just before to start searching). Needed by repetition draw detection.
 Search::StateStackPtr SetupStates;
-Position pos;
+Position pos, searchPos;
 vector<PyObject*> observers;
 Lock bestmoveLock;
 WaitCondition bestmoveCondition;
@@ -310,7 +310,8 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
                                      &(limits.movestogo), &(limits.depth), &(limits.nodes), &(limits.movetime), &(limits.mate), &(limits.infinite), &(limits.ponder)))
         return NULL;
 
-    Threads.start_thinking(pos, limits, searchMoves, SetupStates);
+    searchPos=pos;
+    Threads.start_thinking(searchPos, limits, searchMoves, SetupStates);
     Py_RETURN_NONE;
 }
 
