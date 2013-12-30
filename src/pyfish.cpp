@@ -30,7 +30,7 @@ const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 // Keep track of position keys along the setup moves (from start position to the
 // position just before to start searching). Needed by repetition draw detection.
 Search::StateStackPtr SetupStates;
-Position *pos;
+Position pos;
 vector<PyObject*> observers;
 Lock bestmoveLock;
 WaitCondition bestmoveCondition;
@@ -58,12 +58,12 @@ extern "C" PyObject* stockfish_info(PyObject* self)
 
 extern "C" PyObject* stockfish_key(PyObject* self)
 {
-    return Py_BuildValue("L", PolyglotBook::polyglot_key(*pos));
+    return Py_BuildValue("L", PolyglotBook::polyglot_key(pos));
 }
 
 extern "C" PyObject* stockfish_flip(PyObject* self)
 {
-    pos->flip();
+    pos.flip();
     Py_RETURN_NONE;
 }
 
@@ -115,7 +115,7 @@ extern "C" PyObject* stockfish_position(PyObject* self, PyObject *args)
     }
 
     if(strcmp(fen,"startpos")==0) fen=StartFEN;
-    pos->set(fen, Options["UCI_Chess960"], Threads.main());
+    pos.set(fen, Options["UCI_Chess960"], Threads.main());
     SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
 
     // parse the move list
@@ -123,10 +123,10 @@ extern "C" PyObject* stockfish_position(PyObject* self, PyObject *args)
     for (int i=0; i<numMoves ; i++) {
         string moveStr( PyString_AsString( PyList_GetItem(listObj, i)) );
         Move m;
-        if((m = move_from_uci(*pos, moveStr)) != MOVE_NONE)
+        if((m = move_from_uci(pos, moveStr)) != MOVE_NONE)
         {
             SetupStates->push(StateInfo());
-            pos->do_move(m, SetupStates->top());
+            pos.do_move(m, SetupStates->top());
         }
         else {
             cout<<"Invalid move:"<<moveStr<<endl;
@@ -164,7 +164,7 @@ extern "C" PyObject* stockfish_legalMoves(PyObject* self)
 {
     PyObject* list = PyList_New(0);
 
-    for (MoveList<LEGAL> it(*pos); *it; ++it)
+    for (MoveList<LEGAL> it(pos); *it; ++it)
     {
         PyObject *move=Py_BuildValue("s", move_to_uci(*it,false).c_str());
         PyList_Append(list, move);
@@ -206,7 +206,7 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
     for (int i=0; i<numMoves ; i++) {
         string moveStr( PyString_AsString( PyList_GetItem(moveList, i)) );
         Move m;
-        if((m = move_from_uci(*pos, moveStr)) != MOVE_NONE)
+        if((m = move_from_uci(pos, moveStr)) != MOVE_NONE)
         {
             Square from=from_sq(m), to=to_sq(m);
 
@@ -219,7 +219,7 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
             else
             {
 
-                Piece piece=pos->piece_on(from), captured=pos->piece_on(to);
+                Piece piece=pos.piece_on(from), captured=pos.piece_on(to);
                 PieceType pieceType=type_of(piece);
 
                 san=pieceNames[pieceType];
@@ -228,11 +228,11 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
                 {
                     vector<Square> identicalPieces;
                     //desambiguisation
-                    for (MoveList<LEGAL> it(*pos); *it; ++it)
+                    for (MoveList<LEGAL> it(pos); *it; ++it)
                     {
                         Square _from=from_sq(*it);
                         if( (to==to_sq(*it)) //same destination
-                                && (pos->piece_on(_from)==piece) //same piece
+                                && (pos.piece_on(_from)==piece) //same piece
                                 && (_from!=from) //not the moving pieve
                                 && (find(identicalPieces.begin(), identicalPieces.end(), _from) == identicalPieces.end()) ) //not already in our vector
                             identicalPieces.push_back(_from);
@@ -269,10 +269,10 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
             //do the move
             SetupStates->push(StateInfo());
             moveStack.push(m);
-            pos->do_move(m, SetupStates->top());
+            pos.do_move(m, SetupStates->top());
 
             //check and checkmate
-            if(pos->checkers()) san+=(MoveList<LEGAL> (*pos)).size()?"+":"#";
+            if(pos.checkers()) san+=(MoveList<LEGAL> (pos)).size()?"+":"#";
 
             //add to the san move list
             PyObject *move=Py_BuildValue("s", san.c_str());
@@ -288,7 +288,7 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
     //undo the moves
     while(!moveStack.empty())
     {
-        pos->undo_move(moveStack.top());
+        pos.undo_move(moveStack.top());
         moveStack.pop();
     }
 
@@ -310,7 +310,7 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
                                      &(limits.movestogo), &(limits.depth), &(limits.nodes), &(limits.movetime), &(limits.mate), &(limits.infinite), &(limits.ponder)))
         return NULL;
 
-    Threads.start_thinking(*pos, limits, searchMoves, SetupStates);
+    Threads.start_thinking(pos, limits, searchMoves, SetupStates);
     Py_RETURN_NONE;
 }
 
@@ -351,7 +351,7 @@ PyMODINIT_FUNC initstockfish(void)
     lock_init(bestmoveLock);
     cond_init(bestmoveCondition);
 
-    pos=new Position(StartFEN, false, Threads.main());
+    pos.set(StartFEN, false, Threads.main());
 
     // Make sure the GIL has been created since we need to acquire it in our
     // callback to safely call into the python application.
