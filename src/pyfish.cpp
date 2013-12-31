@@ -193,7 +193,7 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
 {
     PyObject* sanMoves = PyList_New(0), *moveList;
     stack<Move> moveStack;
-    SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
+    Search::StateStackPtr states = Search::StateStackPtr(new std::stack<StateInfo>());
 
     if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &moveList)) {
         return NULL;
@@ -212,9 +212,9 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
             Py_XDECREF(move);
 
             //do the move
-            SetupStates->push(StateInfo());
+            states->push(StateInfo());
             moveStack.push(m);
-            pos.do_move(m, SetupStates->top());
+            pos.do_move(m, states->top());
         }
         else
         {
@@ -239,7 +239,7 @@ extern "C" PyObject* stockfish_toCAN(PyObject* self, PyObject *args)
 {
     PyObject *canMoves = PyList_New(0), *moveList;
     stack<Move> moveStack;
-    SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
+    Search::StateStackPtr states = Search::StateStackPtr(new std::stack<StateInfo>());
 
     if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &moveList)) {
         return NULL;
@@ -260,9 +260,10 @@ extern "C" PyObject* stockfish_toCAN(PyObject* self, PyObject *args)
                 Py_XDECREF(move);
 
                 //do the move
-                SetupStates->push(StateInfo());
+                states->push(StateInfo());
                 moveStack.push(*it);
-                pos.do_move(*it, SetupStates->top());
+                pos.do_move(*it, states->top());
+                break;
             }
         }
     }
