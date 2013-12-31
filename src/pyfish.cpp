@@ -193,7 +193,6 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
 {
     PyObject* sanMoves = PyList_New(0), *moveList;
     stack<Move> moveStack;
-    static const string pieceNames[]= { "", "", "N", "B", "R", "Q", "K" };
     SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
 
     if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &moveList)) {
