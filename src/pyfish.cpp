@@ -191,12 +191,11 @@ void stockfish_notifyObservers(string s)
 //Given a list of moves in CAN formats, it returns a list of moves in SAN format
 extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
 {
-    PyObject* sanMoves = PyList_New(0);
+    PyObject* sanMoves = PyList_New(0), *moveList;
     stack<Move> moveStack;
     static const string pieceNames[]= { "", "", "N", "B", "R", "Q", "K" };
     SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
 
-    PyObject *moveList;
     if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &moveList)) {
         return NULL;
     }
@@ -208,78 +207,19 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
         Move m;
         if((m = move_from_uci(pos, moveStr)) != MOVE_NONE)
         {
-            Square from=from_sq(m), to=to_sq(m);
-
-            string san;
-            if(type_of(m)==CASTLE)
-            {
-                if(file_of(to)==FILE_H) san="O-O";
-                else san="O-O-O";
-            }
-            else
-            {
-
-                Piece piece=pos.piece_on(from), captured=pos.piece_on(to);
-                PieceType pieceType=type_of(piece);
-
-                san=pieceNames[pieceType];
-
-                if(pieceType!=PAWN)
-                {
-                    vector<Square> identicalPieces;
-                    //desambiguisation
-                    for (MoveList<LEGAL> it(pos); *it; ++it)
-                    {
-                        Square _from=from_sq(*it);
-                        if( (to==to_sq(*it)) //same destination
-                                && (pos.piece_on(_from)==piece) //same piece
-                                && (_from!=from) //not the moving pieve
-                                && (find(identicalPieces.begin(), identicalPieces.end(), _from) == identicalPieces.end()) ) //not already in our vector
-                            identicalPieces.push_back(_from);
-                    }
-                    if(!identicalPieces.empty())
-                    {
-                        bool sameRank=false;
-                        bool sameFile=false;
-                        for (std::vector<Square>::iterator it = identicalPieces.begin() ; it != identicalPieces.end(); ++it)
-                        {
-                            if(file_of(from)==file_of(*it)) sameFile=true;
-                            if(rank_of(from)==rank_of(*it)) sameRank=true;
-                        }
-                        if(sameRank || (!sameRank && !sameFile)) san+=('a'+(char)file_of(from));
-                        if(sameFile) san+=('1'+(char)rank_of(from));
-                    }
-
-                }
-
-                //capture
-                if(captured || (type_of(m)==ENPASSANT))
-                {
-                    if(pieceType==PAWN) san+=('a'+(char)file_of(from));
-                    san+="x";
-                }
-
-                //destination
-                san+=square_to_string(to);
-
-                if(type_of(m)==ENPASSANT) san+=" e.p."; //en passant
-                else if(type_of(m)==PROMOTION) san+=pieceNames[promotion_type(m)]; //promotion
-            }
+            //add to the san move list
+            PyObject *move=Py_BuildValue("s", move_to_san(pos,m).c_str());
+            PyList_Append(sanMoves, move);
+            Py_XDECREF(move);
 
             //do the move
             SetupStates->push(StateInfo());
             moveStack.push(m);
             pos.do_move(m, SetupStates->top());
-
-            //check and checkmate
-            if(pos.checkers()) san+=(MoveList<LEGAL> (pos)).size()?"+":"#";
-
-            //add to the san move list
-            PyObject *move=Py_BuildValue("s", san.c_str());
-            PyList_Append(sanMoves, move);
-            Py_XDECREF(move);
         }
-        else {
+        else
+        {
+            cout<<pos.pretty()<<endl;
             cout<<"Invalid move:"<<moveStr<<endl;
             break; //TODO raise error
         }
@@ -293,6 +233,49 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
     }
 
     return sanMoves;
+}
+
+//Given a list of moves in SAN formats, it returns a list of moves in CAN format
+extern "C" PyObject* stockfish_toCAN(PyObject* self, PyObject *args)
+{
+    PyObject *canMoves = PyList_New(0), *moveList;
+    stack<Move> moveStack;
+    SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
+
+    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &moveList)) {
+        return NULL;
+    }
+
+    // parse the move list
+    int numMoves = PyList_Size(moveList);
+    for (int i=0; i<numMoves ; i++)
+    {
+        string moveStr( PyString_AsString( PyList_GetItem(moveList, i)) );
+        for (MoveList<LEGAL> it(pos); *it; ++it)
+        {
+            if(!moveStr.compare(move_to_san(pos,*it)))
+            {
+                PyObject *move=Py_BuildValue("s", move_to_uci(*it,false).c_str());
+                //add to the can move list
+                PyList_Append(canMoves, move);
+                Py_XDECREF(move);
+
+                //do the move
+                SetupStates->push(StateInfo());
+                moveStack.push(*it);
+                pos.do_move(*it, SetupStates->top());
+            }
+        }
+    }
+
+    //undo the moves
+    while(!moveStack.empty())
+    {
+        pos.undo_move(moveStack.top());
+        moveStack.pop();
+    }
+
+    return canMoves;
 }
 
 // go() is called when engine receives the "go" UCI command. The function sets
@@ -326,6 +309,7 @@ static PyMethodDef stockfish_funcs[] = {
     {"info", (PyCFunction)stockfish_info, METH_NOARGS, stockfish_docs},
     {"key", (PyCFunction)stockfish_key, METH_NOARGS, stockfish_docs},
     {"legalMoves", (PyCFunction)stockfish_legalMoves, METH_NOARGS, stockfish_docs},
+    {"toCAN", (PyCFunction)stockfish_toCAN, METH_VARARGS, stockfish_docs},
     {"toSAN", (PyCFunction)stockfish_toSAN, METH_VARARGS, stockfish_docs},
     {"ponderhit", (PyCFunction)stockfish_ponderhit, METH_NOARGS, stockfish_docs},
     {"position", (PyCFunction)stockfish_position, METH_VARARGS, stockfish_docs},
