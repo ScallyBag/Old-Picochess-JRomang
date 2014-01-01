@@ -289,6 +289,12 @@ extern "C" PyObject* stockfish_toCAN(PyObject* self, PyObject *args)
         }
         if(!found)
         {
+            //undo the moves
+            while(!moveStack.empty())
+            {
+                pos.undo_move(moveStack.top());
+                moveStack.pop();
+            }
             PyErr_SetString(PyExc_ValueError, (string("Invalid move '")+moveStr+"'").c_str());
             return NULL;
         }
