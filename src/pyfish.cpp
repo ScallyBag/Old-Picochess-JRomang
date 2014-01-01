@@ -94,15 +94,15 @@ extern "C" PyObject* stockfish_setOption(PyObject* self, PyObject *args)
 {
     const char *name;
     PyObject *valueObj;
-    if (!PyArg_ParseTuple(args, "sO", &name, &valueObj)) {
-        return NULL;
-    }
+    if (!PyArg_ParseTuple(args, "sO", &name, &valueObj)) return NULL;
 
     if (Options.count(name))
         Options[name] = string(PyString_AsString(PyObject_Str(valueObj)));
     else
-        sync_cout << "No such option: " << name << sync_endl; //TODO raise exception
-
+    {
+        PyErr_SetString(PyExc_ValueError, (string("No such option ")+name+"'").c_str());
+        return NULL;
+    }
     Py_RETURN_NONE;
 }
 
@@ -128,22 +128,21 @@ extern "C" PyObject* stockfish_position(PyObject* self, PyObject *args)
             SetupStates->push(StateInfo());
             pos.do_move(m, SetupStates->top());
         }
-        else {
-            cout<<"Invalid move:"<<moveStr<<endl;
-            break; //TODO raise error
+        else
+        {
+            PyErr_SetString(PyExc_ValueError, (string("Invalid move '")+moveStr+"'").c_str());
+            return NULL;
         }
 
     }
-
     Py_RETURN_NONE;
 }
 
 extern "C" PyObject* stockfish_addObserver(PyObject* self, PyObject *args)
 {
     PyObject *observer;
-    if (!PyArg_ParseTuple(args, "O", &observer)) {
-        return NULL;
-    }
+    if (!PyArg_ParseTuple(args, "O", &observer)) return NULL;
+
     Py_INCREF(observer);
     observers.push_back(observer);
     Py_RETURN_NONE;
@@ -152,9 +151,8 @@ extern "C" PyObject* stockfish_addObserver(PyObject* self, PyObject *args)
 extern "C" PyObject* stockfish_removeObserver(PyObject* self, PyObject *args)
 {
     PyObject *observer;
-    if (!PyArg_ParseTuple(args, "O", &observer)) {
-        return NULL;
-    }
+    if (!PyArg_ParseTuple(args, "O", &observer)) return NULL;
+
     observers.erase(remove(observers.begin(), observers.end(), observer), observers.end());
     Py_XDECREF(observer);
     Py_RETURN_NONE;
@@ -195,9 +193,7 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
     stack<Move> moveStack;
     Search::StateStackPtr states = Search::StateStackPtr(new std::stack<StateInfo>());
 
-    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &moveList)) {
-        return NULL;
-    }
+    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &moveList)) return NULL;
 
     // parse the move list
     int numMoves = PyList_Size(moveList);
@@ -218,9 +214,14 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
         }
         else
         {
-            cout<<pos.pretty()<<endl;
-            cout<<"Invalid move:"<<moveStr<<endl;
-            break; //TODO raise error
+            //undo the moves
+            while(!moveStack.empty())
+            {
+                pos.undo_move(moveStack.top());
+                moveStack.pop();
+            }
+            PyErr_SetString(PyExc_ValueError, (string("Invalid move '")+moveStr+"'").c_str());
+            return NULL;
         }
     }
 
@@ -241,15 +242,14 @@ extern "C" PyObject* stockfish_toCAN(PyObject* self, PyObject *args)
     stack<Move> moveStack;
     Search::StateStackPtr states = Search::StateStackPtr(new std::stack<StateInfo>());
 
-    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &moveList)) {
-        return NULL;
-    }
+    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &moveList)) return NULL;
 
     // parse the move list
     int numMoves = PyList_Size(moveList);
     for (int i=0; i<numMoves ; i++)
     {
         string moveStr( PyString_AsString( PyList_GetItem(moveList, i)) );
+        bool found=false;
         for (MoveList<LEGAL> it(pos); *it; ++it)
         {
             if(!moveStr.compare(move_to_san(pos,*it)))
@@ -263,8 +263,14 @@ extern "C" PyObject* stockfish_toCAN(PyObject* self, PyObject *args)
                 states->push(StateInfo());
                 moveStack.push(*it);
                 pos.do_move(*it, states->top());
+                found=true;
                 break;
             }
+        }
+        if(!found)
+        {
+            PyErr_SetString(PyExc_ValueError, (string("Invalid move '")+moveStr+"'").c_str());
+            return NULL;
         }
     }
 
