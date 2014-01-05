@@ -178,16 +178,28 @@ extern "C" PyObject* stockfish_removeObserver(PyObject* self, PyObject *args)
     Py_RETURN_NONE;
 }
 
-extern "C" PyObject* stockfish_legalMoves(PyObject* self)
+extern "C" PyObject* stockfish_legalMoves(PyObject* self, PyObject *args)
 {
     PyObject* list = PyList_New(0);
+    Position p, *target=&pos;
 
-    for (MoveList<LEGAL> it(pos); *it; ++it)
+    const char *fen=NULL;
+    if (!PyArg_ParseTuple(args, "|s", &fen)) return NULL;
+
+    if(fen)
+    {
+        p.set(fen, false, NULL);
+        target=&p;
+    }
+
+    for (MoveList<LEGAL> it(*target); *it; ++it)
     {
         PyObject *move=Py_BuildValue("s", move_to_uci(*it,false).c_str());
         PyList_Append(list, move);
         Py_XDECREF(move);
     }
+
+
     return list;
 }
 
@@ -340,7 +352,7 @@ static PyMethodDef stockfish_funcs[] = {
     {"go", (PyCFunction)stockfish_go, METH_KEYWORDS, stockfish_docs},
     {"info", (PyCFunction)stockfish_info, METH_NOARGS, stockfish_docs},
     {"key", (PyCFunction)stockfish_key, METH_NOARGS, stockfish_docs},
-    {"legalMoves", (PyCFunction)stockfish_legalMoves, METH_NOARGS, stockfish_docs},
+    {"legalMoves", (PyCFunction)stockfish_legalMoves, METH_VARARGS, stockfish_docs},
     {"toCAN", (PyCFunction)stockfish_toCAN, METH_VARARGS, stockfish_docs},
     {"toSAN", (PyCFunction)stockfish_toSAN, METH_VARARGS, stockfish_docs},
     {"ponderhit", (PyCFunction)stockfish_ponderhit, METH_NOARGS, stockfish_docs},
