@@ -342,23 +342,56 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
     Py_RETURN_NONE;
 }
 
+//Given a fen and a list of moves, returns the FEN with all moves made
+extern "C" PyObject* stockfish_getFEN(PyObject* self, PyObject *args)
+{
+    PyObject *moveList;
+    const char *fen=NULL;
+    Position p;
+
+    if (!PyArg_ParseTuple(args, "sO!", &fen, &PyList_Type, &moveList)) return NULL;
+
+    p.set(fen, false, Threads.main());
+    Search::StateStackPtr states = Search::StateStackPtr(new std::stack<StateInfo>());
+
+    // parse the move list
+    int numMoves = PyList_Size(moveList);
+    for (int i=0; i<numMoves ; i++)
+    {
+        string moveStr( PyString_AsString( PyList_GetItem(moveList, i)) );
+
+
+        Move m;
+        if((m = move_from_uci(p, moveStr)) != MOVE_NONE)
+        {
+            states->push(StateInfo());
+            p.do_move(m, states->top());
+        }
+
+    }
+
+    return Py_BuildValue("s", p.fen().c_str());
+}
+
+
 static char stockfish_docs[] =
     "helloworld( ): Any message you want to put here!!\n";
 
 static PyMethodDef stockfish_funcs[] = {
-    {"addObserver", (PyCFunction)stockfish_addObserver, METH_VARARGS, stockfish_docs},
-    {"removeObserver", (PyCFunction)stockfish_removeObserver, METH_VARARGS, stockfish_docs},
+    {"add_observer", (PyCFunction)stockfish_addObserver, METH_VARARGS, stockfish_docs},
+    {"remove_observer", (PyCFunction)stockfish_removeObserver, METH_VARARGS, stockfish_docs},
     {"flip", (PyCFunction)stockfish_flip, METH_NOARGS, stockfish_docs},
     {"go", (PyCFunction)stockfish_go, METH_KEYWORDS, stockfish_docs},
     {"info", (PyCFunction)stockfish_info, METH_NOARGS, stockfish_docs},
     {"key", (PyCFunction)stockfish_key, METH_NOARGS, stockfish_docs},
-    {"legalMoves", (PyCFunction)stockfish_legalMoves, METH_VARARGS, stockfish_docs},
-    {"toCAN", (PyCFunction)stockfish_toCAN, METH_VARARGS, stockfish_docs},
-    {"toSAN", (PyCFunction)stockfish_toSAN, METH_VARARGS, stockfish_docs},
+    {"legal_moves", (PyCFunction)stockfish_legalMoves, METH_VARARGS, stockfish_docs},
+    {"get_fen", (PyCFunction)stockfish_getFEN, METH_VARARGS, stockfish_docs},
+    {"to_can", (PyCFunction)stockfish_toCAN, METH_VARARGS, stockfish_docs},
+    {"to_san", (PyCFunction)stockfish_toSAN, METH_VARARGS, stockfish_docs},
     {"ponderhit", (PyCFunction)stockfish_ponderhit, METH_NOARGS, stockfish_docs},
     {"position", (PyCFunction)stockfish_position, METH_VARARGS, stockfish_docs},
-    {"setOption", (PyCFunction)stockfish_setOption, METH_VARARGS, stockfish_docs},
-    {"getOptions", (PyCFunction)stockfish_getOptions, METH_NOARGS, stockfish_docs},
+    {"set_option", (PyCFunction)stockfish_setOption, METH_VARARGS, stockfish_docs},
+    {"get_options", (PyCFunction)stockfish_getOptions, METH_NOARGS, stockfish_docs},
     {"stop", (PyCFunction)stockfish_stop, METH_NOARGS, stockfish_docs},
     {NULL}
 };
