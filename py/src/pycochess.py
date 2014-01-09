@@ -166,10 +166,10 @@ def start_dgt_thread():
 def dgt_probe():
     dgt = DGTBoard("/dev/cu.usbserial-00001004")
     dgt.connect()
-    dgt.probe()
     while True:
         sleep(1)
-        print dgt.dgtnix.GetFen()
+        print dgt.probe()
+#        print dgt.dgt_fen
 
 #        print dgt.dgt_fen
 
