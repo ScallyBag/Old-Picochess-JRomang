@@ -136,7 +136,7 @@ class EngineManager(object):
     ## MODES: Play, Analyze, Observe
     def __init__(self, **kwargs):
         sf.add_observer(self.parse_score)
-
+        self.score_count = 0
         self.score = None
         self.engine_mode = EngineManager.PLAY
 
@@ -218,7 +218,6 @@ class EngineManager(object):
         return score
 
     def parse_score(self, line):
-#        print line
         score = self.get_score(line)
 
         tokens = line.split()
@@ -226,9 +225,12 @@ class EngineManager(object):
         if line_index>-1:
             pv = sf.to_san(tokens[line_index+1:])
             if len(pv)>0:
-                if piface:
+                self.score_count+=1
+                if self.score_count > 5:
+                    self.score_count = 0
+                if piface and self.score_count==1:
                     cad.lcd.clear()
-                    cad.lcd.write(str(score)+' ')
+                    #cad.lcd.write(str(score)+' ')
                     cad.lcd.write(self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1))
                 
                 print self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1)
@@ -242,11 +244,11 @@ if __name__ == '__main__':
         cad.lcd.backlight_on()
         cad.lcd.write("Pycochess 0.1")
 
-    dgt = DGTBoard("/dev/cu.usbserial-00001004")
-    #dgt = DGTBoard("/dev/ttyUSB0")
+    #dgt = DGTBoard("/dev/cu.usbserial-00001004")
+    dgt = DGTBoard("/dev/ttyUSB0")
     dgt.connect()
     em = EngineManager()
-    sf.go(depth=1)
+    #sf.go(depth=1)
 
 #    start_dgt_thread(dgt)
     while True:
@@ -255,7 +257,7 @@ if __name__ == '__main__':
         if m:
 #            print "dgt_move_list: {0}".format(dgt.move_list)
             sf.stop()
-
+            em.score_count = 0
             em.position(dgt.move_list, pos='startpos')
             sf.go(infinite=True)
 
