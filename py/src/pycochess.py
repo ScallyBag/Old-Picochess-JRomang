@@ -1,3 +1,4 @@
+import pifacecad
 import traceback
 from dgt.dgtnix import *
 import stockfish as sf
@@ -200,7 +201,7 @@ class EngineManager(object):
             if mv:
 #                if raw:
                 score += "%s " % mv
-                if i % 8 == 0:
+                if i % 6 == 0:
                     score += "\n"
 #                else:
 #                    score += " [ref=%d:%s] %s [/ref]"%((i + 1) / 2, move, mv)
@@ -218,10 +219,17 @@ class EngineManager(object):
         if line_index>-1:
             first_mv = tokens[line_index+1]
             pv = sf.to_san(tokens[line_index+1:])
-#            print pv
+            print pv
             if pv:
-                print score
-                print self.generate_move_list(pv, start_move_num=len(self.move_list)+1)
+		cad.lcd.clear()
+		cad.lcd.write(str(score)+' ')
+                #print score
+		#if score:
+		#    cad.lcd.write(score)
+		#print score
+		cad.lcd.write(self.generate_move_list(pv, start_move_num=len(self.move_list)+1))
+                #print score
+                #print self.generate_move_list(pv, start_move_num=len(self.move_list)+1)
 #            output.insert(0,score)
 #            print output
 #def start_dgt_thread(dgt):
@@ -240,7 +248,14 @@ class EngineManager(object):
 #        print dgt.dgt_fen
 
 if __name__ == '__main__':
-    dgt = DGTBoard("/dev/cu.usbserial-00001004")
+    cad = pifacecad.PiFaceCAD()
+    cad.lcd.blink_off()
+    cad.lcd.cursor_off()
+    cad.lcd.backlight_on()
+    cad.lcd.write("Pycochess 0.1")
+
+    #dgt = DGTBoard("/dev/cu.usbserial-00001004")
+    dgt = DGTBoard("/dev/ttyUSB0")
     dgt.connect()
     em = EngineManager()
 #    start_dgt_thread(dgt)
@@ -249,7 +264,7 @@ if __name__ == '__main__':
         m = dgt.probe_move()
         if m:
             sf.stop()
-#            print "dgt_move_list: {0}".format(dgt.move_list)
+            print "dgt_move_list: {0}".format(dgt.move_list)
             em.position(dgt.move_list, pos='startpos')
             sf.go(infinite=True)
 
