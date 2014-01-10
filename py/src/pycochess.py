@@ -255,9 +255,10 @@ if __name__ == '__main__':
         cad.lcd.backlight_on()
         cad.lcd.write("Pycochess 0.1")
 
-
+    arm = False
     if os.uname()[4][:3] == 'arm':
         dgt = DGTBoard("/dev/ttyUSB0")
+        arm = True
     else:
         dgt = DGTBoard("/dev/cu.usbserial-00001004")
 
@@ -266,12 +267,15 @@ if __name__ == '__main__':
     dgt_probe(dgt)
 
     while True:
-        print "Before acquire"
+        #print "Before acquire"
         dgt_sem.acquire()
-        print "board_updated!"
+        print "Board Updated!"
         em.stop_engine()
         em.score_count = 0
         em.position(dgt.move_list, pos='startpos')
+        # Needed on the Pi!
+        if arm:
+            sleep(1)
         sf.go(infinite=True)
         em.engine_started = True
 
