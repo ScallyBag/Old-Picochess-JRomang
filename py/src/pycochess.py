@@ -3,8 +3,11 @@ import traceback
 from dgt.dgtnix import *
 import stockfish as sf
 from threading import Thread
+from threading import Semaphore
+from threading import Timer
 from time import sleep
 import itertools as it
+import os
 
 piface = None
 try:
@@ -16,6 +19,8 @@ except ImportError:
 WHITE = "w"
 BLACK = "b"
 
+dgt_sem = Semaphore(value=0)
+
 class DGTBoard(object):
 
     def __init__(self, device, **kwargs):
@@ -24,6 +29,7 @@ class DGTBoard(object):
         self.dgt_connected = False
         self.device = device
         self.turn = WHITE
+        self.board_updated = False
         self.move_list = []
 
     def get_legal_move(self, from_fen, to_fen):
@@ -99,21 +105,6 @@ class DGTBoard(object):
                                 if len(self.move_list)>0:
                                     return self.move_list[-1]
 
-
-                                #                        else:
-#                            print "No legal moves found"
-                        # if not self.try_dgt_legal_moves(self.chessboard.position.fen, new_dgt_fen):
-                        #     if self.chessboard.previous_node:
-                        #     #                            print new_dgt_fen
-                        #     #                            print self.chessboard.previous_node.position.fen
-                        #         dgt_fen_start = new_dgt_fen.split()[0]
-                        #         prev_fen_start = self.chessboard.previous_node.position.fen.split()[0]
-                        #         if dgt_fen_start == prev_fen_start:
-                        #             self.back('dgt')
-                        # if self.engine_mode != ENGINE_PLAY and self.engine_mode != ENGINE_ANALYSIS:
-                        #     if len(self.chessboard.variations)>0:
-                        #         self.dgtnix.SendToClock(self.format_move_for_dgt(str(self.chessboard.variations[0].move)), self.  dgt_clock_sound, False)
-
                 elif new_dgt_fen:
                     self.dgt_fen = new_dgt_fen
                     self.previous_dgt_fen = new_dgt_fen
@@ -139,6 +130,7 @@ class EngineManager(object):
         self.score_count = 0
         self.score = None
         self.engine_mode = EngineManager.PLAY
+        self.engine_started = False
 
 #    def show_score_on_dgt(self):
 #        if self.engine_mode == EngineManager.ANALYSIS:
@@ -158,6 +150,10 @@ class EngineManager(object):
 #                    if first_mv:
 #                        sleep(1)
 #                        self.dgtnix.SendToClock(self.format_move_for_dgt(first_mv), False, False)
+
+    def stop_engine(self):
+        if self.engine_started:
+            sf.stop()
 
     def get_score(self, line):
         tokens = line.split()
@@ -230,11 +226,26 @@ class EngineManager(object):
                     self.score_count = 0
                 if piface and self.score_count==1:
                     cad.lcd.clear()
+                    first_mv = tokens[line_index+1]
+                    output = str(score)+' '+first_mv
+                    cad.lcd.write(output)
                     #cad.lcd.write(str(score)+' ')
-                    cad.lcd.write(self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1))
-                
-                print self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1)
-                print "\n"
+#                    cad.lcd.write(self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1))
+                    print output
+                else:
+                    print self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1)
+                    print "\n"
+
+def start_dgt_thread(dgt):
+    t = Thread(target=dgt_probe, args=(dgt,))
+    t.daemon = True # thread dies with the program
+    t.start()
+
+def dgt_probe(dgt):
+    Timer(1.0, dgt_probe, [dgt]).start()
+    m = dgt.probe_move()
+    if m:
+        dgt_sem.release()
 
 if __name__ == '__main__':
     if piface:
@@ -244,20 +255,23 @@ if __name__ == '__main__':
         cad.lcd.backlight_on()
         cad.lcd.write("Pycochess 0.1")
 
-    #dgt = DGTBoard("/dev/cu.usbserial-00001004")
-    dgt = DGTBoard("/dev/ttyUSB0")
+
+    if os.uname()[4][:3] == 'arm':
+        dgt = DGTBoard("/dev/ttyUSB0")
+    else:
+        dgt = DGTBoard("/dev/cu.usbserial-00001004")
+
     dgt.connect()
     em = EngineManager()
-    #sf.go(depth=1)
+    dgt_probe(dgt)
 
-#    start_dgt_thread(dgt)
     while True:
-#        sleep(1)
-        m = dgt.probe_move()
-        if m:
-#            print "dgt_move_list: {0}".format(dgt.move_list)
-            sf.stop()
-            em.score_count = 0
-            em.position(dgt.move_list, pos='startpos')
-            sf.go(infinite=True)
+        print "Before acquire"
+        dgt_sem.acquire()
+        print "board_updated!"
+        em.stop_engine()
+        em.score_count = 0
+        em.position(dgt.move_list, pos='startpos')
+        sf.go(infinite=True)
+        em.engine_started = True
 
