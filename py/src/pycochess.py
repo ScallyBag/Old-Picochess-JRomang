@@ -1,10 +1,17 @@
-import pifacecad
+
 import traceback
 from dgt.dgtnix import *
 import stockfish as sf
 from threading import Thread
 from time import sleep
 import itertools as it
+
+piface = None
+try:
+    import pifacecad
+    piface = True
+except ImportError:
+    piface = False
 
 WHITE = "w"
 BLACK = "b"
@@ -191,8 +198,11 @@ class EngineManager(object):
         sf.position(pos, move_list)
         self.move_list = move_list
 
-    def generate_move_list(self, all_moves, start_move_num = 1):
+    def generate_move_list(self, all_moves, eval=None, start_move_num = 1):
         score = ""
+        if eval:
+            score = str(eval) + " "
+
         for i, mv in it.izip(it.count(start_move_num), all_moves):
             move = "b"
             if i % 2 == 1:
@@ -210,61 +220,42 @@ class EngineManager(object):
     def parse_score(self, line):
 #        print line
         score = self.get_score(line)
-#        if score:
-#            print score
-        move_list = []
+
         tokens = line.split()
-        first_mv = None
         line_index = tokens.index('pv')
         if line_index>-1:
-            first_mv = tokens[line_index+1]
             pv = sf.to_san(tokens[line_index+1:])
-            print pv
-            if pv:
-		cad.lcd.clear()
-		cad.lcd.write(str(score)+' ')
-                #print score
-		#if score:
-		#    cad.lcd.write(score)
-		#print score
-		cad.lcd.write(self.generate_move_list(pv, start_move_num=len(self.move_list)+1))
-                #print score
-                #print self.generate_move_list(pv, start_move_num=len(self.move_list)+1)
-#            output.insert(0,score)
-#            print output
-#def start_dgt_thread(dgt):
-#    t = Thread(target=dgt_probe, args=(dgt,))
-#    t.daemon = True # thread dies with the program
-#    t.start()
-
-#def dgt_probe(dgt):
-#    while True:
-#        sleep(1)
-#        dgt.probe_move()
-#        if m:
-#            print m
-#        print dgt.dgt_fen
-
-#        print dgt.dgt_fen
+            if len(pv)>0:
+                if piface:
+                    cad.lcd.clear()
+                    cad.lcd.write(str(score)+' ')
+                    cad.lcd.write(self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1))
+                
+                print self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1)
+                print "\n"
 
 if __name__ == '__main__':
-    cad = pifacecad.PiFaceCAD()
-    cad.lcd.blink_off()
-    cad.lcd.cursor_off()
-    cad.lcd.backlight_on()
-    cad.lcd.write("Pycochess 0.1")
+    if piface:
+        cad = pifacecad.PiFaceCAD()
+        cad.lcd.blink_off()
+        cad.lcd.cursor_off()
+        cad.lcd.backlight_on()
+        cad.lcd.write("Pycochess 0.1")
 
-    #dgt = DGTBoard("/dev/cu.usbserial-00001004")
-    dgt = DGTBoard("/dev/ttyUSB0")
+    dgt = DGTBoard("/dev/cu.usbserial-00001004")
+    #dgt = DGTBoard("/dev/ttyUSB0")
     dgt.connect()
     em = EngineManager()
+    sf.go(depth=1)
+
 #    start_dgt_thread(dgt)
     while True:
-        sleep(1)
+#        sleep(1)
         m = dgt.probe_move()
         if m:
+#            print "dgt_move_list: {0}".format(dgt.move_list)
             sf.stop()
-            print "dgt_move_list: {0}".format(dgt.move_list)
+
             em.position(dgt.move_list, pos='startpos')
             sf.go(infinite=True)
 
