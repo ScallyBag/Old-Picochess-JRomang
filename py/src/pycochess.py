@@ -6,10 +6,13 @@ from threading import Thread
 from threading import Semaphore
 from threading import Timer
 from time import sleep
+import datetime
 import itertools as it
 import os
 
 FIXED_TIME = "fixed_time"
+BLITZ = "blitz"
+BLITZ_FISCHER = "blitz_fischer"
 
 NEW_GAME = "New Game"
 BOOK_MODE = "Book Mode"
@@ -35,6 +38,9 @@ BOOK_PATH="/opt/picochess/books/"
 clock_mode = FIXED_TIME
 # 5 seconds
 comp_time = 5000
+comp_inc = 0
+player_time = 0
+player_inc = 0
 play_mode = GAME_MODE
 
 DEFAULT_BOOK_FEN = "rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR"
@@ -139,6 +145,16 @@ class DGTBoard(object):
         self.move_list = []
         self.executed_command = False
 
+        self.engine_comp_color = BLACK
+        self.engine_computer_move = False
+
+        self.time_white = 0
+        self.time_inc_white = 0
+        self.time_black = 0
+        self.time_inc_black = 0
+
+
+
     def get_legal_move(self, from_fen, to_fen):
         to_fen_first_tok = to_fen.split()[0]
         for m in sf.legal_moves(from_fen):
@@ -199,6 +215,78 @@ class DGTBoard(object):
             else:
                 play_mode = game_map[fen]
                 return True
+        elif time_control_map.has_key(fen):
+            mode = time_control_map[fen][0]
+            message = time_control_map[fen][1]
+
+            if 0 <= mode <= 7:
+                clock_mode = FIXED_TIME
+                if mode == 0:
+                    comp_time = 1000
+                elif mode == 1:
+                    comp_time = 3000
+                elif mode == 2:
+                    comp_time = 5000
+                elif mode == 3:
+                    comp_time = 10000
+                elif mode == 4:
+                    comp_time = 15000
+                elif mode == 5:
+                    comp_time = 30000
+                elif mode == 6:
+                    comp_time = 60000
+                elif mode == 7:
+                    comp_time = 120000
+            elif 8 <= mode <= 15:
+                clock_mode = BLITZ
+
+                if mode == 8:
+                    comp_time = 60000
+                elif mode == 9:
+                    comp_time = 180000
+                elif mode == 10:
+                    comp_time = 300000
+                elif mode == 11:
+                    comp_time = 600000
+                elif mode == 12:
+                    comp_time = 900000
+                elif mode == 13:
+                    comp_time = 1800000
+                elif mode == 14:
+                    comp_time = 3600000
+                elif mode == 15:
+                    comp_time = 5400000
+            elif 16 <= mode <= 22:
+                clock_mode = BLITZ_FISCHER
+                if mode == 16:
+                    comp_time = 3 * 60 * 1000
+                    comp_inc = 2 * 1000
+                elif mode == 17:
+                    comp_time = 4 * 60 * 1000
+                    comp_inc = 2 * 1000
+                elif mode == 18:
+                    comp_time = 5 * 60 * 1000
+                    comp_inc = 3 * 1000
+                elif mode == 19:
+                    comp_time = 5 * 60 * 1000
+                    comp_inc = 5 * 1000
+                elif mode == 20:
+                    # Handicap time control
+                    # Seems to work well for training
+                    # Player has 7m + 10s increment
+                    # Computer has 1m + 3s increment
+                    comp_time = 1 * 60 * 1000
+                    comp_inc = 3 * 1000
+                    player_time = 7 * 60 * 1000
+                    player_inc = 10 * 1000
+                elif mode == 21:
+                    comp_time = 15 * 60 * 1000
+                    comp_inc = 5 * 1000
+                elif mode == 22:
+                    comp_time = 90 * 60 * 1000
+                    comp_inc = 30 * 1000
+
+                write_to_piface(message, clear=True)
 
         else:
             try:
@@ -211,6 +299,72 @@ class DGTBoard(object):
 
 #        elif time_control_map.has_key(fen):
 
+    def reset_clocks(self):
+#        self.white_time_now = time.clock()
+#        self.black_time_now = time.clock()
+        self.time_last = datetime.datetime.now()
+
+        self.time_white = 60
+        self.time_inc_white = 3
+        self.time_black = 420
+        self.time_inc_black = 8
+        if self.engine_comp_color == 'b':
+            # Swap time allotments if comp is black (comp gets less time)
+            self.time_white, self.time_black = self.time_black, self.time_white
+            self.time_inc_white, self.time_inc_black = self.time_inc_black, self.time_inc_white
+
+    def update_time(self, color='w'):
+        current = datetime.datetime.now()
+        seconds_elapsed = (current - self.time_last).total_seconds()
+#        print "seconds_elapsed:{0}".format(seconds_elapsed)
+        self.time_last = current
+        if color == 'w':
+            self.time_white -= seconds_elapsed
+        else:
+            self.time_black -= seconds_elapsed
+
+    def reset_clock_update(self):
+        self.time_last = datetime.datetime.now()
+
+    def time_add_increment(self, color='w'):
+        if color == 'w':
+            self.time_white+=self.time_inc_white
+        else:
+            self.time_black+=self.time_inc_black
+
+    def update_player_time(self):
+        color = 'w'
+        if self.engine_comp_color == 'w':
+            color = 'b'
+        self.update_time(color=color)
+
+    def update_clocks(self, *args):
+        if play_mode == GAME_MODE:
+            if self.engine_computer_move:
+                self.update_time(color=self.engine_comp_color)
+                # self.engine_score.children[0].text = "[color=000000]Thinking..\n[size=24]{0}    [b]{1}[/size][/b][/color]".format(self.format_time_str(self.time_white), self.format_time_str(self.time_black))
+            else:
+                self.update_player_time()
+                # if self.show_hint:
+                #     if not self.ponder_move_san and self.ponder_move and self.ponder_move!='(none)':
+                #         # print self.ponder_move
+                #         try:
+                #             self.ponder_move_san = sf.toSAN([self.ponder_move])[0]
+                #             # print "ponder_move_san: "+self.ponder_move_san
+                #             # if not self.spoke_hint:
+                #             #     self.spoke_hint = True
+                #             #     self.speak_move(self.ponder_move)
+                #         except IndexError:
+                #             self.ponder_move_san = "None"
+                #     if self.ponder_move_san:
+                #         self.engine_score.children[0].text = YOURTURN_MENU.format(self.ponder_move_san, self.eng_eval, self.format_time_str(self.time_white), self.format_time_str(self.time_black))
+                #         if not self.spoke_hint:
+                #             self.spoke_hint = True
+                #             self.speak_move(self.ponder_move, immediate=True)
+                #     else:
+                #         self.engine_score.children[0].text = YOURTURN_MENU.format("Not available", self.eng_eval, self.format_time_str(self.time_white), self.format_time_str(self.time_black))
+                # else:
+                #     self.engine_score.children[0].text = YOURTURN_MENU.format("hidden", "hidden", self.format_time_str(self.time_white), self.format_time_str(self.time_black))
 
 
     def probe_move(self, *args):
@@ -260,9 +414,9 @@ class DGTBoard(object):
                 elif new_dgt_fen:
                     self.dgt_fen = new_dgt_fen
                     self.previous_dgt_fen = new_dgt_fen
-                # if self.engine_mode == ENGINE_PLAY and self.engine_computer_move:
-                #     # Print engine move on DGT XL clock
-                #     self.dgtnix.SendToClock(self.format_str_for_dgt(self.format_time_str(self.time_white,separator='')+self.      format_time_str(self.time_black, separator='')), False, True)
+                if play_mode == GAME_MODE and self.engine_computer_move:
+                    # Print engine move on DGT XL clock
+                    self.dgtnix.SendToClock(self.format_str_for_dgt(self.format_time_str(self.time_white,separator='')+self.      format_time_str(self.time_black, separator='')), False, True)
             except Exception:
                 self.dgt_connected = False
                 self.dgtnix=None
@@ -471,6 +625,7 @@ if __name__ == '__main__':
             if play_mode == ANALYSIS_MODE:
                 sf.go(infinite=True)
             elif play_mode == GAME_MODE:
-                sf.go(movetime=comp_time)
+                if clock_mode == FIXED_TIME:
+                    sf.go(movetime=comp_time)
             em.engine_started = True
 
