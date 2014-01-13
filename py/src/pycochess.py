@@ -42,6 +42,8 @@ comp_inc = 0
 player_time = 0
 player_inc = 0
 play_mode = GAME_MODE
+exec_comp_move = False
+engine_computer_move = False
 
 DEFAULT_BOOK_FEN = "rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR"
 
@@ -146,14 +148,12 @@ class DGTBoard(object):
         self.executed_command = False
 
         self.engine_comp_color = BLACK
-        self.engine_computer_move = False
 
         self.time_white = 0
         self.time_inc_white = 0
         self.time_black = 0
         self.time_inc_black = 0
-
-
+        self.time_last = None
 
     def get_legal_move(self, from_fen, to_fen):
         to_fen_first_tok = to_fen.split()[0]
@@ -197,10 +197,17 @@ class DGTBoard(object):
             cad.lcd.cursor_off()
             cad.lcd.backlight_off()
             cad.lcd.backlight_on()
-            cad.lcd.write("New Game")
+            write_to_piface("New Game", clear=True)
 
 
     def check_for_command_fen(self, fen):
+        global comp_time
+        global play_mode
+        global clock_mode
+        global comp_inc
+        global player_time
+        global player_inc
+
         if book_map.has_key(fen):
             filepath = BOOK_PATH + book_map[fen][0] + BOOK_EXTENSION
             print "book filepath : {0}".format(filepath)
@@ -210,8 +217,10 @@ class DGTBoard(object):
             return True
         elif game_map.has_key(fen):
             if game_map[fen] == NEW_GAME:
-#                self.start_new_game()
-                return False
+                if len(self.move_list) > 0:
+                    self.move_list = []
+                    self.start_new_game()
+                    return True
             else:
                 play_mode = game_map[fen]
                 return True
@@ -219,8 +228,12 @@ class DGTBoard(object):
             mode = time_control_map[fen][0]
             message = time_control_map[fen][1]
 
+#            print "time_control_mode: {0}".format(mode)
+#            print "time_control_message: {0}".format(message)
+
             if 0 <= mode <= 7:
                 clock_mode = FIXED_TIME
+
                 if mode == 0:
                     comp_time = 1000
                 elif mode == 1:
@@ -258,6 +271,7 @@ class DGTBoard(object):
                     comp_time = 5400000
             elif 16 <= mode <= 22:
                 clock_mode = BLITZ_FISCHER
+
                 if mode == 16:
                     comp_time = 3 * 60 * 1000
                     comp_inc = 2 * 1000
@@ -286,7 +300,8 @@ class DGTBoard(object):
                     comp_time = 90 * 60 * 1000
                     comp_inc = 30 * 1000
 
-                write_to_piface(message, clear=True)
+            write_to_piface(message, clear=True)
+            return True
 
         else:
             try:
@@ -314,14 +329,15 @@ class DGTBoard(object):
             self.time_inc_white, self.time_inc_black = self.time_inc_black, self.time_inc_white
 
     def update_time(self, color='w'):
-        current = datetime.datetime.now()
-        seconds_elapsed = (current - self.time_last).total_seconds()
-#        print "seconds_elapsed:{0}".format(seconds_elapsed)
-        self.time_last = current
-        if color == 'w':
-            self.time_white -= seconds_elapsed
-        else:
-            self.time_black -= seconds_elapsed
+        if self.time_last:
+            current = datetime.datetime.now()
+            seconds_elapsed = (current - self.time_last).total_seconds()
+    #        print "seconds_elapsed:{0}".format(seconds_elapsed)
+            self.time_last = current
+            if color == 'w':
+                self.time_white -= seconds_elapsed*1000
+            else:
+                self.time_black -= seconds_elapsed*1000
 
     def reset_clock_update(self):
         self.time_last = datetime.datetime.now()
@@ -338,13 +354,31 @@ class DGTBoard(object):
             color = 'b'
         self.update_time(color=color)
 
+    def format_time_str(self,time_a, separator='.'):
+        return "%d%s%02d" % (int(time_a/60), separator, int(time_a%60))
+
     def update_clocks(self, *args):
         if play_mode == GAME_MODE:
-            if self.engine_computer_move:
+            if engine_computer_move:
+#                print "comp_time: {0}".format(self.time_black)
                 self.update_time(color=self.engine_comp_color)
-                # self.engine_score.children[0].text = "[color=000000]Thinking..\n[size=24]{0}    [b]{1}[/size][/b][/color]".format(self.format_time_str(self.time_white), self.format_time_str(self.time_black))
+                if clock_mode == BLITZ or clock_mode == BLITZ_FISCHER:
+                    write_to_piface(self.format_time_str(self.time_white) + self.format_time_str(self.time_black), clear=True)
+                else:
+                    if self.engine_comp_color == WHITE:
+                        print "comp_time: {0}".format(self.time_white)
+                        write_to_piface(self.format_time_str(self.time_white), clear = True)
+                    else:
+                        print "comp_time: {0}".format(self.time_black)
+                        write_to_piface(self.format_time_str(self.time_black), clear = True)
+
+                        # self.engine_score.children[0].text = "[color=000000]Thinking..\n[size=24]{0}    [b]{1}[/size][/b][/color]".format(self.format_time_str(self.time_white), self.format_time_str(self.time_black))
             else:
-                self.update_player_time()
+                if not exec_comp_move:
+                    self.update_player_time()
+                    if clock_mode == BLITZ or clock_mode == BLITZ_FISCHER:
+                        write_to_piface(self.format_time_str(self.time_white) + self.format_time_str(self.time_black), clear=True)
+
                 # if self.show_hint:
                 #     if not self.ponder_move_san and self.ponder_move and self.ponder_move!='(none)':
                 #         # print self.ponder_move
@@ -400,6 +434,9 @@ class DGTBoard(object):
                             self.dgt_fen = new_dgt_fen
                             self.switch_turn()
                             self.move_list.append(m)
+                            global engine_computer_move
+                            if not engine_computer_move:
+                                engine_computer_move = True
                             return m
                         else:
                             previous_dgt_fen_first_token = self.previous_dgt_fen.split()[0]
@@ -414,9 +451,9 @@ class DGTBoard(object):
                 elif new_dgt_fen:
                     self.dgt_fen = new_dgt_fen
                     self.previous_dgt_fen = new_dgt_fen
-                if play_mode == GAME_MODE and self.engine_computer_move:
+#                if play_mode == GAME_MODE and self.engine_computer_move:
                     # Print engine move on DGT XL clock
-                    self.dgtnix.SendToClock(self.format_str_for_dgt(self.format_time_str(self.time_white,separator='')+self.      format_time_str(self.time_black, separator='')), False, True)
+#                    self.dgtnix.SendToClock(self.format_str_for_dgt(self.format_time_str(self.time_white,separator='')+self.      format_time_str(self.time_black, separator='')), False, True)
             except Exception:
                 self.dgt_connected = False
                 self.dgtnix=None
@@ -548,7 +585,6 @@ class EngineManager(object):
 
         if play_mode == ANALYSIS_MODE:
 
-
             line_index = tokens.index('pv')
             if line_index>-1:
                 pv = sf.to_san(tokens[line_index+1:])
@@ -557,10 +593,9 @@ class EngineManager(object):
                     if self.score_count > 5:
                         self.score_count = 0
                     if piface and self.score_count==1:
-                        cad.lcd.clear()
                         first_mv = tokens[line_index+1]
                         output = str(score)+' '+first_mv
-                        cad.lcd.write(output)
+                        write_to_piface(output, clear = True)
                         #cad.lcd.write(str(score)+' ')
     #                    cad.lcd.write(self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1))
                         print output
@@ -572,16 +607,18 @@ class EngineManager(object):
             if best_move:
 #                print "best_move:{0}".format(best_move)
 #                print "best_move_san:{0}".format(sf.to_san([best_move])[0])
+                global exec_comp_move
+                global engine_computer_move
+                exec_comp_move = True
+                engine_computer_move = False
                 write_to_piface(sf.to_san([best_move])[0], clear=True)
-
-
-
 
 def dgt_probe(dgt):
     Timer(1.0, dgt_probe, [dgt]).start()
     m = dgt.probe_move()
     if m:
         dgt_sem.release()
+    dgt.update_clocks()
 
 if __name__ == '__main__':
     if piface:
@@ -613,19 +650,47 @@ if __name__ == '__main__':
     dgt_probe(dgt)
 
     while True:
-            #print "Before acquire"
-            dgt_sem.acquire()
-            print "Board Updated!"
-            em.stop_engine()
-            em.score_count = 0
-            em.position(dgt.move_list, pos='startpos')
-            # Needed on the Pi!
-            if arm:
-                sleep(1)
-            if play_mode == ANALYSIS_MODE:
-                sf.go(infinite=True)
-            elif play_mode == GAME_MODE:
+        #print "Before acquire"
+        dgt_sem.acquire()
+        print "Board Updated!"
+        em.stop_engine()
+        em.score_count = 0
+        em.position(dgt.move_list, pos='startpos')
+        # Needed on the Pi!
+        if arm:
+            sleep(1)
+        if play_mode == ANALYSIS_MODE:
+            sf.go(infinite=True)
+        elif play_mode == GAME_MODE:
+            if engine_computer_move:
                 if clock_mode == FIXED_TIME:
+                    if dgt.engine_comp_color == BLACK:
+#                        print "comp_time: {0}".format(comp_time)
+                        dgt.btime = comp_time
+#                        print "dgt_time: {0}".format(dgt.btime)
+
+                    else:
+                        dgt.wtime = comp_time
                     sf.go(movetime=comp_time)
-            em.engine_started = True
+                else:
+                    if not player_time:
+                        player_time = comp_time
+                    if not player_inc:
+                        player_inc = comp_inc
+                    wtime = comp_time
+                    winc = comp_inc
+                    btime = player_time
+                    binc = player_inc
+
+                    if dgt.engine_comp_color == BLACK:
+                        wtime, btime = btime, wtime
+                        winc, binc = binc, winc
+
+                    if clock_mode == BLITZ:
+                        sf.go(wtime = int(wtime), btime = int(btime))
+                    elif clock_mode == BLITZ_FISCHER:
+                        sf.go(wtime = int(wtime), btime = int(btime), winc=int(winc), binc=int(binc))
+                    dgt.reset_clock_update()
+
+        em.engine_started = True
 
