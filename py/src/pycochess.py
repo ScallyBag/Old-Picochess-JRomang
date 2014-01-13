@@ -34,17 +34,6 @@ WHITE = "w"
 BLACK = "b"
 
 BOOK_PATH="/opt/picochess/books/"
-
-clock_mode = FIXED_TIME
-# 5 seconds
-comp_time = 5000
-comp_inc = 0
-player_time = 0
-player_inc = 0
-play_mode = GAME_MODE
-exec_comp_move = False
-engine_computer_move = False
-
 DEFAULT_BOOK_FEN = "rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR"
 
 book_map = {
@@ -74,7 +63,6 @@ game_map = {
     "rnbqkbnr/pppppppp/8/3Q4/8/8/PPPPPPPP/RNBQKBNR" : KIBITZ_MODE,
     # White Queen on e5
     "rnbqkbnr/pppppppp/8/4Q3/8/8/PPPPPPPP/RNBQKBNR" : OBSERVE_MODE
-
 }
 
 level_map = ["rnbqkbnr/pppppppp/q7/8/8/8/PPPPPPPP/RNBQKBNR",
@@ -129,13 +117,11 @@ time_control_map = {
 
 dgt_sem = Semaphore(value=0)
 
-def write_to_piface(message, clear = False):
-    if piface:
-        if clear:
-            cad.lcd.clear()
-        cad.lcd.write(message)
+class Pycochess(object):
 
-class DGTBoard(object):
+    ANALYSIS = "Analysis"
+    PLAY = "Play"
+    OBSERVE = "Observe"
 
     def __init__(self, device, **kwargs):
         self.dgtnix = None
@@ -154,6 +140,31 @@ class DGTBoard(object):
         self.time_black = 0
         self.time_inc_black = 0
         self.time_last = None
+
+        # Engine specific stuff
+        sf.add_observer(self.parse_score)
+        self.score_count = 0
+        self.score = None
+        self.engine_mode = Pycochess.PLAY
+        self.engine_started = False
+
+        # Game specific stuff
+        self.clock_mode = FIXED_TIME
+        self.play_mode = GAME_MODE
+
+        # 5 seconds
+        self.comp_time = 5000
+        self.comp_inc = 0
+        self.player_time = 0
+        self.player_inc = 0
+        self.exec_comp_move = False
+        self.engine_computer_move = False
+
+    def write_to_piface(self, message, clear = False):
+        if piface:
+            if clear:
+                cad.lcd.clear()
+            cad.lcd.write(message)
 
     def get_legal_move(self, from_fen, to_fen):
         to_fen_first_tok = to_fen.split()[0]
@@ -197,22 +208,16 @@ class DGTBoard(object):
             cad.lcd.cursor_off()
             cad.lcd.backlight_off()
             cad.lcd.backlight_on()
-            write_to_piface("New Game", clear=True)
+            self.write_to_piface("New Game", clear=True)
 
 
     def check_for_command_fen(self, fen):
-        global comp_time
-        global play_mode
-        global clock_mode
-        global comp_inc
-        global player_time
-        global player_inc
 
         if book_map.has_key(fen):
             filepath = BOOK_PATH + book_map[fen][0] + BOOK_EXTENSION
             print "book filepath : {0}".format(filepath)
             sf.set_option("Book File", filepath)
-            write_to_piface("Book:\n "+book_map[fen][1], clear=True)
+            self.write_to_piface("Book:\n "+book_map[fen][1], clear=True)
             # Return true so that engine does not think if merely the opening book is changed
             return True
         elif game_map.has_key(fen):
@@ -232,82 +237,82 @@ class DGTBoard(object):
 #            print "time_control_message: {0}".format(message)
 
             if 0 <= mode <= 7:
-                clock_mode = FIXED_TIME
+                self.clock_mode = FIXED_TIME
 
                 if mode == 0:
-                    comp_time = 1000
+                    self.comp_time = 1000
                 elif mode == 1:
-                    comp_time = 3000
+                    self.comp_time = 3000
                 elif mode == 2:
-                    comp_time = 5000
+                    self.comp_time = 5000
                 elif mode == 3:
-                    comp_time = 10000
+                    self.comp_time = 10000
                 elif mode == 4:
-                    comp_time = 15000
+                    self.comp_time = 15000
                 elif mode == 5:
-                    comp_time = 30000
+                    self.comp_time = 30000
                 elif mode == 6:
-                    comp_time = 60000
+                    self.comp_time = 60000
                 elif mode == 7:
-                    comp_time = 120000
+                    self.comp_time = 120000
             elif 8 <= mode <= 15:
-                clock_mode = BLITZ
+                self.clock_mode = BLITZ
 
                 if mode == 8:
-                    comp_time = 60000
+                    self.comp_time = 60000
                 elif mode == 9:
-                    comp_time = 180000
+                    self.comp_time = 180000
                 elif mode == 10:
-                    comp_time = 300000
+                    self.comp_time = 300000
                 elif mode == 11:
-                    comp_time = 600000
+                    self.comp_time = 600000
                 elif mode == 12:
-                    comp_time = 900000
+                    self.comp_time = 900000
                 elif mode == 13:
-                    comp_time = 1800000
+                    self.comp_time = 1800000
                 elif mode == 14:
-                    comp_time = 3600000
+                    self.comp_time = 3600000
                 elif mode == 15:
-                    comp_time = 5400000
+                    self.comp_time = 5400000
             elif 16 <= mode <= 22:
-                clock_mode = BLITZ_FISCHER
+                self.clock_mode = BLITZ_FISCHER
 
                 if mode == 16:
-                    comp_time = 3 * 60 * 1000
-                    comp_inc = 2 * 1000
+                    self.comp_time = 3 * 60 * 1000
+                    self.comp_inc = 2 * 1000
                 elif mode == 17:
-                    comp_time = 4 * 60 * 1000
-                    comp_inc = 2 * 1000
+                    self.comp_time = 4 * 60 * 1000
+                    self.comp_inc = 2 * 1000
                 elif mode == 18:
-                    comp_time = 5 * 60 * 1000
-                    comp_inc = 3 * 1000
+                    self.comp_time = 5 * 60 * 1000
+                    self.comp_inc = 3 * 1000
                 elif mode == 19:
-                    comp_time = 5 * 60 * 1000
-                    comp_inc = 5 * 1000
+                    self.comp_time = 5 * 60 * 1000
+                    self.comp_inc = 5 * 1000
                 elif mode == 20:
                     # Handicap time control
                     # Seems to work well for training
                     # Player has 7m + 10s increment
                     # Computer has 1m + 3s increment
-                    comp_time = 1 * 60 * 1000
-                    comp_inc = 3 * 1000
-                    player_time = 7 * 60 * 1000
-                    player_inc = 10 * 1000
+                    self.comp_time = 1 * 60 * 1000
+                    self.comp_inc = 3 * 1000
+                    self.player_time = 7 * 60 * 1000
+                    self.player_inc = 10 * 1000
                 elif mode == 21:
-                    comp_time = 15 * 60 * 1000
-                    comp_inc = 5 * 1000
+                    self.comp_time = 15 * 60 * 1000
+                    self.comp_inc = 5 * 1000
                 elif mode == 22:
-                    comp_time = 90 * 60 * 1000
-                    comp_inc = 30 * 1000
+                    self.comp_time = 90 * 60 * 1000
+                    self.comp_inc = 30 * 1000
 
-            write_to_piface(message, clear=True)
+            self.write_to_piface(message, clear=True)
             return True
 
         else:
             try:
                 level = level_map.index(fen)
                 sf.set_option("Skill Level", level)
-                write_to_piface("Now on Level "+str(level), clear=True)
+                self.write_to_piface("Now on Level "+str(level), clear=True)
                 return True
             except ValueError:
                 return False
@@ -358,26 +363,29 @@ class DGTBoard(object):
         return "%d%s%02d" % (int(time_a/60), separator, int(time_a%60))
 
     def update_clocks(self, *args):
-        if play_mode == GAME_MODE:
-            if engine_computer_move:
-#                print "comp_time: {0}".format(self.time_black)
+        if self.play_mode == GAME_MODE:
+            if self.engine_computer_move:
+                print "comp_time: {0}".format(self.time_black)
                 self.update_time(color=self.engine_comp_color)
-                if clock_mode == BLITZ or clock_mode == BLITZ_FISCHER:
-                    write_to_piface(self.format_time_str(self.time_white) + self.format_time_str(self.time_black), clear=True)
+                print "comp_time: {0}".format(self.time_black)
+
+                if self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER:
+                    self.write_to_piface(self.format_time_str(self.time_white) + self.format_time_str(self.time_black), clear=True)
                 else:
                     if self.engine_comp_color == WHITE:
-                        print "comp_time: {0}".format(self.time_white)
-                        write_to_piface(self.format_time_str(self.time_white), clear = True)
+#                        print "comp_time: {0}".format(self.time_white)
+                        self.write_to_piface(self.format_time_str(self.time_white), clear = True)
                     else:
-                        print "comp_time: {0}".format(self.time_black)
-                        write_to_piface(self.format_time_str(self.time_black), clear = True)
+#                        print "comp_time: {0}".format(self.time_black)
+                        if self.time_black:
+                            self.write_to_piface(self.format_time_str(self.time_black), clear = True)
 
                         # self.engine_score.children[0].text = "[color=000000]Thinking..\n[size=24]{0}    [b]{1}[/size][/b][/color]".format(self.format_time_str(self.time_white), self.format_time_str(self.time_black))
             else:
-                if not exec_comp_move:
+                if not self.exec_comp_move:
                     self.update_player_time()
-                    if clock_mode == BLITZ or clock_mode == BLITZ_FISCHER:
-                        write_to_piface(self.format_time_str(self.time_white) + self.format_time_str(self.time_black), clear=True)
+                    if self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER:
+                        self.write_to_piface(self.format_time_str(self.time_white) + self.format_time_str(self.time_black), clear=True)
 
                 # if self.show_hint:
                 #     if not self.ponder_move_san and self.ponder_move and self.ponder_move!='(none)':
@@ -434,9 +442,8 @@ class DGTBoard(object):
                             self.dgt_fen = new_dgt_fen
                             self.switch_turn()
                             self.move_list.append(m)
-                            global engine_computer_move
-                            if not engine_computer_move:
-                                engine_computer_move = True
+                            if not self.engine_computer_move:
+                                self.engine_computer_move = True
                             return m
                         else:
                             previous_dgt_fen_first_token = self.previous_dgt_fen.split()[0]
@@ -458,40 +465,6 @@ class DGTBoard(object):
                 self.dgt_connected = False
                 self.dgtnix=None
                 print traceback.format_exc()
-
-
-class EngineManager(object):
-
-    ANALYSIS = "Analysis"
-    PLAY = "Play"
-    OBSERVE = "Observe"
-
-    ## MODES: Play, Analyze, Observe
-    def __init__(self, **kwargs):
-        sf.add_observer(self.parse_score)
-        self.score_count = 0
-        self.score = None
-        self.engine_mode = EngineManager.PLAY
-        self.engine_started = False
-
-#    def show_score_on_dgt(self):
-#        if self.engine_mode == EngineManager.ANALYSIS:
-#            out_score = self.parse_score(line)
-#            #out_score = None
-#            if out_score:
-#                first_mv, raw_line, cleaned_line = out_score
-#
-#                if self.dgt_connected and self.dgtnix:
-#                    # Display score on the DGT clock
-#                    score = str(self.get_score(line))
-#                    if score.startswith("mate"):
-#                        score = score[4:]
-#                        score = "m "+score
-#                    score = score.replace("-", "n")
-#                    self.dgtnix.SendToClock(self.format_str_for_dgt(score), False, True)
-#                    if first_mv:
-#                        sleep(1)
-#                        self.dgtnix.SendToClock(self.format_move_for_dgt(first_mv), False, False)
 
     def stop_engine(self):
         if self.engine_started:
@@ -523,10 +496,10 @@ class EngineManager(object):
                     print "Cannot convert Mate number of moves to a int"
                     print e
 
-            # print self.chessboard.position.turn
-#            if self.chessboard.position.turn == 'b':
-#                if score:
-#                    score *= -1
+                    # print self.chessboard.position.turn
+                #            if self.chessboard.position.turn == 'b':
+                #                if score:
+                #                    score *= -1
             if score_type == "mate":
                 score = score_type + " " + str(score)
         return score
@@ -547,12 +520,12 @@ class EngineManager(object):
                 score += "%d." % ((i + 1) / 2)
                 move = "w"
             if mv:
-#                if raw:
+            #                if raw:
                 score += "%s " % mv
                 if i % 6 == 0:
                     score += "\n"
-#                else:
-#                    score += " [ref=%d:%s] %s [/ref]"%((i + 1) / 2, move, mv)
+                #                else:
+                #                    score += " [ref=%d:%s] %s [/ref]"%((i + 1) / 2, move, mv)
         return score
 
     def parse_bestmove(self, line):
@@ -583,7 +556,7 @@ class EngineManager(object):
         tokens = line.split()
         score = self.get_score(line)
 
-        if play_mode == ANALYSIS_MODE:
+        if self.play_mode == ANALYSIS_MODE:
 
             line_index = tokens.index('pv')
             if line_index>-1:
@@ -595,30 +568,30 @@ class EngineManager(object):
                     if piface and self.score_count==1:
                         first_mv = tokens[line_index+1]
                         output = str(score)+' '+first_mv
-                        write_to_piface(output, clear = True)
+                        self.write_to_piface(output, clear = True)
                         #cad.lcd.write(str(score)+' ')
-    #                    cad.lcd.write(self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1))
+                        #                    cad.lcd.write(self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1))
                         print output
                     else:
                         print self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1)
                         print "\n"
-        elif play_mode == GAME_MODE:
+        elif self.play_mode == GAME_MODE:
             best_move, ponder_move = self.parse_bestmove(line)
             if best_move:
-#                print "best_move:{0}".format(best_move)
-#                print "best_move_san:{0}".format(sf.to_san([best_move])[0])
-                global exec_comp_move
-                global engine_computer_move
-                exec_comp_move = True
-                engine_computer_move = False
-                write_to_piface(sf.to_san([best_move])[0], clear=True)
+            #                print "best_move:{0}".format(best_move)
+            #                print "best_move_san:{0}".format(sf.to_san([best_move])[0])
+                self.exec_comp_move = True
+                self.engine_computer_move = False
+                self.write_to_piface(sf.to_san([best_move])[0], clear=True)
 
-def dgt_probe(dgt):
-    Timer(1.0, dgt_probe, [dgt]).start()
-    m = dgt.probe_move()
+
+
+def dgt_probe(pyco):
+    Timer(1.0, dgt_probe, [pyco]).start()
+    m = pyco.probe_move()
     if m:
         dgt_sem.release()
-    dgt.update_clocks()
+    pyco.update_clocks()
 
 if __name__ == '__main__':
     if piface:
@@ -640,57 +613,57 @@ if __name__ == '__main__':
 
     arm = False
     if os.uname()[4][:3] == 'arm':
-        dgt = DGTBoard("/dev/ttyUSB0")
+        pyco = Pycochess("/dev/ttyUSB0")
         arm = True
     else:
-        dgt = DGTBoard("/dev/cu.usbserial-00001004")
+        pyco = Pycochess("/dev/cu.usbserial-00001004")
 
-    dgt.connect()
-    em = EngineManager()
-    dgt_probe(dgt)
+    pyco.connect()
+    dgt_probe(pyco)
 
     while True:
         #print "Before acquire"
         dgt_sem.acquire()
         print "Board Updated!"
-        em.stop_engine()
-        em.score_count = 0
-        em.position(dgt.move_list, pos='startpos')
+        pyco.stop_engine()
+        pyco.score_count = 0
+        pyco.position(pyco.move_list, pos='startpos')
         # Needed on the Pi!
         if arm:
             sleep(1)
-        if play_mode == ANALYSIS_MODE:
+        if pyco.play_mode == ANALYSIS_MODE:
             sf.go(infinite=True)
-        elif play_mode == GAME_MODE:
-            if engine_computer_move:
-                if clock_mode == FIXED_TIME:
-                    if dgt.engine_comp_color == BLACK:
+        elif pyco.play_mode == GAME_MODE:
+            if pyco.engine_computer_move:
+                if pyco.clock_mode == FIXED_TIME:
+                    if pyco.engine_comp_color == BLACK:
 #                        print "comp_time: {0}".format(comp_time)
-                        dgt.btime = comp_time
+                        pyco.btime = pyco.comp_time
 #                        print "dgt_time: {0}".format(dgt.btime)
 
                     else:
-                        dgt.wtime = comp_time
-                    sf.go(movetime=comp_time)
+                        pyco.wtime = pyco.comp_time
+                    sf.go(movetime=pyco.comp_time)
+                    pyco.reset_clock_update()
                 else:
                     if not player_time:
-                        player_time = comp_time
+                        player_time = pyco.comp_time
                     if not player_inc:
-                        player_inc = comp_inc
-                    wtime = comp_time
-                    winc = comp_inc
+                        player_inc = pyco.comp_inc
+                    wtime = pyco.comp_time
+                    winc = pyco.comp_inc
                     btime = player_time
                     binc = player_inc
 
-                    if dgt.engine_comp_color == BLACK:
+                    if pyco.engine_comp_color == BLACK:
                         wtime, btime = btime, wtime
                         winc, binc = binc, winc
 
-                    if clock_mode == BLITZ:
+                    if pyco.clock_mode == BLITZ:
                         sf.go(wtime = int(wtime), btime = int(btime))
-                    elif clock_mode == BLITZ_FISCHER:
+                    elif pyco.clock_mode == BLITZ_FISCHER:
                         sf.go(wtime = int(wtime), btime = int(btime), winc=int(winc), binc=int(binc))
-                    dgt.reset_clock_update()
+                    pyco.reset_clock_update()
 
-        em.engine_started = True
+        pyco.engine_started = True
 
