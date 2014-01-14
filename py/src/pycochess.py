@@ -1,4 +1,4 @@
-
+from Queue import Queue
 import traceback
 from dgt.dgtnix import *
 import stockfish as sf
@@ -115,7 +115,8 @@ time_control_map = {
 
 }
 
-dgt_sem = Semaphore(value=0)
+#dgt_sem = Semaphore(value=0)
+dgt_queue = Queue()
 
 class Pycochess(object):
 
@@ -475,11 +476,13 @@ class Pycochess(object):
                             previous_dgt_fen_first_token = self.previous_dgt_fen.split()[0]
 #                            print "previous_dgt_fen_first_token : {0}".format(previous_dgt_fen_first_token)
                             if new_dgt_first_token == previous_dgt_fen_first_token:
-                                print "undo"
+#                                print "undo"
+
                                 self.dgt_fen = self.previous_dgt_fen
                                 if len(self.move_list)>0:
                                     self.move_list.pop()
-                                    return self.move_list[-1]
+                                    return "undo"
+#                                    return self.move_list[-1]
 
                 elif new_dgt_fen:
                     self.dgt_fen = new_dgt_fen
@@ -607,12 +610,60 @@ class Pycochess(object):
             if best_move:
             #                print "best_move:{0}".format(best_move)
             #                print "best_move_san:{0}".format(sf.to_san([best_move])[0])
+                output_move = sf.to_san([best_move])[0]
+                if output_move:
+                    print "SAN best_move: {0}".format(output_move)
+                    output_move = " I play "+output_move
+                    self.write_to_piface(output_move, clear=True)
+
                 self.exec_comp_move = True
                 self.engine_computer_move = False
                 self.computer_move_FEN_reached = False
                 self.computer_move_FEN = sf.get_fen(self.dgt_fen, [best_move])
-                self.write_to_piface(sf.to_san([best_move])[0], clear=True)
+
                 self.engine_searching = False
+
+    def eng_process_move(self):
+        self.stop_engine()
+        self.score_count = 0
+        self.position(self.move_list, pos='startpos')
+        # Needed on the Pi!
+        if arm:
+            sleep(1)
+        if self.play_mode == ANALYSIS_MODE:
+            sf.go(infinite=True)
+        elif self.play_mode == GAME_MODE:
+            if self.engine_computer_move:
+                if self.clock_mode == FIXED_TIME:
+                    if self.engine_comp_color == BLACK:
+                    #                        print "comp_time: {0}".format(comp_time)
+                        self.time_black = self.comp_time
+                    #                        print "dgt_time: {0}".format(dgt.btime)
+
+                    else:
+                        self.time_white = self.comp_time
+                    sf.go(movetime=self.comp_time)
+                    self.reset_clock_update()
+                else:
+                    if not self.player_time:
+                        player_time = self.comp_time
+                    if not self.player_inc:
+                        player_inc = pyco.comp_inc
+                    wtime = self.comp_time
+                    winc = self.comp_inc
+                    btime = self.player_time
+                    binc = self.player_inc
+
+                    if self.engine_comp_color == BLACK:
+                        wtime, btime = btime, wtime
+                        winc, binc = binc, winc
+
+                    if self.clock_mode == BLITZ:
+                        sf.go(wtime=int(wtime), btime=int(btime))
+                    elif self.clock_mode == BLITZ_FISCHER:
+                        sf.go(wtime=int(wtime), btime=int(btime), winc=int(winc), binc=int(binc))
+                    self.reset_clock_update()
+        self.engine_searching = True
 
 
 def dgt_probe(pyco):
@@ -622,7 +673,10 @@ def dgt_probe(pyco):
     m = pyco.probe_move()
 #    print "move: {0}".format(m)
     if m:
-        dgt_sem.release()
+        dgt_queue.put(m)
+#        dgt_sem.release()
+
+
 
 if __name__ == '__main__':
     if piface:
@@ -654,54 +708,20 @@ if __name__ == '__main__':
 
     while True:
         #print "Before acquire"
-        dgt_sem.acquire()
+        m = dgt_queue.get()
         print "Board Updated!"
-        if pyco.computer_move_FEN_reached:
+        process_move = True
+        if m == "undo":
+            pyco.write_to_piface(pyco.move_list[-1], clear=True)
+            process_move = False
+
+        elif pyco.computer_move_FEN_reached:
             print "Comp_move FEN reached"
-            pyco.write_to_piface("Okay", clear=True)
-            dgt_sem.acquire()
-        else:
-            pyco.write_to_piface("Okay", clear=True)
+            pyco.write_to_piface("Done", clear=True)
+            m = dgt_queue.get()
+            print "Next dgt_get after comp_move fen reached"
+            process_move = True
 
-        pyco.stop_engine()
-        pyco.score_count = 0
-        pyco.position(pyco.move_list, pos='startpos')
-        # Needed on the Pi!
-        if arm:
-            sleep(1)
-        if pyco.play_mode == ANALYSIS_MODE:
-            sf.go(infinite=True)
-        elif pyco.play_mode == GAME_MODE:
-            if pyco.engine_computer_move:
-                if pyco.clock_mode == FIXED_TIME:
-                    if pyco.engine_comp_color == BLACK:
-#                        print "comp_time: {0}".format(comp_time)
-                        pyco.time_black = pyco.comp_time
-#                        print "dgt_time: {0}".format(dgt.btime)
-
-                    else:
-                        pyco.time_white = pyco.comp_time
-                    sf.go(movetime=pyco.comp_time)
-                    pyco.reset_clock_update()
-                else:
-                    if not player_time:
-                        player_time = pyco.comp_time
-                    if not player_inc:
-                        player_inc = pyco.comp_inc
-                    wtime = pyco.comp_time
-                    winc = pyco.comp_inc
-                    btime = player_time
-                    binc = player_inc
-
-                    if pyco.engine_comp_color == BLACK:
-                        wtime, btime = btime, wtime
-                        winc, binc = binc, winc
-
-                    if pyco.clock_mode == BLITZ:
-                        sf.go(wtime = int(wtime), btime = int(btime))
-                    elif pyco.clock_mode == BLITZ_FISCHER:
-                        sf.go(wtime = int(wtime), btime = int(btime), winc=int(winc), binc=int(binc))
-                    pyco.reset_clock_update()
-
-        pyco.engine_searching = True
+        if process_move:
+            pyco.eng_process_move()
 
