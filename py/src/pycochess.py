@@ -146,7 +146,7 @@ class Pycochess(object):
         self.score_count = 0
         self.score = None
         self.engine_mode = Pycochess.PLAY
-        self.engine_started = False
+        self.engine_searching = False
 
         # Game specific stuff
         self.clock_mode = FIXED_TIME
@@ -159,6 +159,10 @@ class Pycochess(object):
         self.player_inc = 0
         self.exec_comp_move = False
         self.engine_computer_move = False
+
+        # Help user execute comp moves
+        self.computer_move_FEN_reached = False
+        self.computer_move_FEN = ""
 
     def write_to_piface(self, message, clear = False):
         if piface:
@@ -362,23 +366,29 @@ class Pycochess(object):
     def format_time_str(self,time_a, separator='.'):
         return "%d%s%02d" % (int(time_a/60), separator, int(time_a%60))
 
+    def format_fixed_time_str(self, time_a):
+#        print "fixed_time_str: {0}".format(time_a)
+        time_a = int(time_a)
+        return "  {0}".format(time_a/1000)
+
     def update_clocks(self, *args):
         if self.play_mode == GAME_MODE:
             if self.engine_computer_move:
-                print "comp_time: {0}".format(self.time_black)
                 self.update_time(color=self.engine_comp_color)
-                print "comp_time: {0}".format(self.time_black)
+#                print "comp_time: {0}".format(self.time_black)
 
                 if self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER:
                     self.write_to_piface(self.format_time_str(self.time_white) + self.format_time_str(self.time_black), clear=True)
-                else:
+                elif self.clock_mode == FIXED_TIME and self.engine_searching:
+                    # If FIXED_TIME
                     if self.engine_comp_color == WHITE:
 #                        print "comp_time: {0}".format(self.time_white)
-                        self.write_to_piface(self.format_time_str(self.time_white), clear = True)
+                        if self.time_white and self.time_white>=1000:
+                            self.write_to_piface(self.format_fixed_time_str(self.time_white), clear = True)
                     else:
 #                        print "comp_time: {0}".format(self.time_black)
-                        if self.time_black:
-                            self.write_to_piface(self.format_time_str(self.time_black), clear = True)
+                        if self.time_black and self.time_black>=1000:
+                            self.write_to_piface(self.format_fixed_time_str(self.time_black), clear = True)
 
                         # self.engine_score.children[0].text = "[color=000000]Thinking..\n[size=24]{0}    [b]{1}[/size][/b][/color]".format(self.format_time_str(self.time_white), self.format_time_str(self.time_black))
             else:
@@ -414,6 +424,10 @@ class Pycochess(object):
             try:
                 new_dgt_fen = self.dgtnix.getFen(color=self.turn)
 
+#                print "old_dgt_fen: {0}".format(self.dgt_fen)
+#                print "new_dgt_fen: {0}".format(new_dgt_fen)
+
+
                 if self.dgt_fen and new_dgt_fen:
                     old_dgt_first_token = self.dgt_fen.split()[0]
                     new_dgt_first_token = new_dgt_fen.split()[0]
@@ -435,6 +449,15 @@ class Pycochess(object):
                         # and there is no need to process a move
                             return False
 
+                        computer_move_first_tok = None
+                        if self.computer_move_FEN:
+                            computer_move_first_tok = self.computer_move_FEN.split()[0]
+
+
+                        if not self.engine_searching and not self.computer_move_FEN_reached and computer_move_first_tok and computer_move_first_tok == new_dgt_first_token:
+                            self.computer_move_FEN_reached = True
+#                            print "computer move Fen reached"
+
                         m = self.get_legal_move(self.dgt_fen, new_dgt_fen)
 
                         if m:
@@ -442,8 +465,11 @@ class Pycochess(object):
                             self.dgt_fen = new_dgt_fen
                             self.switch_turn()
                             self.move_list.append(m)
+
                             if not self.engine_computer_move:
                                 self.engine_computer_move = True
+
+                            # Start player clock!
                             return m
                         else:
                             previous_dgt_fen_first_token = self.previous_dgt_fen.split()[0]
@@ -467,7 +493,8 @@ class Pycochess(object):
                 print traceback.format_exc()
 
     def stop_engine(self):
-        if self.engine_started:
+        if self.engine_searching:
+            self.engine_searching = False
             sf.stop()
 
     def get_score(self, line):
@@ -582,16 +609,20 @@ class Pycochess(object):
             #                print "best_move_san:{0}".format(sf.to_san([best_move])[0])
                 self.exec_comp_move = True
                 self.engine_computer_move = False
+                self.computer_move_FEN_reached = False
+                self.computer_move_FEN = sf.get_fen(self.dgt_fen, [best_move])
                 self.write_to_piface(sf.to_san([best_move])[0], clear=True)
-
+                self.engine_searching = False
 
 
 def dgt_probe(pyco):
     Timer(1.0, dgt_probe, [pyco]).start()
+    pyco.update_clocks()
+
     m = pyco.probe_move()
+#    print "move: {0}".format(m)
     if m:
         dgt_sem.release()
-    pyco.update_clocks()
 
 if __name__ == '__main__':
     if piface:
@@ -625,6 +656,13 @@ if __name__ == '__main__':
         #print "Before acquire"
         dgt_sem.acquire()
         print "Board Updated!"
+        if pyco.computer_move_FEN_reached:
+            print "Comp_move FEN reached"
+            pyco.write_to_piface("Okay", clear=True)
+            dgt_sem.acquire()
+        else:
+            pyco.write_to_piface("Okay", clear=True)
+
         pyco.stop_engine()
         pyco.score_count = 0
         pyco.position(pyco.move_list, pos='startpos')
@@ -638,11 +676,11 @@ if __name__ == '__main__':
                 if pyco.clock_mode == FIXED_TIME:
                     if pyco.engine_comp_color == BLACK:
 #                        print "comp_time: {0}".format(comp_time)
-                        pyco.btime = pyco.comp_time
+                        pyco.time_black = pyco.comp_time
 #                        print "dgt_time: {0}".format(dgt.btime)
 
                     else:
-                        pyco.wtime = pyco.comp_time
+                        pyco.time_white = pyco.comp_time
                     sf.go(movetime=pyco.comp_time)
                     pyco.reset_clock_update()
                 else:
@@ -665,5 +703,5 @@ if __name__ == '__main__':
                         sf.go(wtime = int(wtime), btime = int(btime), winc=int(winc), binc=int(binc))
                     pyco.reset_clock_update()
 
-        pyco.engine_started = True
+        pyco.engine_searching = True
 
