@@ -47,7 +47,7 @@ _DGTNIX_TRADEMARK = 0x12
 _DGTNIX_VERSION = 0x13
 
 piece_map = {
-    _DGTNIX_EMPTY : '-',
+    _DGTNIX_EMPTY : ' ',
     _DGTNIX_WPAWN : 'P',
     _DGTNIX_WROOK : 'R',
     _DGTNIX_WKNIGHT : 'N',
@@ -81,21 +81,18 @@ class DGTBoard:
             raise "Critical, cannot send - Unknown command: {0}".format(unichr(i))
 
     def dump_board(self, board):
-        print len(board)
         pattern = '>'+'B'*len(board)
         buf = unpack(pattern, board)
+        print "____"*8
         for square in xrange(0,len(board)):
-#            if not square%8==0 and not square == 0:
-#                print "|\n"
-            print self.convertInternalPieceToExternal(buf[square])
+            if square and square%8 == 0:
+                print "|"
+                print "____"*8
 
-#        for square in xrange(0, 8):
-#            if not square%8==0:
-#                if not square == 0:
-#                    print "|\n"
-#            print square
-#            print self.convertInternalPieceToExternal(board[square])
-#        print "\n"
+            print "|",
+            print self.convertInternalPieceToExternal(buf[square]),
+        print "|"
+        print "____"*8
 
 
     def read_message_from_board(self):
@@ -104,15 +101,14 @@ class DGTBoard:
         if not header:
             # raise
             raise Exception("Invalid First char in message")
-        print len(header)
         pattern = '>'+'B'*header_len
         buf = unpack(pattern, header)
-        print buf
+#        print buf
 #        print buf[0] & 128
 #        if not buf[0] & 128:
 #            raise Exception("Invalid message -2- readMessageFromBoard")
         command_id = buf[0] & 127
-        print [command_id]
+#        print [command_id]
 #
 #        if header[1] & 128:
 #            raise Exception ("Invalid message -4- readMessageFromBoard")
@@ -122,19 +118,14 @@ class DGTBoard:
 
         message_length = (buf[1] << 7) + buf[2]
         message_length-=3
-        print "len "+str(message_length)
-        print message_length/8
-        tmp1 = 0
-        message = self.ser.read(64)
-        print "len_message: {0}".format(len(message))
-        print [message]
 
         if command_id == _DGTNIX_NONE:
             print "Received _DGTNIX_NONE from the board"
 
         elif command_id == _DGTNIX_BOARD_DUMP:
-            print "DGTNIX_DUMP"
-#            print len(message)
+            print "Received DGTNIX_DUMP message"
+            message = self.ser.read(message_length)
+        #            print len(message)
             self.dump_board(message)
 
 
