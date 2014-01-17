@@ -95,6 +95,49 @@ class DGTBoard:
         print "____"*8
 
 
+    def get_fen(self, board, tomove='w'):
+        pattern = '>'+'B'*len(board)
+        board = unpack(pattern, board)
+        FEN = []
+        empty = 0
+
+        for sq in range(0, 64):
+            if board[sq] != 0:
+                if empty > 0:
+                    FEN.append(str(empty))
+                    empty = 0
+                FEN.append(self.convertInternalPieceToExternal(board[sq]))
+            else:
+                empty+=1
+            if (sq + 1) % 8 == 0:
+                if empty > 0:
+
+                    FEN.append(str(empty))
+                    empty = 0
+                if sq < 63:
+                    FEN.append("/")
+                empty = 0
+
+        FEN.append(' ')
+
+        FEN.append(tomove)
+
+        FEN.append(' ')
+#         possible castlings
+        FEN.append('K')
+        FEN.append('Q')
+        FEN.append('k')
+        FEN.append('q')
+        FEN.append(' ')
+        FEN.append('-')
+        FEN.append(' ')
+        FEN.append('0')
+        FEN.append(' ')
+        FEN.append('1')
+        FEN.append('0')
+
+        return ''.join(FEN)
+
     def read_message_from_board(self):
         header_len = 3
         header = self.ser.read(header_len)
@@ -120,13 +163,33 @@ class DGTBoard:
         message_length-=3
 
         if command_id == _DGTNIX_NONE:
-            print "Received _DGTNIX_NONE from the board"
+            print "Received _DGTNIX_NONE from the board\n"
+            message = self.ser.read(message_length)
 
         elif command_id == _DGTNIX_BOARD_DUMP:
-            print "Received DGTNIX_DUMP message"
+            print "Received DGTNIX_DUMP message\n"
             message = self.ser.read(message_length)
-        #            print len(message)
             self.dump_board(message)
+            print "\n"
+            print self.get_fen(message)
+            print "\n"
+
+        elif command_id == _DGTNIX_EE_MOVES:
+            print "Received _DGTNIX_EE_MOVES from the board\n"
+
+        elif command_id == _DGTNIX_BUSADDRESS:
+            print "Received _DGTNIX_BUSADDRESS from the board\n"
+
+        elif command_id == _DGTNIX_SERIALNR:
+            print "Received _DGTNIX_SERIALNR from the board\n"
+            message = self.ser.read(message_length)
+
+        elif command_id == _DGTNIX_TRADEMARK:
+            print "Received _DGTNIX_TRADEMARK from the board\n"
+            message = self.ser.read(message_length)
+
+        elif command_id == _DGTNIX_VERSION:
+            print "Received _DGTNIX_VERSION from the board\n"
 
 
 if __name__ == "__main__":
