@@ -204,11 +204,19 @@ class DGTBoard:
             print "Received _DGTNIX_VERSION from the board\n"
 
         elif command_id == _DGTNIX_FIELD_UPDATE:
-            print "Received _DGTNIX_FIELD_UPDATE from the board\n"
+            print "Received _DGTNIX_FIELD_UPDATE from the board"
             print "message_length : {0}".format(message_length)
-            message = self.ser.read(4)
-#            board.ser.write(chr(_DGTNIX_SEND_BRD))
 
+            if message_length == 2:
+                message = self.ser.read(message_length)
+                board.ser.write(chr(_DGTNIX_SEND_BRD))
+            else:
+                message = self.ser.read(4)
+
+            pattern = '>'+'B'*message_length
+            buf = unpack(pattern, message)
+#            print buf[0]
+#            print buf[1]
 
         else:
             # Not a regular command id
@@ -226,11 +234,11 @@ class DGTBoard:
 
             if command_id == DGTNIX_MSG_MV_ADD:
                 print "Add piece message"
-                board.ser.write(chr(_DGTNIX_SEND_BRD))
+#                board.ser.write(chr(_DGTNIX_SEND_BRD))
 
             elif command_id == DGTNIX_MSG_UPDATE:
                 print "Update piece message"
-                board.ser.write(chr(_DGTNIX_SEND_BRD))
+#                board.ser.write(chr(_DGTNIX_SEND_BRD))
 
 
 if __name__ == "__main__":
