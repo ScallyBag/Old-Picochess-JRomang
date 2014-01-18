@@ -207,6 +207,8 @@ class DGTBoard:
             print "Received _DGTNIX_FIELD_UPDATE from the board\n"
             print "message_length : {0}".format(message_length)
             message = self.ser.read(4)
+#            board.ser.write(chr(_DGTNIX_SEND_BRD))
+
 
         else:
             # Not a regular command id
@@ -224,6 +226,8 @@ class DGTBoard:
 
             if command_id == DGTNIX_MSG_MV_ADD:
                 print "Add piece message"
+                board.ser.write(chr(_DGTNIX_SEND_BRD))
+
             elif command_id == DGTNIX_MSG_UPDATE:
                 print "Update piece message"
                 board.ser.write(chr(_DGTNIX_SEND_BRD))
@@ -234,14 +238,8 @@ if __name__ == "__main__":
 
     line = []
     board.ser.write(chr(_DGTNIX_SEND_UPDATE_NICE))
-#    board.ser.write(chr(_DGTNIX_SEND_BRD))
-#    board.read_message_from_board(head=board.ser.read(1))
     while True:
         c = board.ser.read(1)
         if c:
             processed_msg = board.read_message_from_board(head=c)
-#            if processed_msg:
-#                board.ser.write(chr(_DGTNIX_SEND_BRD))
-#            processed_msg = None
-#                print processed_msg
 
