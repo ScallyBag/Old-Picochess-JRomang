@@ -87,6 +87,9 @@ class DGTBoard(object):
         self.ser = serial.Serial(device,stopbits=serial.STOPBITS_ONE)
         self.callbacks = []
 
+        self.ser.write(chr(_DGTNIX_SEND_UPDATE_NICE))
+        self.ser.write(chr(_DGTNIX_SEND_BRD))
+
     def subscribe(self, callback):
         self.callbacks.append(callback)
 
@@ -233,8 +236,8 @@ class DGTBoard(object):
             else:
                 message = self.ser.read(4)
 
-            pattern = '>'+'B'*message_length
-            buf = unpack(pattern, message)
+#            pattern = '>'+'B'*message_length
+#            buf = unpack(pattern, message)
 #            print buf[0]
 #            print buf[1]
 
@@ -260,6 +263,13 @@ class DGTBoard(object):
                 print "Update piece message"
 #                board.ser.write(chr(_DGTNIX_SEND_BRD))
 
+    # Warning, this method must be in a thread
+    def thread(self):
+        while True:
+            c = self.ser.read(1)
+            if c:
+                processed_msg = self.read_message_from_board(head=c)
+
 
 def dgt_observer(attrs):
     if attrs.type == FEN:
@@ -272,10 +282,5 @@ if __name__ == "__main__":
     board = DGTBoard('/dev/cu.usbserial-00001004')
     board.subscribe(dgt_observer)
 
-    line = []
-    board.ser.write(chr(_DGTNIX_SEND_UPDATE_NICE))
-    while True:
-        c = board.ser.read(1)
-        if c:
-            processed_msg = board.read_message_from_board(head=c)
+    board.thread()
 
