@@ -232,7 +232,7 @@ class DGTBoard(object):
 
             if message_length == 2:
                 message = self.ser.read(message_length)
-                board.ser.write(chr(_DGTNIX_SEND_BRD))
+                self.ser.write(chr(_DGTNIX_SEND_BRD))
             else:
                 message = self.ser.read(4)
 
@@ -264,11 +264,11 @@ class DGTBoard(object):
 #                board.ser.write(chr(_DGTNIX_SEND_BRD))
 
     # Warning, this method must be in a thread
-    def thread(self):
+    def poll(self):
         while True:
             c = self.ser.read(1)
             if c:
-                processed_msg = self.read_message_from_board(head=c)
+                self.read_message_from_board(head=c)
 
 
 def dgt_observer(attrs):
@@ -282,5 +282,5 @@ if __name__ == "__main__":
     board = DGTBoard('/dev/cu.usbserial-00001004')
     board.subscribe(dgt_observer)
 
-    board.thread()
+    board.poll()
 
