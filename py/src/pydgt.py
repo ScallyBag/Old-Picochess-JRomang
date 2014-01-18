@@ -1,6 +1,10 @@
 import serial
 from struct import unpack
 
+BOARD = "Board"
+
+FEN = "FEN"
+
 DGTNIX_MSG_UPDATE = 0x05
 
 _DGTNIX_SEND_BRD = 0x42
@@ -75,9 +79,24 @@ dgt_send_message_list = [_DGTNIX_SEND_CLK, _DGTNIX_SEND_BRD, _DGTNIX_SEND_UPDATE
                          _DGTNIX_SEND_UPDATE_BRD, _DGTNIX_SEND_SERIALNR, _DGTNIX_SEND_BUSADDRESS, _DGTNIX_SEND_TRADEMARK,
                          _DGTNIX_SEND_VERSION, _DGTNIX_SEND_UPDATE_NICE, _DGTNIX_SEND_EE_MOVES, _DGTNIX_SEND_RESET]
 
-class DGTBoard:
+class Event(object):
+    pass
+
+class DGTBoard(object):
     def __init__(self, device):
         self.ser = serial.Serial(device,stopbits=serial.STOPBITS_ONE)
+        self.callbacks = []
+
+    def subscribe(self, callback):
+        self.callbacks.append(callback)
+
+    def fire(self, **attrs):
+        e = Event()
+        e.source = self
+        for k, v in attrs.iteritems():
+            setattr(e, k, v)
+        for fn in self.callbacks:
+            fn(e)
 
     def convertInternalPieceToExternal(self, c):
         if piece_map.has_key(c):
@@ -92,16 +111,17 @@ class DGTBoard:
     def dump_board(self, board):
         pattern = '>'+'B'*len(board)
         buf = unpack(pattern, board)
-        print "____"*8
+        output = "__"*8+"\n"
         for square in xrange(0,len(board)):
             if square and square%8 == 0:
-                print "|"
-                print "____"*8
+                output+= "|\n"
+                output += "__"*8+"\n"
 
-            print "|",
-            print self.convertInternalPieceToExternal(buf[square]),
-        print "|"
-        print "____"*8
+            output+= "|"
+            output+= self.convertInternalPieceToExternal(buf[square])
+        output+= "|\n"
+        output+= "__"*8
+        return output
 
 
     def get_fen(self, board, tomove='w'):
@@ -181,10 +201,10 @@ class DGTBoard:
         if command_id == _DGTNIX_BOARD_DUMP:
             print "Received DGTNIX_DUMP message\n"
             message = self.ser.read(message_length)
-            self.dump_board(message)
-#            print "\n"
-            print self.get_fen(message)
-#            print "\n"
+#            self.dump_board(message)
+#            print self.get_fen(message)
+            self.fire(type=FEN, message=self.get_fen(message))
+            self.fire(type=BOARD, message=self.dump_board(message))
 
         elif command_id == _DGTNIX_EE_MOVES:
             print "Received _DGTNIX_EE_MOVES from the board\n"
@@ -241,8 +261,16 @@ class DGTBoard:
 #                board.ser.write(chr(_DGTNIX_SEND_BRD))
 
 
+def dgt_observer(attrs):
+    if attrs.type == FEN:
+        print "FEN: {0}".format(attrs.message)
+    elif attrs.type == BOARD:
+        print "Board: "
+        print attrs.message
+
 if __name__ == "__main__":
     board = DGTBoard('/dev/cu.usbserial-00001004')
+    board.subscribe(dgt_observer)
 
     line = []
     board.ser.write(chr(_DGTNIX_SEND_UPDATE_NICE))
