@@ -1,6 +1,8 @@
 import serial
 from struct import unpack
 
+DGTNIX_MSG_UPDATE = 0x05
+
 _DGTNIX_SEND_BRD = 0x42
 _DGTNIX_MESSAGE_BIT = 0x80
 _DGTNIX_BOARD_DUMP =  0x06
@@ -8,6 +10,13 @@ _DGTNIX_BOARD_DUMP =  0x06
 _DGTNIX_MSG_BOARD_DUMP = _DGTNIX_MESSAGE_BIT|_DGTNIX_BOARD_DUMP
 
 _DGTNIX_SEND_UPDATE_NICE = 0x4b
+
+# message emitted when a piece is added onto the board
+DGTNIX_MSG_MV_ADD = 0x00
+#message emitted when a piece is removed from the board
+DGTNIX_MSG_MV_REMOVE = 0x01
+
+DGT_SIZE_FIELD_UPDATE = 5
 _DGTNIX_FIELD_UPDATE =   0x0e
 _DGTNIX_EMPTY = 0x00
 _DGTNIX_WPAWN = 0x01
@@ -138,9 +147,12 @@ class DGTBoard:
 
         return ''.join(FEN)
 
-    def read_message_from_board(self):
+    def read_message_from_board(self, head=None):
         header_len = 3
-        header = self.ser.read(header_len)
+        if head:
+            header = head + self.ser.read(header_len-1)
+        else:
+            header = self.ser.read(header_len)
         if not header:
             # raise
             raise Exception("Invalid First char in message")
@@ -151,28 +163,28 @@ class DGTBoard:
 #        if not buf[0] & 128:
 #            raise Exception("Invalid message -2- readMessageFromBoard")
         command_id = buf[0] & 127
-#        print [command_id]
+        print "command_id: {0}".format(command_id)
 #
-#        if header[1] & 128:
+#        if buf[1] & 128:
 #            raise Exception ("Invalid message -4- readMessageFromBoard")
 #
-#        if header[2] & 128:
+#        if buf[2] & 128:
 #            raise Exception ("Invalid message -6- readMessageFromBoard")
 
         message_length = (buf[1] << 7) + buf[2]
         message_length-=3
 
-        if command_id == _DGTNIX_NONE:
-            print "Received _DGTNIX_NONE from the board\n"
-            message = self.ser.read(message_length)
+#        if command_id == _DGTNIX_NONE:
+#            print "Received _DGTNIX_NONE from the board\n"
+#            message = self.ser.read(message_length)
 
-        elif command_id == _DGTNIX_BOARD_DUMP:
+        if command_id == _DGTNIX_BOARD_DUMP:
             print "Received DGTNIX_DUMP message\n"
             message = self.ser.read(message_length)
             self.dump_board(message)
-            print "\n"
+#            print "\n"
             print self.get_fen(message)
-            print "\n"
+#            print "\n"
 
         elif command_id == _DGTNIX_EE_MOVES:
             print "Received _DGTNIX_EE_MOVES from the board\n"
@@ -191,14 +203,45 @@ class DGTBoard:
         elif command_id == _DGTNIX_VERSION:
             print "Received _DGTNIX_VERSION from the board\n"
 
+        elif command_id == _DGTNIX_FIELD_UPDATE:
+            print "Received _DGTNIX_FIELD_UPDATE from the board\n"
+            print "message_length : {0}".format(message_length)
+            message = self.ser.read(4)
+
+        else:
+            # Not a regular command id
+            # Piece remove/add codes?
+
+#            header = header + self.ser.read(1)
+#            print "message_length : {0}".format(len(header))
+#            print [header]
+            #message[0] = code;
+            #message[1] = intern_column;
+            #message[2] = intern_line;
+            #message[3] = piece;
+
+#            print "diff command : {0}".format(command_id)
+
+            if command_id == DGTNIX_MSG_MV_ADD:
+                print "Add piece message"
+            elif command_id == DGTNIX_MSG_UPDATE:
+                print "Update piece message"
+                board.ser.write(chr(_DGTNIX_SEND_BRD))
+
 
 if __name__ == "__main__":
     board = DGTBoard('/dev/cu.usbserial-00001004')
 
     line = []
-    board.ser.write(chr(_DGTNIX_SEND_BRD))
-    board.read_message_from_board()
-#    while True:
-#        sq = ser.read()
-#        if chr(_DGTNIX_WQUEEN) ==sq:
-#            print "WQueen"
+    board.ser.write(chr(_DGTNIX_SEND_UPDATE_NICE))
+#    board.ser.write(chr(_DGTNIX_SEND_BRD))
+#    board.read_message_from_board(head=board.ser.read(1))
+    while True:
+        c = board.ser.read(1)
+        if c:
+            processed_msg = board.read_message_from_board(head=c)
+#            if processed_msg:
+#                board.ser.write(chr(_DGTNIX_SEND_BRD))
+#            processed_msg = None
+#                print processed_msg
+
