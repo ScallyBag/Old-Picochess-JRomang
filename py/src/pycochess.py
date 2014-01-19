@@ -406,9 +406,9 @@ class Pycochess(object):
         return "%d%s%02d" % (int(time_a/60), separator, int(time_a%60))
 
     def format_fixed_time_str(self, time_a):
-#        print "fixed_time_str: {0}".format(time_a)
-        time_a = int(time_a)
-        return "  {0}".format(time_a/1000)
+        seconds = int(time_a)/1000
+        m, s = divmod(seconds, 60)
+        return "%02d:%02d" % (m, s)
 
     def update_clocks(self, *args):
         if self.play_mode == GAME_MODE:
