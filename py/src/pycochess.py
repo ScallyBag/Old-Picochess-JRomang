@@ -175,6 +175,8 @@ class Pycochess(object):
 
     def write_to_piface(self, message, clear = False):
         if piface:
+            # Sleep enables that garbage is not written to the screen
+            sleep(0.1)
             if clear:
                 cad.lcd.clear()
             cad.lcd.write(message)
@@ -665,7 +667,7 @@ class Pycochess(object):
                         print figlet.renderText(output_move)
                     else:
                         print "SAN best_move: {0}".format(output_move)
-                    output_move = " I play "+output_move
+                    output_move = "   "+output_move
                     self.write_to_piface(output_move, clear=True)
 
                 self.exec_comp_move = True
