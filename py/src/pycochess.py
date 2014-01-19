@@ -1,6 +1,5 @@
 from Queue import Queue
 import traceback
-from dgt.dgtnix import *
 import stockfish as sf
 from threading import Thread
 from threading import Semaphore
@@ -9,6 +8,8 @@ from time import sleep
 import datetime
 import itertools as it
 import os
+from pydgt import DGTBoard
+from pydgt import FEN
 
 FIXED_TIME = "fixed_time"
 BLITZ = "blitz"
@@ -22,6 +23,13 @@ KIBITZ_MODE = "Kibitz Mode"
 OBSERVE_MODE = "Observe Mode"
 
 BOOK_EXTENSION = ".bin"
+try:
+    import pyfiglet
+    figlet = pyfiglet.Figlet()
+    print figlet.renderText("Pycochess 0.1")
+except ImportError:
+    figlet = None
+    print "No pyfiglet"
 
 piface = None
 try:
@@ -125,7 +133,7 @@ class Pycochess(object):
     OBSERVE = "Observe"
 
     def __init__(self, device, **kwargs):
-        self.dgtnix = None
+        self.dgt = None
         self.dgt_fen = None
         self.dgt_connected = False
         self.device = device
@@ -182,30 +190,52 @@ class Pycochess(object):
                 return m
 
     def disconnect(self):
-        if self.dgtnix:
-            self.dgtnix.Close()
+        if self.dgt:
+            del self.dgt
         self.dgt_connected = False
 
+    def fen_to_move(self, fen, color):
+        return fen.replace(''+WHITE+'', color)
+
+    def on_observe_dgt_move(self, attr):
+        if attr.type == FEN:
+            fen = attr.message
+            print "Fen: {0}".format(fen)
+            m = pyco.probe_move(fen)
+            if m:
+                dgt_queue.put(m)
+        #        dgt_sem.release()
+
+    def poll_dgt(self):
+        thread = Thread(target=self.dgt.poll)
+        thread.start()
+
     def connect(self):
-        try:
-            self.dgtnix = dgtnix("dgt/libdgtnix.so")
-            self.dgtnix.SetOption(dgtnix.DGTNIX_DEBUG, dgtnix.DGTNIX_DEBUG_ON)
-            # Initialize the driver with port argv[1]
-            result = self.dgtnix.Init(self.device)
-            if result < 0:
-                print "Unable to connect to the device on {0}".format(self.device)
-            else:
-                print "The board was found"
-                self.dgtnix.update()
-                self.dgt_connected = True
-        except DgtnixError, e:
-            print "unable to load the library : %s " % e
+        self.dgt = DGTBoard('/dev/cu.usbserial-00001004')
+        self.dgt.subscribe(self.on_observe_dgt_move)
+        self.poll_dgt()
+
+        # board.poll()
+
+        # self.dgt = dgtnix("dgt/libdgtnix.so")
+        # self.dgt.SetOption(dgtnix.DGTNIX_DEBUG, dgtnix.DGTNIX_DEBUG_ON)
+        # Initialize the driver with port argv[1]
+        # result = self.dgt.Init(self.device)
+        if not self.dgt:
+            print "Unable to connect to the device on {0}".format(self.device)
+        else:
+            print "The board was found"
+            self.dgt_connected = True
+
 
     def switch_turn(self):
+#        print "prev_turn : {0}".format(self.turn)
         if self.turn == WHITE:
             self.turn = BLACK
         elif self.turn == BLACK:
             self.turn = WHITE
+#        print "turn : {0}".format(self.turn)
+
 
     def start_new_game(self):
         if piface:
@@ -420,10 +450,11 @@ class Pycochess(object):
                 #     self.engine_score.children[0].text = YOURTURN_MENU.format("hidden", "hidden", self.format_time_str(self.time_white), self.format_time_str(self.time_black))
 
 
-    def probe_move(self, *args):
-        if self.dgt_connected and self.dgtnix:
+    def probe_move(self, fen, *args):
+        if self.dgt_connected and self.dgt:
             try:
-                new_dgt_fen = self.dgtnix.getFen(color=self.turn)
+                new_dgt_fen = fen # color
+#                print "mod_fen : {0}".format(fen)
 
 #                print "old_dgt_fen: {0}".format(self.dgt_fen)
 #                print "new_dgt_fen: {0}".format(new_dgt_fen)
@@ -457,14 +488,26 @@ class Pycochess(object):
 
                         if not self.engine_searching and not self.computer_move_FEN_reached and computer_move_first_tok and computer_move_first_tok == new_dgt_first_token:
                             self.computer_move_FEN_reached = True
+#                            self.switch_turn()
 #                            print "computer move Fen reached"
 
+
+#                        print "old_dgt_fen: {0}".format(self.dgt_fen)
+#                        print "new_dgt_fen: {0}".format(new_dgt_fen)
                         m = self.get_legal_move(self.dgt_fen, new_dgt_fen)
+                        if not m:
+                            # If the user made a quick move, try to see if the current position is playable from the computer_move_FEN
+                            if self.is_fen(self.computer_move_FEN):
+                                m = self.get_legal_move(self.computer_move_FEN, new_dgt_fen)
+
 
                         if m:
+#                            print "Move: {0}".format(m)
                             self.previous_dgt_fen = self.dgt_fen
-                            self.dgt_fen = new_dgt_fen
                             self.switch_turn()
+                            new_dgt_fen = self.fen_to_move(new_dgt_fen, self.turn)
+
+                            self.dgt_fen = new_dgt_fen
                             self.move_list.append(m)
 
                             if not self.engine_computer_move:
@@ -492,7 +535,7 @@ class Pycochess(object):
 #                    self.dgtnix.SendToClock(self.format_str_for_dgt(self.format_time_str(self.time_white,separator='')+self.      format_time_str(self.time_black, separator='')), False, True)
             except Exception:
                 self.dgt_connected = False
-                self.dgtnix=None
+                self.dgt=None
                 print traceback.format_exc()
 
     def stop_engine(self):
@@ -612,7 +655,10 @@ class Pycochess(object):
             #                print "best_move_san:{0}".format(sf.to_san([best_move])[0])
                 output_move = sf.to_san([best_move])[0]
                 if output_move:
-                    print "SAN best_move: {0}".format(output_move)
+                    if figlet:
+                        print figlet.renderText(output_move)
+                    else:
+                        print "SAN best_move: {0}".format(output_move)
                     output_move = " I play "+output_move
                     self.write_to_piface(output_move, clear=True)
 
@@ -620,7 +666,8 @@ class Pycochess(object):
                 self.engine_computer_move = False
                 self.computer_move_FEN_reached = False
                 self.computer_move_FEN = sf.get_fen(self.dgt_fen, [best_move])
-
+#                print "prev dgt_fen: {0}".format(self.dgt_fen)
+#                print "computer_move_FEN: {0}".format(self.computer_move_FEN)
                 self.engine_searching = False
 
     def eng_process_move(self):
@@ -665,16 +712,18 @@ class Pycochess(object):
                     self.reset_clock_update()
         self.engine_searching = True
 
+    def is_fen(self, fen):
+        return len(fen.split()) == 6
 
-def dgt_probe(pyco):
-    Timer(1.0, dgt_probe, [pyco]).start()
+def update_clocks(pyco):
+    Timer(1.0, update_clocks, [pyco]).start()
     pyco.update_clocks()
 
-    m = pyco.probe_move()
-#    print "move: {0}".format(m)
-    if m:
-        dgt_queue.put(m)
-#        dgt_sem.release()
+#    m = pyco.probe_move()
+##    print "move: {0}".format(m)
+#    if m:
+#        dgt_queue.put(m)
+##        dgt_sem.release()
 
 
 
@@ -704,12 +753,12 @@ if __name__ == '__main__':
         pyco = Pycochess("/dev/cu.usbserial-00001004")
 
     pyco.connect()
-    dgt_probe(pyco)
+    update_clocks(pyco)
 
     while True:
         #print "Before acquire"
         m = dgt_queue.get()
-        print "Board Updated!"
+#        print "Board Updated!"
         process_move = True
         if m == "undo":
             pyco.write_to_piface(pyco.move_list[-1], clear=True)
@@ -719,7 +768,7 @@ if __name__ == '__main__':
             print "Comp_move FEN reached"
             pyco.write_to_piface("Done", clear=True)
             m = dgt_queue.get()
-            print "Next dgt_get after comp_move fen reached"
+#            print "Next dgt_get after comp_move fen reached"
             process_move = True
 
         if process_move:

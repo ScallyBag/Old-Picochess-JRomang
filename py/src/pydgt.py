@@ -82,13 +82,16 @@ dgt_send_message_list = [_DGTNIX_SEND_CLK, _DGTNIX_SEND_BRD, _DGTNIX_SEND_UPDATE
 class Event(object):
     pass
 
-class DGTBoard(object):
-    def __init__(self, device):
-        self.ser = serial.Serial(device,stopbits=serial.STOPBITS_ONE)
-        self.callbacks = []
 
-        self.ser.write(chr(_DGTNIX_SEND_UPDATE_NICE))
-        self.ser.write(chr(_DGTNIX_SEND_BRD))
+
+class DGTBoard(object):
+    def __init__(self, device, virtual = False):
+        if not virtual:
+            self.ser = serial.Serial(device,stopbits=serial.STOPBITS_ONE)
+            self.write(chr(_DGTNIX_SEND_UPDATE_NICE))
+            self.write(chr(_DGTNIX_SEND_BRD))
+
+        self.callbacks = []
 
     def subscribe(self, callback):
         self.callbacks.append(callback)
@@ -107,7 +110,7 @@ class DGTBoard(object):
 
     def sendMessageToBoard(self, i):
         if i in dgt_send_message_list:
-            self.ser.write(i)
+            self.write(i)
         else:
             raise "Critical, cannot send - Unknown command: {0}".format(unichr(i))
 
@@ -170,12 +173,18 @@ class DGTBoard(object):
 
         return ''.join(FEN)
 
+    def read(self, message_length):
+        return self.ser.read(message_length)
+
+    def write(self, message):
+        self.ser.write(message)
+
     def read_message_from_board(self, head=None):
         header_len = 3
         if head:
-            header = head + self.ser.read(header_len-1)
+            header = head + self.read(header_len-1)
         else:
-            header = self.ser.read(header_len)
+            header = self.read(header_len)
         if not header:
             # raise
             raise Exception("Invalid First char in message")
@@ -203,7 +212,7 @@ class DGTBoard(object):
 
         if command_id == _DGTNIX_BOARD_DUMP:
             print "Received DGTNIX_DUMP message\n"
-            message = self.ser.read(message_length)
+            message = self.read(message_length)
 #            self.dump_board(message)
 #            print self.get_fen(message)
             self.fire(type=FEN, message=self.get_fen(message))
@@ -217,11 +226,11 @@ class DGTBoard(object):
 
         elif command_id == _DGTNIX_SERIALNR:
             print "Received _DGTNIX_SERIALNR from the board\n"
-            message = self.ser.read(message_length)
+            message = self.read(message_length)
 
         elif command_id == _DGTNIX_TRADEMARK:
             print "Received _DGTNIX_TRADEMARK from the board\n"
-            message = self.ser.read(message_length)
+            message = self.read(message_length)
 
         elif command_id == _DGTNIX_VERSION:
             print "Received _DGTNIX_VERSION from the board\n"
@@ -231,10 +240,10 @@ class DGTBoard(object):
             print "message_length : {0}".format(message_length)
 
             if message_length == 2:
-                message = self.ser.read(message_length)
-                self.ser.write(chr(_DGTNIX_SEND_BRD))
+                message = self.read(message_length)
+                self.write(chr(_DGTNIX_SEND_BRD))
             else:
-                message = self.ser.read(4)
+                message = self.read(4)
 
 #            pattern = '>'+'B'*message_length
 #            buf = unpack(pattern, message)
@@ -266,9 +275,33 @@ class DGTBoard(object):
     # Warning, this method must be in a thread
     def poll(self):
         while True:
-            c = self.ser.read(1)
+            c = self.read(1)
             if c:
                 self.read_message_from_board(head=c)
+
+class VirtualDGTBoard(DGTBoard):
+    def __init__(self, device, virtual = True):
+        super(VirtualDGTBoard, self).__init__(device, virtual = virtual)
+        self.fen = None
+        self.callbacks = []
+
+    def read(self, bits):
+        if self.fen:
+            return True
+
+    def read_message_from_board(self, head = None):
+        fen = self.fen
+        self.fen = None
+        return self.fire(type=FEN, message = fen)
+
+    def write(self, message):
+        if message == chr(_DGTNIX_SEND_UPDATE_NICE):
+            print "Got Update Nice"
+        elif message == chr(_DGTNIX_SEND_BRD):
+            print "Got Send board"
+
+    def set_fen(self, fen):
+        self.fen = fen
 
 
 def dgt_observer(attrs):
