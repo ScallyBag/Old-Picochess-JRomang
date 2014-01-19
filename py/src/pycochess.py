@@ -166,7 +166,6 @@ class Pycochess(object):
         self.comp_inc = 0
         self.player_time = 0
         self.player_inc = 0
-        self.exec_comp_move = False
         self.engine_computer_move = False
 
         # Help user execute comp moves
@@ -176,7 +175,7 @@ class Pycochess(object):
     def write_to_piface(self, message, clear = False):
         if piface:
             # Sleep enables that garbage is not written to the screen
-            sleep(0.1)
+            sleep(0.2)
             if clear:
                 cad.lcd.clear()
             cad.lcd.write(message)
@@ -371,18 +370,18 @@ class Pycochess(object):
         self.time_inc_white = 3
         self.time_black = 420
         self.time_inc_black = 8
-        if self.engine_comp_color == 'b':
+        if self.engine_comp_color == BLACK:
             # Swap time allotments if comp is black (comp gets less time)
             self.time_white, self.time_black = self.time_black, self.time_white
             self.time_inc_white, self.time_inc_black = self.time_inc_black, self.time_inc_white
 
-    def update_time(self, color='w'):
+    def update_time(self, color=WHITE):
         if self.time_last:
             current = datetime.datetime.now()
             seconds_elapsed = (current - self.time_last).total_seconds()
     #        print "seconds_elapsed:{0}".format(seconds_elapsed)
             self.time_last = current
-            if color == 'w':
+            if color == WHITE:
                 self.time_white -= seconds_elapsed*1000
             else:
                 self.time_black -= seconds_elapsed*1000
@@ -390,25 +389,26 @@ class Pycochess(object):
     def reset_clock_update(self):
         self.time_last = datetime.datetime.now()
 
-    def time_add_increment(self, color='w'):
-        if color == 'w':
+    def time_add_increment(self, color=WHITE):
+        if color == WHITE:
             self.time_white+=self.time_inc_white
         else:
             self.time_black+=self.time_inc_black
 
     def update_player_time(self):
-        color = 'w'
-        if self.engine_comp_color == 'w':
-            color = 'b'
+        color = WHITE
+        if self.engine_comp_color == WHITE:
+            color = BLACK
         self.update_time(color=color)
 
-    def format_time_str(self,time_a, separator='.'):
-        return "%d%s%02d" % (int(time_a/60), separator, int(time_a%60))
-
-    def format_fixed_time_str(self, time_a):
+    def format_time_str(self, time_a):
         seconds = int(time_a)/1000
         m, s = divmod(seconds, 60)
-        return "%02d:%02d" % (m, s)
+        if m >=60:
+            h, m = divmod(m, 60)
+            return "%d:%02d:%02d" % (h, m, s)
+        else:
+            return "%02d:%02d" % (m, s)
 
     def update_clocks(self, *args):
         if self.play_mode == GAME_MODE:
@@ -416,25 +416,26 @@ class Pycochess(object):
                 self.update_time(color=self.engine_comp_color)
 #                print "comp_time: {0}".format(self.time_black)
 
-                if self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER:
+                if len(self.move_list) > 0 and self.engine_searching and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
                     self.write_to_piface(self.format_time_str(self.time_white) + self.format_time_str(self.time_black), clear=True)
                 elif self.clock_mode == FIXED_TIME and self.engine_searching:
                     # If FIXED_TIME
                     if self.engine_comp_color == WHITE:
 #                        print "comp_time: {0}".format(self.time_white)
                         if self.time_white and self.time_white>=1000:
-                            self.write_to_piface(self.format_fixed_time_str(self.time_white), clear = True)
+                            self.write_to_piface(self.format_time_str(self.time_white), clear = True)
                     else:
 #                        print "comp_time: {0}".format(self.time_black)
                         if self.time_black and self.time_black>=1000:
-                            self.write_to_piface(self.format_fixed_time_str(self.time_black), clear = True)
+                            self.write_to_piface(self.format_time_str(self.time_black), clear = True)
 
                         # self.engine_score.children[0].text = "[color=000000]Thinking..\n[size=24]{0}    [b]{1}[/size][/b][/color]".format(self.format_time_str(self.time_white), self.format_time_str(self.time_black))
             else:
-                if not self.exec_comp_move:
-                    self.update_player_time()
-                    if self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER:
-                        self.write_to_piface(self.format_time_str(self.time_white) + self.format_time_str(self.time_black), clear=True)
+                self.update_player_time()
+                comp_made_move = not self.engine_computer_move and not self.computer_move_FEN_reached and not self.engine_searching
+
+                if not comp_made_move and len(self.move_list) > 0 and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
+                    self.write_to_piface(self.format_time_str(self.time_white) + self.format_time_str(self.time_black), clear=True)
 
                 # if self.show_hint:
                 #     if not self.ponder_move_san and self.ponder_move and self.ponder_move!='(none)':
@@ -667,16 +668,17 @@ class Pycochess(object):
                         print figlet.renderText(output_move)
                     else:
                         print "SAN best_move: {0}".format(output_move)
-                    output_move = "   "+output_move
+                    output_move = output_move
                     self.write_to_piface(output_move, clear=True)
 
-                self.exec_comp_move = True
                 self.engine_computer_move = False
                 self.computer_move_FEN_reached = False
-                self.computer_move_FEN = sf.get_fen(self.dgt_fen, [best_move])
-#                print "prev dgt_fen: {0}".format(self.dgt_fen)
-#                print "computer_move_FEN: {0}".format(self.computer_move_FEN)
                 self.engine_searching = False
+                self.computer_move_FEN = sf.get_fen(self.dgt_fen, [best_move])
+
+                #                print "prev dgt_fen: {0}".format(self.dgt_fen)
+            #                print "computer_move_FEN: {0}".format(self.computer_move_FEN)
+
 
     def eng_process_move(self):
         self.stop_engine()
