@@ -211,7 +211,7 @@ class Pycochess(object):
         thread.start()
 
     def connect(self):
-        self.dgt = DGTBoard('/dev/cu.usbserial-00001004')
+        self.dgt = DGTBoard(self.device)
         self.dgt.subscribe(self.on_observe_dgt_move)
         self.poll_dgt()
 
@@ -238,6 +238,13 @@ class Pycochess(object):
 
 
     def start_new_game(self):
+        self.engine_computer_move = False
+        # Help user execute comp moves
+        self.computer_move_FEN_reached = False
+        self.computer_move_FEN = ""
+        self.move_list = []
+        self.turn = WHITE
+
         if piface:
             cad.lcd.blink_off()
             cad.lcd.cursor_off()
@@ -258,7 +265,6 @@ class Pycochess(object):
         elif game_map.has_key(fen):
             if game_map[fen] == NEW_GAME:
                 if len(self.move_list) > 0:
-                    self.move_list = []
                     self.start_new_game()
                     return True
             else:
@@ -766,7 +772,7 @@ if __name__ == '__main__':
 
         elif pyco.computer_move_FEN_reached:
             print "Comp_move FEN reached"
-            pyco.write_to_piface("Done", clear=True)
+#            pyco.write_to_piface("Done", clear=True)
             m = dgt_queue.get()
 #            print "Next dgt_get after comp_move fen reached"
             process_move = True
