@@ -13,6 +13,7 @@ To build pyfish:
 
 1. This needs pyfish. To build pyfish (just needed one time):
 2. Switch to the pyfish branch -> "git checkout pyfish"
+3. Install the python headers, on linux, its "sudo apt-get install python2.7-dev"
 3. Go to the src folder
 4. Execute "sudo python setup.py install"
 
