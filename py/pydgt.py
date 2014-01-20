@@ -1,4 +1,5 @@
 import serial
+import sys
 from struct import unpack
 
 BOARD = "Board"
@@ -334,7 +335,11 @@ def dgt_observer(attrs):
         print attrs.message
 
 if __name__ == "__main__":
-    board = DGTBoard('/dev/cu.usbserial-00001004')
+    if len(sys.argv)> 1:
+        device = sys.argv[1]
+    else:
+        device = "/dev/cu.usbserial-00001004"
+    board = DGTBoard(device)
     board.subscribe(dgt_observer)
 
     board.poll()
