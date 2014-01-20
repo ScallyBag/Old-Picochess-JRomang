@@ -18,6 +18,7 @@ To build pyfish:
 4. Execute "sudo python setup.py install"
 
 After pyfish:
+
 1. Go to the py/ folder
 1. Do this one time: https://github.com/piface/pifacecad
 1. Also do this one time: "sudo pip install -r requirements.txt" 
