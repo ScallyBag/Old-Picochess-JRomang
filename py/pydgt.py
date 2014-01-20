@@ -86,6 +86,8 @@ class Event(object):
 
 class DGTBoard(object):
     def __init__(self, device, virtual = False):
+        self.board_reversed = False
+
         if not virtual:
             self.ser = serial.Serial(device,stopbits=serial.STOPBITS_ONE)
             self.write(chr(_DGTNIX_SEND_UPDATE_NICE))
@@ -117,6 +119,10 @@ class DGTBoard(object):
     def dump_board(self, board):
         pattern = '>'+'B'*len(board)
         buf = unpack(pattern, board)
+
+        if self.board_reversed:
+            buf = buf[::-1]
+
         output = "__"*8+"\n"
         for square in xrange(0,len(board)):
             if square and square%8 == 0:
@@ -129,13 +135,14 @@ class DGTBoard(object):
         output+= "__"*8
         return output
 
+    # Two reverse calls will bring back board to original orientation
+    def reverse_board(self):
+        print "Reversing board!"
+        self.board_reversed = not self.board_reversed
 
-    def get_fen(self, board, tomove='w'):
-        pattern = '>'+'B'*len(board)
-        board = unpack(pattern, board)
+    def extract_base_fen(self, board):
         FEN = []
         empty = 0
-
         for sq in range(0, 64):
             if board[sq] != 0:
                 if empty > 0:
@@ -143,15 +150,30 @@ class DGTBoard(object):
                     empty = 0
                 FEN.append(self.convertInternalPieceToExternal(board[sq]))
             else:
-                empty+=1
+                empty += 1
             if (sq + 1) % 8 == 0:
                 if empty > 0:
-
                     FEN.append(str(empty))
                     empty = 0
                 if sq < 63:
                     FEN.append("/")
                 empty = 0
+
+        return FEN
+
+    def get_fen(self, board, tomove='w'):
+        pattern = '>'+'B'*len(board)
+        board = unpack(pattern, board)
+
+        if self.board_reversed:
+            board = board[::-1]
+
+        FEN = self.extract_base_fen(board)# Check if board needs to be reversed
+        if ''.join(FEN) == "RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr":
+            self.reverse_board()
+            board = board[::-1]
+            # Redo FEN generation - should be a fast operation
+            FEN = self.extract_base_fen(board)# Check if board needs to be reversed
 
         FEN.append(' ')
 
