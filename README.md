@@ -5,12 +5,12 @@ Stand alone chess computer with Stockfish and DGT Board
 
 This branch supports a pure python implementation with the pyfish engine (taken from the pyfish branch).
 
+It also supports the piface.
+
 To run on the piface and desktop:
 
-1. Go to the py/src/dgt folder
-2. Execute g++ dgtnix.c  -w -shared -o libdgtnix.so
-3. The above command is also in README.txt in the same folder
-4. Go to the py/src folder
-5. Execute "python pycochess.py"
-6. Analysis score should be updated when pieces are moved on the DGT board, sleeps still need to be added.
-
+1. Go to the py/ folder
+2. Do this one time: https://github.com/piface/pifacecad
+2. Also do this one time: "sudo pip install -r requirements.txt" 
+2. Execute "python pycochess.py"
+3. Fixed time modes should work now (with occasional issues).
