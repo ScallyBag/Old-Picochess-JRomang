@@ -235,7 +235,10 @@ extern "C" {
   int dgtnixTestBoard(const char *);
  
   const char* getDgtFENWhite ();
+  const char* getDgtFEN (char);
   const char* getDgtFENBlack ();
+  extern void dgtnix_notifyObservers(char);
+
 
   /* void dgtnixSetOption(unsigned long option, unsigned int value)
    * set various options for the driver,
