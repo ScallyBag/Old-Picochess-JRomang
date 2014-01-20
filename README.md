@@ -9,6 +9,10 @@ It also supports the piface.
 
 To run on the piface and desktop:
 
+1. This needs pyfish. To build pyfish (just needed one time):
+2. Switch to the pyfish branch -> "git checkout pyfish"
+3. Go to the src folder
+4. Execute "sudo python setup.py install"
 1. Go to the py/ folder
 1. Do this one time: https://github.com/piface/pifacecad
 1. Also do this one time: "sudo pip install -r requirements.txt" 
