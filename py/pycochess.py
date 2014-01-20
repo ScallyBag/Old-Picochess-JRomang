@@ -202,7 +202,7 @@ class Pycochess(object):
         if attr.type == FEN:
             fen = attr.message
             print "Fen: {0}".format(fen)
-            m = pyco.probe_move(fen)
+            m = self.probe_move(fen)
             if m:
                 dgt_queue.put(m)
         #        dgt_sem.release()
@@ -705,7 +705,7 @@ class Pycochess(object):
                     if not self.player_time:
                         player_time = self.comp_time
                     if not self.player_inc:
-                        player_inc = pyco.comp_inc
+                        player_inc = self.comp_inc
                     wtime = self.comp_time
                     winc = self.comp_inc
                     btime = self.player_time
