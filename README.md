@@ -24,6 +24,7 @@ After pyfish:
 1. Also do this one time: "sudo pip install -r requirements.txt" 
 1. Execute "python pycochess.py"
 1. Fixed time modes should work now (with occasional issues).
+1. To stop pycochess, "execute Ctrl-Z" followed by a process kill (e.g. "pkill -9 -f pycochess.py")
 
 
 To test the DGT driver:
