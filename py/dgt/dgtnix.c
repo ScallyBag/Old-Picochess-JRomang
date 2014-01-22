@@ -780,8 +780,6 @@ static void _bwtimeReceived(unsigned char buffer[7])
  */
 static void _fieldUpdateReceived(int mposition, char mpiece)
 {
-        dgtnix_notifyObservers('m');
-
   /*_debug("_fieldUpdateReceived %d %c %d\n", mposition, mpiece, mpiece); */
   /* Remove = 1 if the move is a piece removal 
      else 0 (a piece was added )  */
@@ -857,7 +855,6 @@ static void _fieldUpdateReceived(int mposition, char mpiece)
     }
    fprintf(stderr, "DGT_FEN: "); 
    printf("DGT_FEN: "); 
-   dgtnix_notifyObservers('m');
    //fprintf(stderr, getDgtFEN('w'));
   //fprintf(stderr, "\n");
 }

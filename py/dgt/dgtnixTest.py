@@ -61,7 +61,7 @@ dgtnix.update()
 while True:
    # bd = ""
     print dgtnix.getFen('w')
-    time.sleep(0.1)
+    time.sleep(1)
    # print dgtnix.GetBoard(True)
     #print bd
     #time.sleep(1)
