@@ -11,7 +11,7 @@ To test the dgtnix driver:
 
 1. Go to the py/dgt folder.
 2. Execute "g++ dgtnix.c  -w -shared -o libdgtnix.so"
-3. Execute "python dgtnixTest.py"
+3. Execute "python dgtnixTest.py <device name>"
 
 To test the Python native DGT driver:
 
