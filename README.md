@@ -7,6 +7,19 @@ This branch supports a pure python implementation with the pyfish engine (taken 
 
 It also supports the piface.
 
+To test the dgtnix driver:
+
+1. Go to the py/dgt folder.
+2. Execute "g++ dgtnix.c  -w -shared -o libdgtnix.so"
+3. Execute "python dgtnixTest.py"
+
+To test the Python native DGT driver:
+
+1. Go to the py/ folder
+2. Execute "python pydgt.py <device name>" such as /dev/ttyUSB0
+3. Ensure that moving a piece on the board will return a new FEN and board graphic
+
+
 To run on the piface and desktop:
 
 To build pyfish:
@@ -25,10 +38,3 @@ After pyfish:
 1. Execute "python pycochess.py"
 1. Fixed time modes should work now (with occasional issues).
 1. To stop pycochess, "execute Ctrl-Z" followed by a process kill (e.g. "pkill -9 -f pycochess.py")
-
-
-To test the DGT driver:
-
-1. Go to the py/ folder
-2. Execute "python pydgt.py <device name>" such as /dev/ttyUSB0
-3. Ensure that moving a piece on the board will return a new FEN and board graphic
