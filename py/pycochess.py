@@ -663,6 +663,11 @@ class Pycochess(object):
             #                print "best_move:{0}".format(best_move)
             #                print "best_move_san:{0}".format(sf.to_san([best_move])[0])
                 output_move = sf.to_san([best_move])[0]
+                self.engine_computer_move = False
+                self.computer_move_FEN_reached = False
+                self.engine_searching = False
+                self.computer_move_FEN = sf.get_fen(self.dgt_fen, [best_move])
+
                 if output_move:
                     if figlet:
                         print figlet.renderText(output_move)
@@ -671,10 +676,6 @@ class Pycochess(object):
                     output_move = output_move
                     self.write_to_piface(output_move, clear=True)
 
-                self.engine_computer_move = False
-                self.computer_move_FEN_reached = False
-                self.engine_searching = False
-                self.computer_move_FEN = sf.get_fen(self.dgt_fen, [best_move])
 
                 #                print "prev dgt_fen: {0}".format(self.dgt_fen)
             #                print "computer_move_FEN: {0}".format(self.computer_move_FEN)
