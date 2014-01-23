@@ -172,12 +172,13 @@ class Pycochess(object):
         self.computer_move_FEN_reached = False
         self.computer_move_FEN = ""
 
-    def write_to_piface(self, message, clear = False):
+    def write_to_piface(self, message, clear = False, sleep_time = 0.2):
         if piface:
             # Sleep enables that garbage is not written to the screen
-            sleep(0.2)
+            sleep(sleep_time)
             if clear:
                 cad.lcd.clear()
+#                cad.lcd.home()
             cad.lcd.write(message)
 
     def get_legal_move(self, from_fen, to_fen):
@@ -297,25 +298,27 @@ class Pycochess(object):
                     self.comp_time = 60000
                 elif mode == 7:
                     self.comp_time = 120000
+
             elif 8 <= mode <= 15:
                 self.clock_mode = BLITZ
 
                 if mode == 8:
-                    self.comp_time = 60000
+                    self.comp_time = 60   * 1000
                 elif mode == 9:
-                    self.comp_time = 180000
+                    self.comp_time = 180  * 1000
                 elif mode == 10:
-                    self.comp_time = 300000
+                    self.comp_time = 300  * 1000
                 elif mode == 11:
-                    self.comp_time = 600000
+                    self.comp_time = 600  * 1000
                 elif mode == 12:
-                    self.comp_time = 900000
+                    self.comp_time = 900  * 1000
                 elif mode == 13:
-                    self.comp_time = 1800000
+                    self.comp_time = 1800 * 1000
                 elif mode == 14:
-                    self.comp_time = 3600000
+                    self.comp_time = 3600 * 1000
                 elif mode == 15:
-                    self.comp_time = 5400000
+                    self.comp_time = 5400 * 1000
+
             elif 16 <= mode <= 22:
                 self.clock_mode = BLITZ_FISCHER
 
@@ -359,22 +362,6 @@ class Pycochess(object):
             except ValueError:
                 return False
 
-#        elif time_control_map.has_key(fen):
-
-    def reset_clocks(self):
-#        self.white_time_now = time.clock()
-#        self.black_time_now = time.clock()
-        self.time_last = datetime.datetime.now()
-
-        self.time_white = 60
-        self.time_inc_white = 3
-        self.time_black = 420
-        self.time_inc_black = 8
-        if self.engine_comp_color == BLACK:
-            # Swap time allotments if comp is black (comp gets less time)
-            self.time_white, self.time_black = self.time_black, self.time_white
-            self.time_inc_white, self.time_inc_black = self.time_inc_black, self.time_inc_white
-
     def update_time(self, color=WHITE):
         if self.time_last:
             current = datetime.datetime.now()
@@ -410,14 +397,26 @@ class Pycochess(object):
         else:
             return "%02d:%02d" % (m, s)
 
+    def format_time_strs(self, time_a, time_b, disp_length=16):
+        fmt_time_a = self.format_time_str(time_a)
+        fmt_time_b = self.format_time_str(time_b)
+
+        head_len = len(fmt_time_a)
+        tail_len = len(fmt_time_b)
+
+        num_spaces = disp_length - head_len - tail_len
+
+        return fmt_time_a+" "*num_spaces+fmt_time_b
+
     def update_clocks(self, *args):
         if self.play_mode == GAME_MODE:
             if self.engine_computer_move:
-                self.update_time(color=self.engine_comp_color)
-#                print "comp_time: {0}".format(self.time_black)
+                if len(self.move_list) > 0:
+                    self.update_time(color=self.engine_comp_color)
+#                    print "comp_time: {0}".format(self.time_black)
 
                 if len(self.move_list) > 0 and self.engine_searching and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
-                    self.write_to_piface(self.format_time_str(self.time_white) + self.format_time_str(self.time_black), clear=True)
+                    self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), clear=True, sleep_time=0.7)
                 elif self.clock_mode == FIXED_TIME and self.engine_searching:
                     # If FIXED_TIME
                     if self.engine_comp_color == WHITE:
@@ -431,11 +430,14 @@ class Pycochess(object):
 
                         # self.engine_score.children[0].text = "[color=000000]Thinking..\n[size=24]{0}    [b]{1}[/size][/b][/color]".format(self.format_time_str(self.time_white), self.format_time_str(self.time_black))
             else:
-                self.update_player_time()
+                if len(self.move_list) > 0:
+                    self.update_player_time()
                 comp_made_move = not self.engine_computer_move and not self.computer_move_FEN_reached and not self.engine_searching
 
                 if not comp_made_move and len(self.move_list) > 0 and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
-                    self.write_to_piface(self.format_time_str(self.time_white) + self.format_time_str(self.time_black), clear=True)
+                    self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), clear=True, sleep_time=0.7)
+
+#                    self.write_to_piface(self.format_time_str(self.time_white) + " "*5+ self.format_time_str(self.time_black), clear=True)
 
                 # if self.show_hint:
                 #     if not self.ponder_move_san and self.ponder_move and self.ponder_move!='(none)':
@@ -674,7 +676,7 @@ class Pycochess(object):
                     else:
                         print "SAN best_move: {0}".format(output_move)
                     output_move = output_move
-                    self.write_to_piface(output_move, clear=True)
+                    self.write_to_piface(output_move, clear=True, sleep_time=0.7)
 
 
                 #                print "prev dgt_fen: {0}".format(self.dgt_fen)
@@ -704,22 +706,27 @@ class Pycochess(object):
                     self.reset_clock_update()
                 else:
                     if not self.player_time:
-                        player_time = self.comp_time
+                        self.player_time = self.comp_time
                     if not self.player_inc:
-                        player_inc = self.comp_inc
-                    wtime = self.comp_time
-                    winc = self.comp_inc
-                    btime = self.player_time
-                    binc = self.player_inc
+                        self.player_inc = self.comp_inc
+
+                    if not self.time_white or not self.time_black:
+                        self.time_white = int(self.comp_time)
+                        self.time_inc_white = int(self.comp_inc)
+                        self.time_black = int(self.player_time)
+                        self.time_inc_black = int(self.player_inc)
 
                     if self.engine_comp_color == BLACK:
-                        wtime, btime = btime, wtime
-                        winc, binc = binc, winc
+                        self.time_white, self.time_black = self.time_black, self.time_white
+                        self.time_inc_white, self.time_inc_black = self.time_inc_black, self.time_inc_white
 
                     if self.clock_mode == BLITZ:
-                        sf.go(wtime=int(wtime), btime=int(btime))
+                        sf.go(wtime=int(self.time_white), btime=int(self.time_black))
+#                        print "starting wtime: {0}, starting btime: {1}".format(self.time_white, self.time_black)
                     elif self.clock_mode == BLITZ_FISCHER:
-                        sf.go(wtime=int(wtime), btime=int(btime), winc=int(winc), binc=int(binc))
+                        sf.go(wtime=int(self.time_white), btime=int(self.time_black),
+                            winc=int(self.time_inc_white), binc=int(self.time_inc_black))
+
                     self.reset_clock_update()
         self.engine_searching = True
 
