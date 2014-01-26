@@ -1,7 +1,7 @@
 from Queue import Queue
 import traceback
 import stockfish as sf
-from threading import Thread
+from threading import Thread, RLock
 from threading import Semaphore
 from threading import Timer
 from time import sleep
@@ -172,14 +172,21 @@ class Pycochess(object):
         self.computer_move_FEN_reached = False
         self.computer_move_FEN = ""
 
-    def write_to_piface(self, message, clear = False, sleep_time = 0.2):
+        # Piface display lock
+        self.piface_lock = RLock()
+
+    def write_to_piface(self, message, clear = False):
         if piface:
-            # Sleep enables that garbage is not written to the screen
-            sleep(sleep_time)
-            if clear:
-                cad.lcd.clear()
-#                cad.lcd.home()
-            cad.lcd.write(message)
+            # Acquire piface write lock to guard against multiple threads writing at the same time
+            with self.piface_lock:
+                # Sleep enables that garbage is not written to the screen
+    #            sleep(sleep_time)
+                if clear:
+                    cad.lcd.clear()
+    #                cad.lcd.home()
+                cad.lcd.write(message)
+                # Microsleep before returning lock
+                sleep(0.05)
 
     def get_legal_move(self, from_fen, to_fen):
         to_fen_first_tok = to_fen.split()[0]
@@ -248,10 +255,10 @@ class Pycochess(object):
         self.turn = WHITE
 
         if piface:
-            cad.lcd.blink_off()
-            cad.lcd.cursor_off()
-            cad.lcd.backlight_off()
-            cad.lcd.backlight_on()
+#            cad.lcd.blink_off()
+#            cad.lcd.cursor_off()
+#            cad.lcd.backlight_off()
+#            cad.lcd.backlight_on()
             self.write_to_piface("New Game", clear=True)
 
 
@@ -416,7 +423,7 @@ class Pycochess(object):
 #                    print "comp_time: {0}".format(self.time_black)
 
                 if len(self.move_list) > 0 and self.engine_searching and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
-                    self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), clear=True, sleep_time=0.7)
+                    self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), clear=True)
                 elif self.clock_mode == FIXED_TIME and self.engine_searching:
                     # If FIXED_TIME
                     if self.engine_comp_color == WHITE:
@@ -435,7 +442,7 @@ class Pycochess(object):
                 comp_made_move = not self.engine_computer_move and not self.computer_move_FEN_reached and not self.engine_searching
 
                 if not comp_made_move and len(self.move_list) > 0 and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
-                    self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), clear=True, sleep_time=0.7)
+                    self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), clear=True)
 
 #                    self.write_to_piface(self.format_time_str(self.time_white) + " "*5+ self.format_time_str(self.time_black), clear=True)
 
@@ -676,7 +683,7 @@ class Pycochess(object):
                     else:
                         print "SAN best_move: {0}".format(output_move)
                     output_move = output_move
-                    self.write_to_piface(output_move, clear=True, sleep_time=0.7)
+                    self.write_to_piface(output_move, clear=True)
 
 
                 #                print "prev dgt_fen: {0}".format(self.dgt_fen)
