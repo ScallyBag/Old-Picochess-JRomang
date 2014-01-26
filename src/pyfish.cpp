@@ -224,6 +224,7 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
     PyObject* sanMoves = PyList_New(0), *moveList;
     stack<Move> moveStack;
     Search::StateStackPtr states = Search::StateStackPtr(new std::stack<StateInfo>());
+    Position tmpPos=pos;
 
     if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &moveList)) return NULL;
 
@@ -232,24 +233,24 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
     for (int i=0; i<numMoves ; i++) {
         string moveStr( PyString_AsString( PyList_GetItem(moveList, i)) );
         Move m;
-        if((m = move_from_uci(pos, moveStr)) != MOVE_NONE)
+        if((m = move_from_uci(tmpPos, moveStr)) != MOVE_NONE)
         {
             //add to the san move list
-            PyObject *move=Py_BuildValue("s", move_to_san(pos,m).c_str());
+            PyObject *move=Py_BuildValue("s", move_to_san(tmpPos,m).c_str());
             PyList_Append(sanMoves, move);
             Py_XDECREF(move);
 
             //do the move
             states->push(StateInfo());
             moveStack.push(m);
-            pos.do_move(m, states->top());
+            tmpPos.do_move(m, states->top());
         }
         else
         {
             //undo the moves
             while(!moveStack.empty())
             {
-                pos.undo_move(moveStack.top());
+                tmpPos.undo_move(moveStack.top());
                 moveStack.pop();
             }
             PyErr_SetString(PyExc_ValueError, (string("Invalid move '")+moveStr+"'").c_str());
@@ -260,7 +261,7 @@ extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
     //undo the moves
     while(!moveStack.empty())
     {
-        pos.undo_move(moveStack.top());
+        tmpPos.undo_move(moveStack.top());
         moveStack.pop();
     }
 
