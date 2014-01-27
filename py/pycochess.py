@@ -8,6 +8,9 @@ from time import sleep
 import datetime
 import itertools as it
 import os
+import fileinput
+import sys
+#from ChessBoard import ChessBoard
 from pydgt import DGTBoard
 from pydgt import FEN
 
@@ -124,7 +127,7 @@ time_control_map = {
 }
 
 #dgt_sem = Semaphore(value=0)
-dgt_queue = Queue()
+move_queue = Queue()
 
 class Pycochess(object):
 
@@ -151,7 +154,6 @@ class Pycochess(object):
         self.time_last = None
 
         # Engine specific stuff
-        sf.add_observer(self.parse_score)
         self.score_count = 0
         self.score = None
         self.engine_mode = Pycochess.PLAY
@@ -171,6 +173,8 @@ class Pycochess(object):
         # Help user execute comp moves
         self.computer_move_FEN_reached = False
         self.computer_move_FEN = ""
+        sf.add_observer(self.parse_score)
+
 
         # Piface display lock
         self.piface_lock = RLock()
@@ -212,7 +216,7 @@ class Pycochess(object):
             print "Fen: {0}".format(fen)
             m = self.probe_move(fen)
             if m:
-                dgt_queue.put(m)
+                move_queue.put(m)
         #        dgt_sem.release()
 
     def poll_dgt(self):
@@ -220,9 +224,10 @@ class Pycochess(object):
         thread.start()
 
     def connect(self):
-        self.dgt = DGTBoard(self.device)
-        self.dgt.subscribe(self.on_observe_dgt_move)
-        self.poll_dgt()
+        if self.device!="human":
+            self.dgt = DGTBoard(self.device)
+            self.dgt.subscribe(self.on_observe_dgt_move)
+            self.poll_dgt()
 
         # board.poll()
 
@@ -230,6 +235,8 @@ class Pycochess(object):
         # self.dgt.SetOption(dgtnix.DGTNIX_DEBUG, dgtnix.DGTNIX_DEBUG_ON)
         # Initialize the driver with port argv[1]
         # result = self.dgt.Init(self.device)
+#        sf.add_observer(self.parse_score)
+
         if not self.dgt:
             print "Unable to connect to the device on {0}".format(self.device)
         else:
@@ -370,15 +377,15 @@ class Pycochess(object):
                 return False
 
     def update_time(self, color=WHITE):
-        if self.time_last:
-            current = datetime.datetime.now()
-            seconds_elapsed = (current - self.time_last).total_seconds()
+#        if self.time_last:
+#            current = datetime.datetime.now()
+#            seconds_elapsed = (current - self.time_last).total_seconds()
     #        print "seconds_elapsed:{0}".format(seconds_elapsed)
-            self.time_last = current
-            if color == WHITE:
-                self.time_white -= seconds_elapsed*1000
-            else:
-                self.time_black -= seconds_elapsed*1000
+#            self.time_last = current
+        if color == WHITE:
+            self.time_white -= 1*1000
+        else:
+            self.time_black -= 1*1000
 
     def reset_clock_update(self):
         self.time_last = datetime.datetime.now()
@@ -418,7 +425,8 @@ class Pycochess(object):
     def update_clocks(self, *args):
         if self.play_mode == GAME_MODE:
             if self.engine_computer_move:
-                if len(self.move_list) > 0:
+#                print "computer_move"
+                if len(self.move_list) > 0 and self.engine_searching:
                     self.update_time(color=self.engine_comp_color)
 #                    print "comp_time: {0}".format(self.time_black)
 
@@ -437,11 +445,12 @@ class Pycochess(object):
 
                         # self.engine_score.children[0].text = "[color=000000]Thinking..\n[size=24]{0}    [b]{1}[/size][/b][/color]".format(self.format_time_str(self.time_white), self.format_time_str(self.time_black))
             else:
-                if len(self.move_list) > 0:
+#                print "player move"
+#                print "engine_searching : {0}".format(self.engine_searching)
+                player_move = not self.engine_computer_move and not self.engine_searching and self.computer_move_FEN_reached
+                # print "player_move: {0}".format(player_move)
+                if player_move  and len(self.move_list) > 0 and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
                     self.update_player_time()
-                comp_made_move = not self.engine_computer_move and not self.computer_move_FEN_reached and not self.engine_searching
-
-                if not comp_made_move and len(self.move_list) > 0 and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
                     self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), clear=True)
 
 #                    self.write_to_piface(self.format_time_str(self.time_white) + " "*5+ self.format_time_str(self.time_black), clear=True)
@@ -467,6 +476,13 @@ class Pycochess(object):
                 # else:
                 #     self.engine_score.children[0].text = YOURTURN_MENU.format("hidden", "hidden", self.format_time_str(self.time_white), self.format_time_str(self.time_black))
 
+
+    def register_move(self, m):
+        self.switch_turn()
+        self.move_list.append(m)
+
+        if not self.engine_computer_move:
+            self.engine_computer_move = True
 
     def probe_move(self, fen, *args):
         if self.dgt_connected and self.dgt:
@@ -502,12 +518,12 @@ class Pycochess(object):
                         computer_move_first_tok = None
                         if self.computer_move_FEN:
                             computer_move_first_tok = self.computer_move_FEN.split()[0]
-
-
+#                            print "computer_move_fen_first_tok : {0}".format(computer_move_first_tok)
+#                            print "new_dgt_first_token : {0}".format(new_dgt_first_token)
                         if not self.engine_searching and not self.computer_move_FEN_reached and computer_move_first_tok and computer_move_first_tok == new_dgt_first_token:
                             self.computer_move_FEN_reached = True
 #                            self.switch_turn()
-#                            print "computer move Fen reached"
+                            print "computer move Fen reached"
 
 
 #                        print "old_dgt_fen: {0}".format(self.dgt_fen)
@@ -517,21 +533,16 @@ class Pycochess(object):
                             # If the user made a quick move, try to see if the current position is playable from the computer_move_FEN
                             if self.is_fen(self.computer_move_FEN):
                                 m = self.get_legal_move(self.computer_move_FEN, new_dgt_fen)
-
+#                                print "Quick move made"
 
                         if m:
-#                            print "Move: {0}".format(m)
+#                            print "Move processed: {0}".format(m)
                             self.previous_dgt_fen = self.dgt_fen
-                            self.switch_turn()
+                            self.register_move(m)# Start player clock!
+
                             new_dgt_fen = self.fen_to_move(new_dgt_fen, self.turn)
 
                             self.dgt_fen = new_dgt_fen
-                            self.move_list.append(m)
-
-                            if not self.engine_computer_move:
-                                self.engine_computer_move = True
-
-                            # Start player clock!
                             return m
                         else:
                             previous_dgt_fen_first_token = self.previous_dgt_fen.split()[0]
@@ -643,7 +654,7 @@ class Pycochess(object):
         return best_move, ponder_move
 
     def parse_score(self, line):
-        print line
+        print "Got line: " + line
         tokens = line.split()
         score = self.get_score(line)
 
@@ -669,14 +680,30 @@ class Pycochess(object):
         elif self.play_mode == GAME_MODE:
             best_move, ponder_move = self.parse_bestmove(line)
             if best_move:
-            #                print "best_move:{0}".format(best_move)
+                # print "best_move_san:{0}".format(best_move)
             #                print "best_move_san:{0}".format(sf.to_san([best_move])[0])
                 output_move = sf.to_san([best_move])[0]
+                # print "output_move: {0}".format(output_move)
                 self.engine_computer_move = False
                 self.computer_move_FEN_reached = False
                 self.engine_searching = False
-                self.computer_move_FEN = sf.get_fen(self.dgt_fen, [best_move])
+                if self.dgt_fen:
+#                    print "dgt_fen : {0}".format(self.dgt_fen)
 
+                    self.computer_move_FEN = sf.get_fen(self.dgt_fen, [best_move])
+#                    print "dgt_fen : {0}".format(self.dgt_fen)
+#                    print "comp_move_fen : {0}".format(self.computer_move_FEN)
+#                    print self.move_list
+
+                elif self.device=="human":
+                    # Not using a DGT board, lets use a chessboard parser in python
+                    # board = ChessBoard()
+                    # for move in self.move_list:
+                    #     board.addTextMove(move)
+                    # board.addTextMove(output_move)
+#                    print "Not using DGT board"
+                    self.move_list.append(best_move)
+                    # self.computer_move_FEN = board.getFEN()
                 if output_move:
                     if figlet:
                         print figlet.renderText(output_move)
@@ -684,11 +711,6 @@ class Pycochess(object):
                         print "SAN best_move: {0}".format(output_move)
                     output_move = output_move
                     self.write_to_piface(output_move, clear=True)
-
-
-                #                print "prev dgt_fen: {0}".format(self.dgt_fen)
-            #                print "computer_move_FEN: {0}".format(self.computer_move_FEN)
-
 
     def eng_process_move(self):
         self.stop_engine()
@@ -710,7 +732,7 @@ class Pycochess(object):
                     else:
                         self.time_white = self.comp_time
                     sf.go(movetime=self.comp_time)
-                    self.reset_clock_update()
+#                    self.reset_clock_update()
                 else:
                     if not self.player_time:
                         self.player_time = self.comp_time
@@ -723,9 +745,9 @@ class Pycochess(object):
                         self.time_black = int(self.player_time)
                         self.time_inc_black = int(self.player_inc)
 
-                    if self.engine_comp_color == BLACK:
-                        self.time_white, self.time_black = self.time_black, self.time_white
-                        self.time_inc_white, self.time_inc_black = self.time_inc_black, self.time_inc_white
+                        if self.engine_comp_color == BLACK:
+                            self.time_white, self.time_black = self.time_black, self.time_white
+                            self.time_inc_white, self.time_inc_black = self.time_inc_black, self.time_inc_white
 
                     if self.clock_mode == BLITZ:
                         sf.go(wtime=int(self.time_white), btime=int(self.time_black))
@@ -734,23 +756,39 @@ class Pycochess(object):
                         sf.go(wtime=int(self.time_white), btime=int(self.time_black),
                             winc=int(self.time_inc_white), binc=int(self.time_inc_black))
 
-                    self.reset_clock_update()
+#                    self.reset_clock_update()
         self.engine_searching = True
 
     def is_fen(self, fen):
         return len(fen.split()) == 6
 
+    def screen_input(self):
+        # print "screen_input mode"
+        while True:
+            m = raw_input("Enter command/move\n")
+            # print "got command: {0}".format(m)
+            if m == "quit":
+                sys.exit(1)
+            if m == "undo":
+                if len(self.move_list)>0:
+                    self.move_list.pop()
+
+                # board = ChessBoard()
+                # for move in self.move_list:
+                #     board.addTextMove(move)
+                # board.addTextMove(m)
+            else:
+                self.register_move(m)
+            move_queue.put(m)
+
+    def poll_screen(self):
+        thread = Thread(target=self.screen_input)
+        thread.start()
+
+
 def update_clocks(pyco):
     Timer(1.0, update_clocks, [pyco]).start()
     pyco.update_clocks()
-
-#    m = pyco.probe_move()
-##    print "move: {0}".format(m)
-#    if m:
-#        dgt_queue.put(m)
-##        dgt_sem.release()
-
-
 
 if __name__ == '__main__':
     if piface:
@@ -771,28 +809,38 @@ if __name__ == '__main__':
 
 
     arm = False
-    if os.uname()[4][:3] == 'arm':
-        pyco = Pycochess("/dev/ttyUSB0")
-        arm = True
-    else:
-        pyco = Pycochess("/dev/cu.usbserial-00001004")
+#    print os.uname()[4][:3]
+    try:
+        if os.uname()[4][:3] == 'arm':
+            pyco = Pycochess("/dev/ttyUSB0")
+            arm = True
+        else:
+            pyco = Pycochess("/dev/cu.usbserial-00001004")
 
-    pyco.connect()
+        pyco.connect()
+    except OSError:
+        print "DGT board not found, trying human input mode\n"
+        # pyco = Pycochess("human")
+        pyco.poll_screen()
+        raise
+
     update_clocks(pyco)
 
     while True:
         #print "Before acquire"
-        m = dgt_queue.get()
-#        print "Board Updated!"
+        m = move_queue.get()
+        print "Board Updated!"
         process_move = True
         if m == "undo":
-            pyco.write_to_piface(pyco.move_list[-1], clear=True)
+            if len(pyco.move_list)>0:
+                pyco.write_to_piface(pyco.move_list[-1], clear=True)
             process_move = False
 
         elif pyco.computer_move_FEN_reached:
             print "Comp_move FEN reached"
+            pyco.engine_computer_move = False
 #            pyco.write_to_piface("Done", clear=True)
-            m = dgt_queue.get()
+            m = move_queue.get()
 #            print "Next dgt_get after comp_move fen reached"
             process_move = True
 
