@@ -49,11 +49,32 @@ const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
 // Keep track of position keys along the setup moves (from start position to the
 // position just before to start searching). Needed by repetition draw detection.
-Search::StateStackPtr SetupStates;
-Position pos, searchPos;
 vector<PyObject*> observers;
 Lock bestmoveLock;
 WaitCondition bestmoveCondition;
+
+void buildPosition(Position *p, Search::StateStackPtr states, const char *fen, PyObject *moves)
+{
+    if(strcmp(fen,"startpos")==0) fen=StartFEN;
+    p->set(fen, false, Threads.main());
+
+    // parse the move list
+    int numMoves = PyList_Size(moves);
+    for (int i=0; i<numMoves ; i++) {
+        string moveStr( PyString_AsString( PyList_GetItem(moves, i)) );
+        Move m;
+        if((m = move_from_uci(*p, moveStr)) != MOVE_NONE)
+        {
+            states->push(StateInfo());
+            p->do_move(m, states->top());
+        }
+        else
+        {
+            PyErr_SetString(PyExc_ValueError, (string("Invalid move '")+moveStr+"'").c_str());
+        }
+    }
+}
+
 }
 
 extern "C" PyObject* stockfish_getOptions(PyObject* self)
@@ -76,15 +97,19 @@ extern "C" PyObject* stockfish_info(PyObject* self)
     return Py_BuildValue("s", engine_info().c_str());
 }
 
-extern "C" PyObject* stockfish_key(PyObject* self)
+//INPUT: fen, list of moves
+extern "C" PyObject* stockfish_key(PyObject* self, PyObject *args)
 {
-    return Py_BuildValue("L", PolyglotBook::polyglot_key(pos));
-}
+    PyObject *listObj;
+    Position p;
+    Search::StateStackPtr states = Search::StateStackPtr(new std::stack<StateInfo>());
+    const char *fen;
+    if (!PyArg_ParseTuple(args, "sO!", &fen,  &PyList_Type, &listObj)) {
+        return NULL;
+    }
+    buildPosition(&p,states,fen,listObj);
 
-extern "C" PyObject* stockfish_flip(PyObject* self)
-{
-    pos.flip();
-    Py_RETURN_NONE;
+    return Py_BuildValue("L", PolyglotBook::polyglot_key(p));
 }
 
 extern "C" PyObject* stockfish_stop(PyObject* self)
@@ -126,38 +151,6 @@ extern "C" PyObject* stockfish_setOption(PyObject* self, PyObject *args)
     Py_RETURN_NONE;
 }
 
-extern "C" PyObject* stockfish_position(PyObject* self, PyObject *args)
-{
-    PyObject *listObj;
-    const char *fen;
-    if (!PyArg_ParseTuple(args, "sO!", &fen,  &PyList_Type, &listObj)) {
-        return NULL;
-    }
-
-    if(strcmp(fen,"startpos")==0) fen=StartFEN;
-    pos.set(fen, Options["UCI_Chess960"], Threads.main());
-    SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
-
-    // parse the move list
-    int numMoves = PyList_Size(listObj);
-    for (int i=0; i<numMoves ; i++) {
-        string moveStr( PyString_AsString( PyList_GetItem(listObj, i)) );
-        Move m;
-        if((m = move_from_uci(pos, moveStr)) != MOVE_NONE)
-        {
-            SetupStates->push(StateInfo());
-            pos.do_move(m, SetupStates->top());
-        }
-        else
-        {
-            PyErr_SetString(PyExc_ValueError, (string("Invalid move '")+moveStr+"'").c_str());
-            return NULL;
-        }
-
-    }
-    Py_RETURN_NONE;
-}
-
 extern "C" PyObject* stockfish_addObserver(PyObject* self, PyObject *args)
 {
     PyObject *observer;
@@ -178,27 +171,23 @@ extern "C" PyObject* stockfish_removeObserver(PyObject* self, PyObject *args)
     Py_RETURN_NONE;
 }
 
+//INPUT fen
 extern "C" PyObject* stockfish_legalMoves(PyObject* self, PyObject *args)
 {
     PyObject* list = PyList_New(0);
-    Position p, *target=&pos;
+    Position p;
 
     const char *fen=NULL;
-    if (!PyArg_ParseTuple(args, "|s", &fen)) return NULL;
+    if (!PyArg_ParseTuple(args, "s", &fen)) return NULL;
+    if(strcmp(fen,"startpos")==0) fen=StartFEN;
+    p.set(fen, false, Threads.main());
 
-    if(fen)
-    {
-        p.set(fen, false, NULL);
-        target=&p;
-    }
-
-    for (MoveList<LEGAL> it(*target); *it; ++it)
+    for (MoveList<LEGAL> it(p); *it; ++it)
     {
         PyObject *move=Py_BuildValue("s", move_to_uci(*it,false).c_str());
         PyList_Append(list, move);
         Py_XDECREF(move);
     }
-
 
     return list;
 }
@@ -219,63 +208,62 @@ void stockfish_notifyObservers(string s)
 }
 
 //Given a list of moves in CAN formats, it returns a list of moves in SAN format
+//Input FEN, list of moves
 extern "C" PyObject* stockfish_toSAN(PyObject* self, PyObject *args)
 {
     PyObject* sanMoves = PyList_New(0), *moveList;
     stack<Move> moveStack;
     Search::StateStackPtr states = Search::StateStackPtr(new std::stack<StateInfo>());
-    Position tmpPos=pos;
+    Position p;
+    const char *fen;
 
-    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &moveList)) return NULL;
+    if (!PyArg_ParseTuple(args, "sO!", &fen,  &PyList_Type, &moveList)) {
+        return NULL;
+    }
+    if(strcmp(fen,"startpos")==0) fen=StartFEN;
+    p.set(fen, false, Threads.main());
 
     // parse the move list
     int numMoves = PyList_Size(moveList);
     for (int i=0; i<numMoves ; i++) {
         string moveStr( PyString_AsString( PyList_GetItem(moveList, i)) );
         Move m;
-        if((m = move_from_uci(tmpPos, moveStr)) != MOVE_NONE)
+        if((m = move_from_uci(p, moveStr)) != MOVE_NONE)
         {
             //add to the san move list
-            PyObject *move=Py_BuildValue("s", move_to_san(tmpPos,m).c_str());
+            PyObject *move=Py_BuildValue("s", move_to_san(p,m).c_str());
             PyList_Append(sanMoves, move);
             Py_XDECREF(move);
 
             //do the move
             states->push(StateInfo());
             moveStack.push(m);
-            tmpPos.do_move(m, states->top());
+            p.do_move(m, states->top());
         }
         else
         {
-            //undo the moves
-            while(!moveStack.empty())
-            {
-                tmpPos.undo_move(moveStack.top());
-                moveStack.pop();
-            }
             PyErr_SetString(PyExc_ValueError, (string("Invalid move '")+moveStr+"'").c_str());
             return NULL;
         }
     }
-
-    //undo the moves
-    while(!moveStack.empty())
-    {
-        tmpPos.undo_move(moveStack.top());
-        moveStack.pop();
-    }
-
     return sanMoves;
 }
 
 //Given a list of moves in SAN formats, it returns a list of moves in CAN format
+//Input FEN, list of moves
 extern "C" PyObject* stockfish_toCAN(PyObject* self, PyObject *args)
 {
     PyObject *canMoves = PyList_New(0), *moveList;
     stack<Move> moveStack;
     Search::StateStackPtr states = Search::StateStackPtr(new std::stack<StateInfo>());
+    Position p;
+    const char *fen;
 
-    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &moveList)) return NULL;
+    if (!PyArg_ParseTuple(args, "sO!", &fen,  &PyList_Type, &moveList)) {
+        return NULL;
+    }
+    if(strcmp(fen,"startpos")==0) fen=StartFEN;
+    p.set(fen, Options["UCI_Chess960"], Threads.main());
 
     // parse the move list
     int numMoves = PyList_Size(moveList);
@@ -283,9 +271,9 @@ extern "C" PyObject* stockfish_toCAN(PyObject* self, PyObject *args)
     {
         string moveStr( PyString_AsString( PyList_GetItem(moveList, i)) );
         bool found=false;
-        for (MoveList<LEGAL> it(pos); *it; ++it)
+        for (MoveList<LEGAL> it(p); *it; ++it)
         {
-            if(!moveStr.compare(move_to_san(pos,*it)))
+            if(!moveStr.compare(move_to_san(p,*it)))
             {
                 PyObject *move=Py_BuildValue("s", move_to_uci(*it,false).c_str());
                 //add to the can move list
@@ -295,29 +283,16 @@ extern "C" PyObject* stockfish_toCAN(PyObject* self, PyObject *args)
                 //do the move
                 states->push(StateInfo());
                 moveStack.push(*it);
-                pos.do_move(*it, states->top());
+                p.do_move(*it, states->top());
                 found=true;
                 break;
             }
         }
         if(!found)
         {
-            //undo the moves
-            while(!moveStack.empty())
-            {
-                pos.undo_move(moveStack.top());
-                moveStack.pop();
-            }
             PyErr_SetString(PyExc_ValueError, (string("Invalid move '")+moveStr+"'").c_str());
             return NULL;
         }
-    }
-
-    //undo the moves
-    while(!moveStack.empty())
-    {
-        pos.undo_move(moveStack.top());
-        moveStack.pop();
     }
 
     return canMoves;
@@ -330,16 +305,20 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
     Search::LimitsType limits;
     vector<Move> searchMoves;
     PyObject *listSearchMoves;
+    PyObject *moveList;
+    const char *fen=NULL;
+    Position p;
+    Search::StateStackPtr states = Search::StateStackPtr(new std::stack<StateInfo>());
 
     stockfish_stop(self);
-    const char *kwlist[] = {"searchmoves", "wtime", "btime", "winc", "binc", "movestogo", "depth", "nodes", "movetime", "mate", "infinite", "ponder", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O!iiiiiiiiiii", const_cast<char **>(kwlist), &PyList_Type, &listSearchMoves,
+    const char *kwlist[] = {"fen", "moves", "searchmoves", "wtime", "btime", "winc", "binc", "movestogo", "depth", "nodes", "movetime", "mate", "infinite", "ponder", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO!|O!iiiiiiiiiii", const_cast<char **>(kwlist), &fen, &PyList_Type, &moveList, &PyList_Type, &listSearchMoves,
                                      &(limits.time[WHITE]), &(limits.time[BLACK]), &(limits.inc[WHITE]), &(limits.inc[BLACK]),
                                      &(limits.movestogo), &(limits.depth), &(limits.nodes), &(limits.movetime), &(limits.mate), &(limits.infinite), &(limits.ponder)))
         return NULL;
 
-    searchPos=pos;
-    Threads.start_thinking(searchPos, limits, searchMoves, SetupStates);
+    buildPosition(&p,states,fen,moveList);
+    Threads.start_thinking(p, limits, searchMoves, states);
     Py_RETURN_NONE;
 }
 
@@ -351,7 +330,7 @@ extern "C" PyObject* stockfish_getFEN(PyObject* self, PyObject *args)
     Position p;
 
     if (!PyArg_ParseTuple(args, "sO!", &fen, &PyList_Type, &moveList)) return NULL;
-
+    if(strcmp(fen,"startpos")==0) fen=StartFEN;
     p.set(fen, false, Threads.main());
     Search::StateStackPtr states = Search::StateStackPtr(new std::stack<StateInfo>());
 
@@ -381,16 +360,16 @@ static char stockfish_docs[] =
 static PyMethodDef stockfish_funcs[] = {
     {"add_observer", (PyCFunction)stockfish_addObserver, METH_VARARGS, stockfish_docs},
     {"remove_observer", (PyCFunction)stockfish_removeObserver, METH_VARARGS, stockfish_docs},
-    {"flip", (PyCFunction)stockfish_flip, METH_NOARGS, stockfish_docs},
-    {"go", (PyCFunction)stockfish_go, METH_KEYWORDS, stockfish_docs},
+    //{"flip", (PyCFunction)stockfish_flip, METH_NOARGS, stockfish_docs},
+    {"go", (PyCFunction)stockfish_go, METH_VARARGS | METH_KEYWORDS, stockfish_docs},
     {"info", (PyCFunction)stockfish_info, METH_NOARGS, stockfish_docs},
-    {"key", (PyCFunction)stockfish_key, METH_NOARGS, stockfish_docs},
+    {"key", (PyCFunction)stockfish_key, METH_VARARGS, stockfish_docs},
     {"legal_moves", (PyCFunction)stockfish_legalMoves, METH_VARARGS, stockfish_docs},
     {"get_fen", (PyCFunction)stockfish_getFEN, METH_VARARGS, stockfish_docs},
     {"to_can", (PyCFunction)stockfish_toCAN, METH_VARARGS, stockfish_docs},
     {"to_san", (PyCFunction)stockfish_toSAN, METH_VARARGS, stockfish_docs},
     {"ponderhit", (PyCFunction)stockfish_ponderhit, METH_NOARGS, stockfish_docs},
-    {"position", (PyCFunction)stockfish_position, METH_VARARGS, stockfish_docs},
+    //{"position", (PyCFunction)stockfish_position, METH_VARARGS, stockfish_docs},
     {"set_option", (PyCFunction)stockfish_setOption, METH_VARARGS, stockfish_docs},
     {"get_options", (PyCFunction)stockfish_getOptions, METH_NOARGS, stockfish_docs},
     {"stop", (PyCFunction)stockfish_stop, METH_NOARGS, stockfish_docs},
@@ -414,7 +393,7 @@ PyMODINIT_FUNC initstockfish(void)
     lock_init(bestmoveLock);
     cond_init(bestmoveCondition);
 
-    pos.set(StartFEN, false, Threads.main());
+    //pos.set(StartFEN, false, Threads.main());
 
     // Make sure the GIL has been created since we need to acquire it in our
     // callback to safely call into the python application.
