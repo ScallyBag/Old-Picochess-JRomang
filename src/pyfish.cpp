@@ -49,6 +49,10 @@ const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 
 // Keep track of position keys along the setup moves (from start position to the
 // position just before to start searching). Needed by repetition draw detection.
+// Keep track of position keys along the setup moves (from start position to the
+// position just before to start searching). Needed by repetition draw detection.
+Search::StateStackPtr SetupStates;
+
 vector<PyObject*> observers;
 Lock bestmoveLock;
 WaitCondition bestmoveCondition;
@@ -308,17 +312,37 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
     PyObject *moveList;
     const char *fen=NULL;
     Position p;
-    Search::StateStackPtr states = Search::StateStackPtr(new std::stack<StateInfo>());
 
     stockfish_stop(self);
+    cout<<"thinking:"<<Threads.main()->thinking<<endl;
+    SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
+
     const char *kwlist[] = {"fen", "moves", "searchmoves", "wtime", "btime", "winc", "binc", "movestogo", "depth", "nodes", "movetime", "mate", "infinite", "ponder", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO!|O!iiiiiiiiiii", const_cast<char **>(kwlist), &fen, &PyList_Type, &moveList, &PyList_Type, &listSearchMoves,
                                      &(limits.time[WHITE]), &(limits.time[BLACK]), &(limits.inc[WHITE]), &(limits.inc[BLACK]),
                                      &(limits.movestogo), &(limits.depth), &(limits.nodes), &(limits.movetime), &(limits.mate), &(limits.infinite), &(limits.ponder)))
         return NULL;
 
-    buildPosition(&p,states,fen,moveList);
-    Threads.start_thinking(p, limits, searchMoves, states);
+    if(strcmp(fen,"startpos")==0) fen=StartFEN;
+    p.set(fen, false, Threads.main());
+
+    // parse the move list
+    int numMoves = PyList_Size(moveList);
+    for (int i=0; i<numMoves ; i++) {
+        string moveStr( PyString_AsString( PyList_GetItem(moveList, i)) );
+        Move m;
+        if((m = move_from_uci(p, moveStr)) != MOVE_NONE)
+        {
+            SetupStates->push(StateInfo());
+            p.do_move(m, SetupStates->top());
+        }
+        else
+        {
+            PyErr_SetString(PyExc_ValueError, (string("Invalid move '")+moveStr+"'").c_str());
+        }
+    }
+
+    Threads.start_thinking(p, limits, searchMoves, SetupStates);
     Py_RETURN_NONE;
 }
 
@@ -392,8 +416,6 @@ PyMODINIT_FUNC initstockfish(void)
 
     lock_init(bestmoveLock);
     cond_init(bestmoveCondition);
-
-    //pos.set(StartFEN, false, Threads.main());
 
     // Make sure the GIL has been created since we need to acquire it in our
     // callback to safely call into the python application.
