@@ -314,7 +314,7 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
     Position p;
 
     stockfish_stop(self);
-    cout<<"thinking:"<<Threads.main()->thinking<<endl;
+    //cout<<"thinking:"<<Threads.main()->thinking<<endl;
     SetupStates = Search::StateStackPtr(new std::stack<StateInfo>());
 
     const char *kwlist[] = {"fen", "moves", "searchmoves", "wtime", "btime", "winc", "binc", "movestogo", "depth", "nodes", "movetime", "mate", "infinite", "ponder", NULL};
