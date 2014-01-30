@@ -2,6 +2,7 @@ import serial
 import sys
 import time
 from threading import Thread
+from threading import RLock
 from struct import unpack
 
 BOARD = "Board"
@@ -94,6 +95,8 @@ class Event(object):
 class DGTBoard(object):
     def __init__(self, device, virtual = False, send_board = True):
         self.board_reversed = False
+        self.clock_ack_recv = False
+        self.dgt_clock_lock = RLock()
 
         if not virtual:
             self.ser = serial.Serial(device,stopbits=serial.STOPBITS_ONE)
@@ -288,10 +291,11 @@ class DGTBoard(object):
 
     def send_message_to_clock(self, message, beep, dots):
         # Todo locking?
-        self._sendMessageToClock(self.char_to_lcd_code(message[0]), self.char_to_lcd_code(message[1]),
-                            self.char_to_lcd_code(message[2]), self.char_to_lcd_code(message[3]),
-                            self.char_to_lcd_code(message[4]), self.char_to_lcd_code(message[5]),
-                            beep, dots)
+        with self.dgt_clock_lock:
+            self._sendMessageToClock(self.char_to_lcd_code(message[0]), self.char_to_lcd_code(message[1]),
+                                self.char_to_lcd_code(message[2]), self.char_to_lcd_code(message[3]),
+                                self.char_to_lcd_code(message[4]), self.char_to_lcd_code(message[5]),
+                                beep, dots)
 
 
 
@@ -308,6 +312,9 @@ class DGTBoard(object):
         #       }
         #   }
         print "Sending Message to Clock.."
+        num_tries = 0
+        # while not self.clock_ack_recv:
+        num_tries +=1
         self.ser.write(chr(_DGTNIX_CLOCK_MESSAGE))
         self.ser.write(chr(0x0b))
         self.ser.write(chr(0x03))
@@ -319,14 +326,6 @@ class DGTBoard(object):
         self.ser.write(chr(e))
         self.ser.write(chr(d))
 
-        # print "a : {0}".format(a)
-        # print "a : {0}".format(b)
-        # print "a : {0}".format(c)
-        # print "a : {0}".format(d)
-        # print "a : {0}".format(e)
-        # print "a : {0}".format(f)
-
-
         if dots:
             self.ser.write(chr(dots))
         else:
@@ -336,13 +335,20 @@ class DGTBoard(object):
         else:
           self.ser.write(chr(0x01))
         self.ser.write(chr(0x00))
-
+        # time.sleep(1)
+        self.read_message_from_board()
+            # if num_tries>1:
+            #     print "try : {0}".format(num_tries)
+            # if num_tries>=5:
+            #     break
+        # self.clock_ack_recv = False
         # Retry logic?
         # time.sleep(1)
         # Check clock ack?
 
 
     def read_message_from_board(self, head=None):
+        # print "got message"
         header_len = 3
         if head:
             header = head + self.read(header_len-1)
@@ -383,6 +389,15 @@ class DGTBoard(object):
 
         elif command_id == _DGTNIX_BWTIME:
             print "Received DGTNIX_BWTIME message from the board\n"
+            message = self.read(message_length)
+
+            pattern = '>'+'B'*message_length
+            buf = unpack(pattern, message)
+
+            if buf:
+                if buf[3] & 15==10 or buf[6] & 15 == 10:
+                    self.clock_ack_recv = True
+                    # print "clock ACK received!"
 
         elif command_id == _DGTNIX_EE_MOVES:
             print "Received _DGTNIX_EE_MOVES from the board\n"
@@ -442,8 +457,20 @@ class DGTBoard(object):
     def poll(self):
         while True:
             c = self.read(1)
+            # print "got msg"
             if c:
                 self.read_message_from_board(head=c)
+
+    def _dgt_observer(self, attrs):
+        if attrs.type == FEN:
+            print "FEN: {0}".format(attrs.message)
+        elif attrs.type == BOARD:
+            print "Board: "
+            print attrs.message
+            self.send_message_to_clock(['c','h','a','n','g','e'], False, False)
+            # time.sleep(1)
+            self.send_message_to_clock(['b','o','a','r','d','c'], False, False)
+
 
 class VirtualDGTBoard(DGTBoard):
     def __init__(self, device, virtual = True):
@@ -470,12 +497,6 @@ class VirtualDGTBoard(DGTBoard):
         self.fen = fen
 
 
-def dgt_observer(attrs):
-    if attrs.type == FEN:
-        print "FEN: {0}".format(attrs.message)
-    elif attrs.type == BOARD:
-        print "Board: "
-        print attrs.message
 
 
 def poll_dgt(dgt):
@@ -488,9 +509,9 @@ if __name__ == "__main__":
     else:
         device = "/dev/cu.usbserial-00001004"
     board = DGTBoard(device, send_board=False)
-    board.subscribe(dgt_observer)
+    board.subscribe(board._dgt_observer)
     # poll_dgt(board)
-    board.send_message_to_clock(['p','y',' ','d','g', 't'], True, False)
+    # board.send_message_to_clock(['a','y',' ','d','g', 't'], False, False)
     board.poll()
     # poll_dgt(board)
 
