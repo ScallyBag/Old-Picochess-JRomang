@@ -497,8 +497,6 @@ class VirtualDGTBoard(DGTBoard):
         self.fen = fen
 
 
-
-
 def poll_dgt(dgt):
     thread = Thread(target=dgt.poll)
     thread.start()

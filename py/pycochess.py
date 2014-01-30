@@ -785,6 +785,11 @@ class Pycochess(object):
         thread = Thread(target=self.screen_input)
         thread.start()
 
+    def button_event(self, event):
+        print "You pressed",
+        print event.pin_num
+        # print event
+
 
 def update_clocks(pyco):
     Timer(1.0, update_clocks, [pyco]).start()
@@ -799,7 +804,6 @@ if __name__ == '__main__':
         cad.lcd.write("Pycochess 0.1")
 
         # Lets assume this is the raspberry Pi for now..
-
         sf.set_option("OwnBook", "true")
 
         # In case someone has the pi rev A
@@ -823,6 +827,12 @@ if __name__ == '__main__':
         # pyco = Pycochess("human")
         pyco.poll_screen()
         raise
+
+    if piface:
+        listener = pifacecad.SwitchEventListener(chip=cad)
+        for i in range(8):
+            listener.register(i, pifacecad.IODIR_FALLING_EDGE, pyco.button_event)
+        listener.activate()
 
     update_clocks(pyco)
 
