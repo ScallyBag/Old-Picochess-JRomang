@@ -1,5 +1,7 @@
 import serial
 import sys
+import time
+from threading import Thread
 from struct import unpack
 
 BOARD = "Board"
@@ -7,10 +9,10 @@ BOARD = "Board"
 FEN = "FEN"
 
 DGTNIX_MSG_UPDATE = 0x05
-
 _DGTNIX_SEND_BRD = 0x42
 _DGTNIX_MESSAGE_BIT = 0x80
 _DGTNIX_BOARD_DUMP =  0x06
+_DGTNIX_BWTIME = 0x0d
 
 _DGTNIX_MSG_BOARD_DUMP = _DGTNIX_MESSAGE_BIT|_DGTNIX_BOARD_DUMP
 
@@ -37,28 +39,32 @@ _DGTNIX_BBISHOP =    0x0a
 _DGTNIX_BKING   =    0x0b
 _DGTNIX_BQUEEN  =    0x0c
 
+_DGTNIX_CLOCK_MESSAGE = 0x2b
 _DGTNIX_SEND_CLK = 0x41
-_DGTNIX_SEND_BRD = 0x42
 _DGTNIX_SEND_UPDATE = 0x43
 _DGTNIX_SEND_UPDATE_BRD = 0x44
 _DGTNIX_SEND_SERIALNR = 0x45
 _DGTNIX_SEND_BUSADDRESS = 0x46
 _DGTNIX_SEND_TRADEMARK = 0x47
 _DGTNIX_SEND_VERSION = 0x4d
-_DGTNIX_SEND_UPDATE_NICE = 0x4b
 _DGTNIX_SEND_EE_MOVES = 0x49
 _DGTNIX_SEND_RESET = 0x40
 
 _DGTNIX_SIZE_BOARD_DUMP = 67
 _DGTNIX_NONE = 0x00
 _DGTNIX_BOARD_DUMP = 0x06
-_DGTNIX_BWTIME = 0x0d
-_DGTNIX_FIELD_UPDATE = 0x0e
 _DGTNIX_EE_MOVES = 0x0f
 _DGTNIX_BUSADDRESS = 0x10
 _DGTNIX_SERIALNR = 0x11
 _DGTNIX_TRADEMARK = 0x12
 _DGTNIX_VERSION = 0x13
+
+DGTNIX_RIGHT_DOT = 0x01
+DGTNIX_RIGHT_SEMICOLON = 0x02
+DGTNIX_RIGHT_1 = 0x04
+DGTNIX_LEFT_DOT = 0x08
+DGTNIX_LEFT_SEMICOLON = 0x10
+DGTNIX_LEFT_1 = 0x20
 
 piece_map = {
     _DGTNIX_EMPTY : ' ',
@@ -76,7 +82,7 @@ piece_map = {
     _DGTNIX_BQUEEN : 'q'
 }
 
-dgt_send_message_list = [_DGTNIX_SEND_CLK, _DGTNIX_SEND_BRD, _DGTNIX_SEND_UPDATE,
+dgt_send_message_list = [_DGTNIX_CLOCK_MESSAGE, _DGTNIX_SEND_CLK, _DGTNIX_SEND_BRD, _DGTNIX_SEND_UPDATE,
                          _DGTNIX_SEND_UPDATE_BRD, _DGTNIX_SEND_SERIALNR, _DGTNIX_SEND_BUSADDRESS, _DGTNIX_SEND_TRADEMARK,
                          _DGTNIX_SEND_VERSION, _DGTNIX_SEND_UPDATE_NICE, _DGTNIX_SEND_EE_MOVES, _DGTNIX_SEND_RESET]
 
@@ -86,13 +92,14 @@ class Event(object):
 
 
 class DGTBoard(object):
-    def __init__(self, device, virtual = False):
+    def __init__(self, device, virtual = False, send_board = True):
         self.board_reversed = False
 
         if not virtual:
             self.ser = serial.Serial(device,stopbits=serial.STOPBITS_ONE)
             self.write(chr(_DGTNIX_SEND_UPDATE_NICE))
-            self.write(chr(_DGTNIX_SEND_BRD))
+            if send_board:
+                self.write(chr(_DGTNIX_SEND_BRD))
 
         self.callbacks = []
 
@@ -202,6 +209,139 @@ class DGTBoard(object):
     def write(self, message):
         self.ser.write(message)
 
+    # Converts a lowercase ASCII character or digit to DGT Clock representation
+    @staticmethod
+    def char_to_lcd_code(c):
+        if c == '0':
+            return 0x01 | 0x02 | 0x20 | 0x08 | 0x04 | 0x10
+        if c == '1':
+            return 0x02 | 0x04
+        if c == '2':
+            return 0x01 | 0x40 | 0x08 | 0x02 | 0x10
+        if c == '3':
+            return 0x01 | 0x40 | 0x08 | 0x02 | 0x04
+        if c == '4':
+            return 0x20 | 0x04 | 0x40 | 0x02
+        if c == '5':
+            return 0x01 | 0x40 | 0x08 | 0x20 | 0x04
+        if c == '6':
+            return 0x01 | 0x40 | 0x08 | 0x20 | 0x04 | 0x10
+        if c == '7':
+            return 0x02 | 0x04 | 0x01
+        if c == '8':
+            return 0x01 | 0x02 | 0x20 | 0x40 | 0x04 | 0x10 | 0x08
+        if c == '9':
+            return 0x01 | 0x40 | 0x08 | 0x02 | 0x04 | 0x20
+        if c == 'a':
+            return 0x01 | 0x02 | 0x20 | 0x40 | 0x04 | 0x10
+        if c == 'b':
+            return 0x20 | 0x04 | 0x40 | 0x08 | 0x10
+        if c == 'c':
+            return 0x01 | 0x20 | 0x10 | 0x08
+        if c == 'd':
+            return 0x10 | 0x40 | 0x08 | 0x02 | 0x04
+        if c == 'e':
+            return 0x01 | 0x40 | 0x08 | 0x20 | 0x10
+        if c == 'f':
+            return 0x01 | 0x40 | 0x20 | 0x10
+        if c == 'g':
+            return 0x01 | 0x20 | 0x10 | 0x08 | 0x04
+        if c == 'h':
+            return 0x20 | 0x10 | 0x04 | 0x40
+        if c == 'i':
+            return 0x02 | 0x04
+        if c == 'j':
+            return 0x02 | 0x04 | 0x08 | 0x10
+        if c == 'k':
+            return 0x01 | 0x20 | 0x40 | 0x04 | 0x10
+        if c == 'l':
+            return 0x20 | 0x10 | 0x08
+        if c == 'm':
+            return 0x01 | 0x40 | 0x04 | 0x10
+        if c == 'n':
+            return 0x40 | 0x04 | 0x10
+        if c == 'o':
+            return 0x40 | 0x04 | 0x10 | 0x08
+        if c == 'p':
+            return 0x01 | 0x40 | 0x20 | 0x10 | 0x02
+        if c == 'q':
+            return 0x01 | 0x40 | 0x20 | 0x04 | 0x02
+        if c == 'r':
+            return 0x40 | 0x10
+        if c == 's':
+            return 0x01 | 0x40 | 0x08 | 0x20 | 0x04
+        if c == 't':
+            return 0x20 | 0x10 | 0x08 | 0x40
+        if c == 'u':
+            return 0x08 | 0x02 | 0x20 | 0x04 | 0x10
+        if c == 'v':
+            return 0x08 | 0x02 | 0x20
+        if c == 'w':
+            return 0x40 | 0x08 | 0x20 | 0x02
+        if c == 'x':
+            return 0x20 | 0x10 | 0x04 | 0x40 | 0x02
+        if c == 'y':
+            return 0x20 | 0x08 | 0x04 | 0x40 | 0x02
+        if c == 'z':
+            return 0x01 | 0x40 | 0x08 | 0x02 | 0x10
+        return 0
+
+    def send_message_to_clock(self, message, beep, dots):
+        # Todo locking?
+        self._sendMessageToClock(self.char_to_lcd_code(message[0]), self.char_to_lcd_code(message[1]),
+                            self.char_to_lcd_code(message[2]), self.char_to_lcd_code(message[3]),
+                            self.char_to_lcd_code(message[4]), self.char_to_lcd_code(message[5]),
+                            beep, dots)
+
+
+
+    def _sendMessageToClock(self, a, b, c, d, e, f, beep, dots):
+        # pthread_mutex_lock (&clock_ack_mutex);
+
+        # if(!(g_debugMode == DGTNIX_DEBUG_OFF))
+        #   {
+        #     _debug("Sending message to clock\n");
+        #     if(g_descriptorDriverBoard < 0)
+        #       {
+        #         perror("dgtnix critical:sendMessageToBoard: invalid file descriptor\n");
+        #         exit(-1);
+        #       }
+        #   }
+        print "Sending Message to Clock.."
+        self.ser.write(chr(_DGTNIX_CLOCK_MESSAGE))
+        self.ser.write(chr(0x0b))
+        self.ser.write(chr(0x03))
+        self.ser.write(chr(0x01))
+        self.ser.write(chr(c))
+        self.ser.write(chr(b))
+        self.ser.write(chr(a))
+        self.ser.write(chr(f))
+        self.ser.write(chr(e))
+        self.ser.write(chr(d))
+
+        # print "a : {0}".format(a)
+        # print "a : {0}".format(b)
+        # print "a : {0}".format(c)
+        # print "a : {0}".format(d)
+        # print "a : {0}".format(e)
+        # print "a : {0}".format(f)
+
+
+        if dots:
+            self.ser.write(chr(dots))
+        else:
+            self.ser.write(chr(0))
+        if beep:
+          self.ser.write(chr(0x03))
+        else:
+          self.ser.write(chr(0x01))
+        self.ser.write(chr(0x00))
+
+        # Retry logic?
+        # time.sleep(1)
+        # Check clock ack?
+
+
     def read_message_from_board(self, head=None):
         header_len = 3
         if head:
@@ -240,6 +380,9 @@ class DGTBoard(object):
 #            print self.get_fen(message)
             self.fire(type=FEN, message=self.get_fen(message))
             self.fire(type=BOARD, message=self.dump_board(message))
+
+        elif command_id == _DGTNIX_BWTIME:
+            print "Received DGTNIX_BWTIME message from the board\n"
 
         elif command_id == _DGTNIX_EE_MOVES:
             print "Received _DGTNIX_EE_MOVES from the board\n"
@@ -334,13 +477,23 @@ def dgt_observer(attrs):
         print "Board: "
         print attrs.message
 
+
+def poll_dgt(dgt):
+    thread = Thread(target=dgt.poll)
+    thread.start()
+
 if __name__ == "__main__":
     if len(sys.argv)> 1:
         device = sys.argv[1]
     else:
         device = "/dev/cu.usbserial-00001004"
-    board = DGTBoard(device)
+    board = DGTBoard(device, send_board=False)
     board.subscribe(dgt_observer)
-
+    # poll_dgt(board)
+    board.send_message_to_clock(['p','y',' ','d','g', 't'], True, False)
     board.poll()
+    # poll_dgt(board)
+
+
+
 
