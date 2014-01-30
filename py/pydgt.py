@@ -467,9 +467,9 @@ class DGTBoard(object):
         elif attrs.type == BOARD:
             print "Board: "
             print attrs.message
-            self.send_message_to_clock(['c','h','a','n','g','e'], False, False)
+            # self.send_message_to_clock(['c','h','a','n','g','e'], False, False)
             # time.sleep(1)
-            self.send_message_to_clock(['b','o','a','r','d','c'], False, False)
+            # self.send_message_to_clock(['b','o','a','r','d','c'], False, False)
 
 
 class VirtualDGTBoard(DGTBoard):
