@@ -126,6 +126,27 @@ time_control_map = {
 
 }
 
+
+# Menus accessible via piface and perhaps other devices
+class PlayMode:
+    GAME, ANALYSIS, KIBITZ, TRAINING, SILENT = range(5)
+
+
+class ClockMode:
+    FIXEDTIME, INFINITE, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL = range(6)
+
+
+class MainMenu:
+    PLAY, POSITION_SETUP, ENGINE, SYSTEM = range(5)
+
+
+class PositionMenu:
+    SCAN_POSITION, WHITE_TO_MOVE, BLACK_TO_MOVE, REVERSE_ORIENTATION = range(4)
+
+
+class PlayMenu:
+    LAST_MOVE, HINT, EVAL, SWITCH_SIDES, SWITCH_MODE = range(5)
+
 #dgt_sem = Semaphore(value=0)
 move_queue = Queue()
 
@@ -786,6 +807,8 @@ class Pycochess(object):
         thread.start()
 
     def button_event(self, event):
+        # Button 0-4 are on the front
+        # Button 5-7 are on the back, press is 5, left is 6, and right is 7
         print "You pressed",
         print event.pin_num
         # print event
