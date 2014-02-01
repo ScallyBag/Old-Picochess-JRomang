@@ -582,26 +582,13 @@ static void *_threadManagedFunc(void *params)
   _queryVendorStrings();
   sem_init(&dgtnixEventSemaphore,0,0);
   _sendMessageToBoard(_DGTNIX_SEND_UPDATE);
-  int numRetries = 0;
   while( 1 ) 
     {  
-      if(_readMessageFromBoard()<0)
-	{
-	  ++numRetries;
-	  sleep(numRetries*2);
-	  fprintf(stderr, "dgtnixManagerFunc:read error -- retrying\n");
-	  if (numRetries>5)
-	    {
-	      fprintf(stderr,"dgtnixManagerFunc:read error after five retries, terminating\n");
-	      break;
-	    }
-	  continue;
-	}
-      else
+          if(_readMessageFromBoard()<0)
         {
-          numRetries = 0;
+          fprintf(stderr, "dgtnixManagerFunc:read error \n");
+          continue;
         }
-      /*_dumpBoard(g_board);*/
       sem_post(&dgtnixEventSemaphore); 
     }
   _closeAllDescriptors();
