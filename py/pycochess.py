@@ -137,7 +137,7 @@ class ClockMode:
 
 
 class MainMenu:
-    PLAY, POSITION_SETUP, ENGINE, SYSTEM = range(5)
+    PLAY, POSITION_SETUP, ENGINE, SYSTEM = range(4)
 
 
 class PositionMenu:
@@ -789,7 +789,7 @@ class Pycochess(object):
             m = raw_input("Enter command/move\n")
             # print "got command: {0}".format(m)
             if m == "quit":
-                sys.exit(1)
+                os._exit(0)
             if m == "undo":
                 if len(self.move_list)>0:
                     self.move_list.pop()
@@ -812,6 +812,9 @@ class Pycochess(object):
         print "You pressed",
         print event.pin_num
         # print event
+
+    def set_device(self, device):
+        self.device = device
 
 
 def update_clocks(pyco):
@@ -847,9 +850,8 @@ if __name__ == '__main__':
         pyco.connect()
     except OSError:
         print "DGT board not found, trying human input mode\n"
-        # pyco = Pycochess("human")
+        pyco.set_device("human")
         pyco.poll_screen()
-        raise
 
     if piface:
         listener = pifacecad.SwitchEventListener(chip=cad)
