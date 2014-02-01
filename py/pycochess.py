@@ -685,7 +685,7 @@ class Pycochess(object):
             if line_index>-1:
                 pv = sf.to_san(tokens[line_index+1:])
                 if len(pv)>0:
-                    self.score_count+=1
+                    self.score_count += 1
                     if self.score_count > 5:
                         self.score_count = 0
                     if piface and self.score_count==1:
@@ -812,6 +812,15 @@ class Pycochess(object):
         print "You pressed",
         print event.pin_num
         # print event
+
+        if event.pin_num == 4:
+            if self.play_mode == GAME_MODE:
+                self.play_mode = ANALYSIS_MODE
+                self.write_to_piface("Analysis mode", clear=True)
+            else:
+                self.play_mode = GAME_MODE
+                self.write_to_piface("Game mode", clear=True)
+
 
     def set_device(self, device):
         self.device = device
