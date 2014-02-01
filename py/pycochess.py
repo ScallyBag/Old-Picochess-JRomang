@@ -678,7 +678,8 @@ class Pycochess(object):
         print "Got line: " + line
         tokens = line.split()
         score = self.get_score(line)
-
+        if self.turn == BLACK:
+            score *=-1
         if self.play_mode == ANALYSIS_MODE:
 
             line_index = tokens.index('pv')
@@ -689,7 +690,7 @@ class Pycochess(object):
                     if self.score_count > 5:
                         self.score_count = 0
                     if piface and self.score_count==1:
-                        first_mv = tokens[line_index+1]
+                        first_mv = pv[0]
                         output = str(score)+' '+first_mv
                         self.write_to_piface(output, clear = True)
                         #cad.lcd.write(str(score)+' ')
@@ -830,6 +831,16 @@ def update_clocks(pyco):
     Timer(1.0, update_clocks, [pyco]).start()
     pyco.update_clocks()
 
+
+def process_undo(process_move):
+    if len(pyco.move_list) > 0:
+        pyco.write_to_piface(pyco.move_list[-1], clear=True)
+    if pyco.play_mode == GAME_MODE:
+        process_move = False
+    else:
+        process_move = True
+
+
 if __name__ == '__main__':
     if piface:
         cad = pifacecad.PiFaceCAD()
@@ -876,17 +887,18 @@ if __name__ == '__main__':
         print "Board Updated!"
         process_move = True
         if m == "undo":
-            if len(pyco.move_list)>0:
-                pyco.write_to_piface(pyco.move_list[-1], clear=True)
-            process_move = False
+            process_undo(process_move)
 
         elif pyco.computer_move_FEN_reached:
             print "Comp_move FEN reached"
             pyco.engine_computer_move = False
 #            pyco.write_to_piface("Done", clear=True)
             m = move_queue.get()
+            if m == "undo":
+                process_undo(process_move)
 #            print "Next dgt_get after comp_move fen reached"
-            process_move = True
+            else:
+                process_move = True
 
         if process_move:
             pyco.eng_process_move()
