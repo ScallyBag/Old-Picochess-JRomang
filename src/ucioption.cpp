@@ -1,7 +1,7 @@
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
   Copyright (C) 2004-2008 Tord Romstad (Glaurung author)
-  Copyright (C) 2008-2013 Marco Costalba, Joona Kiiski, Tord Romstad
+  Copyright (C) 2008-2014 Marco Costalba, Joona Kiiski, Tord Romstad
 
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
+#include "tbprobe.h"
 
 using std::string;
 
@@ -40,6 +41,7 @@ void on_eval(const Option&) { Eval::init(); }
 void on_threads(const Option&) { Threads.read_uci_options(); }
 void on_hash_size(const Option& o) { TT.set_size(o); }
 void on_clear_hash(const Option&) { TT.clear(); }
+void on_tb_path(const Option& o) { Tablebases::init(o); }
 
 
 /// Our case insensitive less() function as required by UCI protocol
@@ -50,7 +52,7 @@ bool CaseInsensitiveLess::operator() (const string& s1, const string& s2) const 
 }
 
 
-/// init() initializes the UCI options to their hard coded default values
+/// init() initializes the UCI options to their hard-coded default values
 
 void init(OptionsMap& o) {
 
@@ -72,8 +74,8 @@ void init(OptionsMap& o) {
   o["Min Split Depth"]             = Option(0, 0, 12, on_threads);
   o["Max Threads per Split Point"] = Option(5, 4,  8, on_threads);
   o["Threads"]                     = Option(1, 1, MAX_THREADS, on_threads);
-  o["Idle Threads Sleep"]          = Option(false);
-  o["Hash"]                        = Option(32, 1, 8192, on_hash_size);
+  o["Idle Threads Sleep"]          = Option(true);
+  o["Hash"]                        = Option(32, 1, 16384, on_hash_size);
   o["Clear Hash"]                  = Option(on_clear_hash);
   o["Ponder"]                      = Option(true);
   o["OwnBook"]                     = Option(false);
@@ -86,6 +88,10 @@ void init(OptionsMap& o) {
   o["Slow Mover"]                  = Option(70, 10, 1000);
   o["UCI_Chess960"]                = Option(false);
   o["UCI_AnalyseMode"]             = Option(false, on_eval);
+  o["SyzygyPath"]                  = Option("", on_tb_path);
+  o["SyzygyProbeDepth"]            = Option(1, 1, 100);
+  o["Syzygy50MoveRule"]            = Option(true);
+  o["SyzygyProbeLimit"]            = Option(6, 0, 6);
 }
 
 
@@ -113,7 +119,7 @@ std::ostream& operator<<(std::ostream& os, const OptionsMap& om) {
 }
 
 
-/// Option c'tors and conversion operators
+/// Option class constructors and conversion operators
 
 Option::Option(const char* v, Fn* f) : type("string"), min(0), max(0), idx(Options.size()), on_change(f)
 { defaultValue = currentValue = v; }

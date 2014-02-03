@@ -1,7 +1,7 @@
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
   Copyright (C) 2004-2008 Tord Romstad (Glaurung author)
-  Copyright (C) 2008-2013 Marco Costalba, Joona Kiiski, Tord Romstad
+  Copyright (C) 2008-2014 Marco Costalba, Joona Kiiski, Tord Romstad
 
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 namespace Bitboards {
 
 void init();
-void print(Bitboard b);
+const std::string pretty(Bitboard b);
 
 }
 
@@ -177,7 +177,7 @@ inline Bitboard in_front_bb(Color c, Rank r) {
 
 /// between_bb() returns a bitboard representing all squares between two squares.
 /// For instance, between_bb(SQ_C4, SQ_F7) returns a bitboard with the bits for
-/// square d5 and e6 set.  If s1 and s2 are not on the same line, file or diagonal,
+/// square d5 and e6 set.  If s1 and s2 are not on the same rank, file or diagonal,
 /// 0 is returned.
 
 inline Bitboard between_bb(Square s1, Square s2) {
@@ -254,9 +254,19 @@ inline Bitboard attacks_bb(Square s, Bitboard occ) {
   return (Pt == ROOK ? RAttacks : BAttacks)[s][magic_index<Pt>(s, occ)];
 }
 
+inline Bitboard attacks_bb(Piece p, Square s, Bitboard occ) {
 
-/// lsb()/msb() finds the least/most significant bit in a nonzero bitboard.
-/// pop_lsb() finds and clears the least significant bit in a nonzero bitboard.
+  switch (type_of(p))
+  {
+  case BISHOP: return attacks_bb<BISHOP>(s, occ);
+  case ROOK  : return attacks_bb<ROOK>(s, occ);
+  case QUEEN : return attacks_bb<BISHOP>(s, occ) | attacks_bb<ROOK>(s, occ);
+  default    : return StepAttacksBB[p][s];
+  }
+}
+
+/// lsb()/msb() finds the least/most significant bit in a non-zero bitboard.
+/// pop_lsb() finds and clears the least significant bit in a non-zero bitboard.
 
 #ifdef USE_BSFQ
 
