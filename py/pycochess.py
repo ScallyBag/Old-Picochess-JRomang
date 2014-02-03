@@ -545,6 +545,8 @@ class Pycochess(object):
                             self.computer_move_FEN_reached = True
 #                            self.switch_turn()
                             print "computer move Fen reached"
+                        else:
+                            self.computer_move_FEN_reached = False
 
 
 #                        print "old_dgt_fen: {0}".format(self.dgt_fen)
@@ -593,8 +595,7 @@ class Pycochess(object):
             self.engine_searching = False
             sf.stop()
 
-    def get_score(self, line):
-        tokens = line.split()
+    def get_score(self, tokens):
         try:
             score_index = tokens.index('score')
         except ValueError, e:
@@ -677,11 +678,11 @@ class Pycochess(object):
     def parse_score(self, line):
         print "Got line: " + line
         tokens = line.split()
-        score = self.get_score(line)
-        if self.turn == BLACK:
-            score *=-1
-        if self.play_mode == ANALYSIS_MODE:
+        score = self.get_score(tokens)
 
+        if self.play_mode == ANALYSIS_MODE:
+            if self.turn == BLACK:
+                score *=-1
             line_index = tokens.index('pv')
             if line_index>-1:
                 pv = sf.to_san(tokens[line_index+1:])
@@ -832,13 +833,11 @@ def update_clocks(pyco):
     pyco.update_clocks()
 
 
-def process_undo(process_move):
-    if len(pyco.move_list) > 0:
-        pyco.write_to_piface(pyco.move_list[-1], clear=True)
-    if pyco.play_mode == GAME_MODE:
-        process_move = False
-    else:
-        process_move = True
+def process_undo(pyco, m):
+    if m == "undo" and len(pyco.move_list) > 0:
+        pyco.write_to_piface("Undo - " + pyco.move_list[-1], clear=True)
+        pyco.switch_turn()
+        return True
 
 
 if __name__ == '__main__':
@@ -880,26 +879,21 @@ if __name__ == '__main__':
         listener.activate()
 
     update_clocks(pyco)
+    reached_comp_move = False
 
     while True:
         #print "Before acquire"
         m = move_queue.get()
         print "Board Updated!"
-        process_move = True
-        if m == "undo":
-            process_undo(process_move)
+        # print "Got move: {0}".format(m)
+        if process_undo(pyco, m):
+            continue
 
-        elif pyco.computer_move_FEN_reached:
+        if pyco.computer_move_FEN_reached:
             print "Comp_move FEN reached"
-            pyco.engine_computer_move = False
-#            pyco.write_to_piface("Done", clear=True)
-            m = move_queue.get()
-            if m == "undo":
-                process_undo(process_move)
-#            print "Next dgt_get after comp_move fen reached"
-            else:
-                process_move = True
+            # pyco.engine_computer_move = False
+            continue
 
-        if process_move:
+        if pyco.engine_comp_color == pyco.turn:
             pyco.eng_process_move()
 
