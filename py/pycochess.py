@@ -10,7 +10,7 @@ import itertools as it
 import os
 import fileinput
 import sys
-#from ChessBoard import ChessBoard
+from ChessBoard import ChessBoard
 from pydgt import DGTBoard
 from pydgt import FEN
 
@@ -141,11 +141,16 @@ class MainMenu:
 
 
 class PositionMenu:
-    SCAN_POSITION, WHITE_TO_MOVE, BLACK_TO_MOVE, REVERSE_ORIENTATION = range(4)
+    WHITE_TO_MOVE, BLACK_TO_MOVE, REVERSE_ORIENTATION, SCAN_POSITION = range(4)
 
 
 class PlayMenu:
     LAST_MOVE, HINT, EVAL, SWITCH_SIDES, SWITCH_MODE = range(5)
+
+
+class MenuRotation:
+    length = 2
+    MAIN, POSITION = range(length)
 
 #dgt_sem = Semaphore(value=0)
 move_queue = Queue()
@@ -157,7 +162,11 @@ class Pycochess(object):
     OBSERVE = "Observe"
 
     def __init__(self, device, **kwargs):
+        self.use_tb = False
+        self.current_menu = MenuRotation.MAIN
+        self.pyfish_fen = 'startpos'
         self.dgt = None
+        self.current_fen = None
         self.dgt_fen = None
         self.dgt_connected = False
         self.device = device
@@ -235,6 +244,7 @@ class Pycochess(object):
         if attr.type == FEN:
             fen = attr.message
             print "Fen: {0}".format(fen)
+            self.current_fen = fen
             m = self.probe_move(fen)
             if m:
                 move_queue.put(m)
@@ -629,9 +639,9 @@ class Pycochess(object):
         return score
 
 
-    def position(self, move_list, pos='startpos'):
-        sf.position(pos, move_list)
-        self.move_list = move_list
+    # def position(self, move_list, pos='startpos'):
+    #     sf.position(pos, move_list)
+    #     self.move_list = move_list
 
     def generate_move_list(self, all_moves, eval=None, start_move_num = 1):
         score = ""
@@ -675,6 +685,11 @@ class Pycochess(object):
 
         return best_move, ponder_move
 
+    def get_san(self, moves):
+        prev_fen = sf.get_fen(self.pyfish_fen,  self.move_list)
+            # print prev_fen
+        return sf.to_san(prev_fen, moves)
+
     def parse_score(self, line):
         print "Got line: " + line
         tokens = line.split()
@@ -685,13 +700,18 @@ class Pycochess(object):
                 score *=-1
             line_index = tokens.index('pv')
             if line_index>-1:
-                pv = sf.to_san(tokens[line_index+1:])
+                pv = self.get_san(tokens[line_index+1:])
                 if len(pv)>0:
                     self.score_count += 1
                     if self.score_count > 5:
                         self.score_count = 0
                     if piface and self.score_count==1:
                         first_mv = pv[0]
+                        if self.use_tb and score == 151:
+                            score = 'TB: 1-0'
+                        if self.use_tb and score == -151:
+                            score = 'TB: 0-1'
+
                         output = str(score)+' '+first_mv
                         self.write_to_piface(output, clear = True)
                         #cad.lcd.write(str(score)+' ')
@@ -705,7 +725,7 @@ class Pycochess(object):
             if best_move:
                 # print "best_move_san:{0}".format(best_move)
             #                print "best_move_san:{0}".format(sf.to_san([best_move])[0])
-                output_move = sf.to_san([best_move])[0]
+                output_move = self.get_san([best_move])[0]
                 # print "output_move: {0}".format(output_move)
                 self.engine_computer_move = False
                 self.computer_move_FEN_reached = False
@@ -738,12 +758,12 @@ class Pycochess(object):
     def eng_process_move(self):
         self.stop_engine()
         self.score_count = 0
-        self.position(self.move_list, pos='startpos')
+        # self.position(self.move_list, pos='startpos')
         # Needed on the Pi!
         if arm:
             sleep(1)
         if self.play_mode == ANALYSIS_MODE:
-            sf.go(infinite=True)
+            sf.go(self.pyfish_fen, moves=self.move_list, infinite=True)
         elif self.play_mode == GAME_MODE:
             if self.engine_computer_move:
                 if self.clock_mode == FIXED_TIME:
@@ -754,7 +774,7 @@ class Pycochess(object):
 
                     else:
                         self.time_white = self.comp_time
-                    sf.go(movetime=self.comp_time)
+                    sf.go(self.pyfish_fen, moves=self.move_list, movetime=self.comp_time)
 #                    self.reset_clock_update()
                 else:
                     if not self.player_time:
@@ -773,10 +793,10 @@ class Pycochess(object):
                             self.time_inc_white, self.time_inc_black = self.time_inc_black, self.time_inc_white
 
                     if self.clock_mode == BLITZ:
-                        sf.go(wtime=int(self.time_white), btime=int(self.time_black))
+                        sf.go(self.pyfish_fen, moves=self.move_list, wtime=int(self.time_white), btime=int(self.time_black))
 #                        print "starting wtime: {0}, starting btime: {1}".format(self.time_white, self.time_black)
                     elif self.clock_mode == BLITZ_FISCHER:
-                        sf.go(wtime=int(self.time_white), btime=int(self.time_black),
+                        sf.go('startpos', moves=self.move_list, wtime=int(self.time_white), btime=int(self.time_black),
                             winc=int(self.time_inc_white), binc=int(self.time_inc_black))
 
 #                    self.reset_clock_update()
@@ -808,6 +828,35 @@ class Pycochess(object):
         thread = Thread(target=self.screen_input)
         thread.start()
 
+    def update_castling_rights(self, fen):
+        can_castle = False
+        castling_fen = ''
+        board = ChessBoard()
+        board.setFEN(fen)
+        b = board.getBoard()
+        if b[-1][4] == "K" and  b[-1][7] == "R":
+            can_castle = True
+            castling_fen += 'K'
+
+        if b[-1][4] == "K" and  b[-1][0] == "R":
+            can_castle = True
+            castling_fen += 'Q'
+
+        if b[0][4] == "k" and  b[0][7] == "r":
+            can_castle = True
+            castling_fen += 'k'
+
+        if b[0][4] == "k" and  b[0][0] == "r":
+            can_castle = True
+            castling_fen += 'q'
+
+        if not can_castle:
+            castling_fen = '-'
+
+        # TODO: Support fen positions where castling is not possible even if king and rook are on right squares
+        fen = fen.replace("KQkq", castling_fen)
+        return fen
+
     def button_event(self, event):
         # Button 0-4 are on the front
         # Button 5-7 are on the back, press is 5, left is 6, and right is 7
@@ -815,7 +864,7 @@ class Pycochess(object):
         print event.pin_num
         # print event
 
-        if event.pin_num == 4:
+        if event.pin_num == 4 and self.current_menu == MenuRotation.MAIN:
             if self.play_mode == GAME_MODE:
                 self.play_mode = ANALYSIS_MODE
                 self.write_to_piface("Analysis mode", clear=True)
@@ -823,6 +872,41 @@ class Pycochess(object):
                 self.play_mode = GAME_MODE
                 self.write_to_piface("Game mode", clear=True)
 
+
+        if event.pin_num == 6 or event.pin_num == 7:
+            if event.pin_num == 6:
+                if self.current_menu == 0:
+                    self.current_menu = MenuRotation.length-1
+                else:
+                    self.current_menu -= 1
+
+            if event.pin_num == 7:
+                if self.current_menu == MenuRotation.length-1:
+                    self.current_menu = 0
+                else:
+                    self.current_menu += 1
+
+            if self.current_menu == MenuRotation.POSITION:
+                self.write_to_piface("Setup Position", clear=True)
+            elif self.current_menu == MenuRotation.MAIN:
+                self.write_to_piface("Play Menu", clear=True)
+
+# SCAN_POSITION, WHITE_TO_MOVE, BLACK_TO_MOVE, REVERSE_ORIENTATION = range(4)
+        if self.current_menu == MenuRotation.POSITION:
+            if event.pin_num == PositionMenu.WHITE_TO_MOVE:
+                self.turn = WHITE
+                self.write_to_piface("White to Move", clear=True)
+            elif event.pin_num == PositionMenu.BLACK_TO_MOVE:
+                self.turn = BLACK
+                self.write_to_piface("Black to Move", clear=True)
+            elif event.pin_num == PositionMenu.REVERSE_ORIENTATION:
+                self.dgt.reverse_board()
+                self.write_to_piface("Reverse Board", clear=True)
+            elif event.pin_num == PositionMenu.SCAN_POSITION:
+                # Scan current fen
+                fen = self.fen_to_move(self.current_fen, self.turn)
+                self.pyfish_fen = self.update_castling_rights(fen)
+                self.write_to_piface("Scan Position", clear=True)
 
     def set_device(self, device):
         self.device = device
@@ -855,7 +939,8 @@ if __name__ == '__main__':
         sf.set_option("Hash", 128)
         sf.set_option("Emergency Base Time", 1300)
         sf.set_option("Book File", BOOK_PATH+book_map[DEFAULT_BOOK_FEN][0]+ BOOK_EXTENSION)
-
+        # Make this an option later
+        # self.use_tb = True
 
     arm = False
 #    print os.uname()[4][:3]
@@ -871,6 +956,9 @@ if __name__ == '__main__':
         print "DGT board not found, trying human input mode\n"
         pyco.set_device("human")
         pyco.poll_screen()
+
+    # pyco.use_tb = True
+    # sf.set_option('SyzygyPath', '/home/pi/syzygy/')
 
     if piface:
         listener = pifacecad.SwitchEventListener(chip=cad)
@@ -894,6 +982,6 @@ if __name__ == '__main__':
             # pyco.engine_computer_move = False
             continue
 
-        if pyco.engine_comp_color == pyco.turn:
+        if pyco.engine_comp_color == pyco.turn or pyco.play_mode == ANALYSIS_MODE:
             pyco.eng_process_move()
 
