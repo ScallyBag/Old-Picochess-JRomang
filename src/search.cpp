@@ -266,7 +266,7 @@ void Search::think() {
       }
       else // If DTZ tables are missing, use WDL tables as a fallback
       {
-          TBCardinality = piecesCnt - 1;
+          // TBCardinality = piecesCnt - 1;
           RootInTB = Tablebases::root_probe_wdl(RootPos, TBScore);
       }
 
@@ -619,8 +619,10 @@ namespace {
     }
 
     // Step 4a. Tablebase probe
-    if (   !RootNode && depth >= TBProbeDepth
-        && pos.count<ALL_PIECES>(WHITE) + pos.count<ALL_PIECES>(BLACK) <= TBCardinality)
+    if (   !RootNode
+        && depth >= TBProbeDepth
+        && pos.count<ALL_PIECES>(WHITE) + pos.count<ALL_PIECES>(BLACK) <= TBCardinality
+        && pos.rule50_count() == 0)
     {
         int found, v = Tablebases::probe_wdl(pos, &found);
 
@@ -689,11 +691,9 @@ namespace {
         &&  abs(beta) < VALUE_MATE_IN_MAX_PLY
         && !pos.pawn_on_7th(pos.side_to_move()))
     {
-        Value rbeta = beta - razor_margin(depth);
-        Value v = qsearch<NonPV, false>(pos, ss, rbeta-1, rbeta, DEPTH_ZERO);
-        if (v < rbeta)
-            // Logically we should return (v + razor_margin(depth)), but
-            // surprisingly this performed slightly weaker in tests.
+        Value ralpha = alpha - razor_margin(depth);
+        Value v = qsearch<NonPV, false>(pos, ss, ralpha, ralpha+1, DEPTH_ZERO);
+        if (v <= ralpha)
             return v;
     }
 
@@ -726,8 +726,8 @@ namespace {
 
         pos.do_null_move(st);
         (ss+1)->skipNullMove = true;
-        nullValue = depth-R < ONE_PLY ? -qsearch<NonPV, false>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
-                                      : - search<NonPV>(pos, ss+1, -beta, -alpha, depth-R, !cutNode);
+        nullValue = depth-R < ONE_PLY ? -qsearch<NonPV, false>(pos, ss+1, -beta, -beta+1, DEPTH_ZERO)
+                                      : - search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
         (ss+1)->skipNullMove = false;
         pos.undo_null_move();
 
@@ -742,8 +742,8 @@ namespace {
 
             // Do verification search at high depths
             ss->skipNullMove = true;
-            Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, alpha, beta, DEPTH_ZERO)
-                                        :  search<NonPV>(pos, ss, alpha, beta, depth-R, false);
+            Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta, DEPTH_ZERO)
+                                        :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
             ss->skipNullMove = false;
 
             if (v >= beta)
