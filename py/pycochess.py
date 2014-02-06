@@ -14,6 +14,8 @@ from ChessBoard import ChessBoard
 from pydgt import DGTBoard
 from pydgt import FEN
 
+START_ALT_INPUT = ['a', '1', 'a', '1']
+
 FIXED_TIME = "fixed_time"
 BLITZ = "blitz"
 BLITZ_FISCHER = "blitz_fischer"
@@ -137,7 +139,8 @@ class ClockMode:
 
 
 class MainMenu:
-    PLAY, POSITION_SETUP, ENGINE, SYSTEM = range(4)
+    length = 4
+    PLAY, POSITION_SETUP, ENGINE, SYSTEM = range(length)
 
 
 class PositionMenu:
@@ -148,9 +151,14 @@ class PlayMenu:
     LAST_MOVE, HINT, EVAL, SWITCH_SIDES, SWITCH_MODE = range(5)
 
 
+class AltInputMenu:
+    length = 5
+    FIRST, SECOND, THIRD, FOURTH, VALIDATE = range(length)
+
+
 class MenuRotation:
-    length = 2
-    MAIN, POSITION = range(length)
+    length = 3
+    MAIN, POSITION, ALT_INPUT = range(length)
 
 #dgt_sem = Semaphore(value=0)
 move_queue = Queue()
@@ -162,6 +170,9 @@ class Pycochess(object):
     OBSERVE = "Observe"
 
     def __init__(self, device, **kwargs):
+        self.alt_input_entry = START_ALT_INPUT
+
+
         self.use_tb = False
         self.current_menu = MenuRotation.MAIN
         self.pyfish_fen = 'startpos'
@@ -746,6 +757,7 @@ class Pycochess(object):
                     # board.addTextMove(output_move)
 #                    print "Not using DGT board"
                     self.move_list.append(best_move)
+                    self.switch_turn()
                     # self.computer_move_FEN = board.getFEN()
                 if output_move:
                     if figlet:
@@ -857,12 +869,56 @@ class Pycochess(object):
         fen = fen.replace("KQkq", castling_fen)
         return fen
 
+    def char_add(self, c, x):
+        return chr(ord(c)+x)
+
     def button_event(self, event):
         # Button 0-4 are on the front
         # Button 5-7 are on the back, press is 5, left is 6, and right is 7
         print "You pressed",
         print event.pin_num
         # print event
+
+        if self.current_menu == MenuRotation.ALT_INPUT:
+            if 0 <= event.pin_num <= 3:
+                self.alt_input_entry[event.pin_num] = self.char_add(self.alt_input_entry[event.pin_num], 1)
+
+                if self.alt_input_entry[0] > 'h':
+                    self.alt_input_entry[0] = 'a'
+
+                if self.alt_input_entry[1] > '8':
+                    self.alt_input_entry[1] = '1'
+
+
+                if self.alt_input_entry[2] > 'h':
+                    self.alt_input_entry[2] = 'a'
+
+                if self.alt_input_entry[3] > '8':
+                    self.alt_input_entry[3] = '1'
+
+                self.write_to_piface("".join(self.alt_input_entry), clear=True)
+
+            elif event.pin_num == 4:
+                # process move
+                # m = raw_input("Enter command/move\n")
+                # # print "got command: {0}".format(m)
+                # if m == "quit":
+                #     os._exit(0)
+                # if m == "undo":
+                #     if len(self.move_list)>0:
+                #         self.move_list.pop()
+                #
+                #     # board = ChessBoard()
+                #     # for move in self.move_list:
+                #     #     board.addTextMove(move)
+                #     # board.addTextMove(m)
+                # else:
+                m = "".join(self.alt_input_entry)
+                self.register_move(m)
+                move_queue.put(m)
+                self.alt_input_entry = START_ALT_INPUT
+                self.write_to_piface("Validating..", clear=True)
+
 
         if event.pin_num == 4 and self.current_menu == MenuRotation.MAIN:
             if self.play_mode == GAME_MODE:
@@ -890,6 +946,11 @@ class Pycochess(object):
                 self.write_to_piface("Setup Position", clear=True)
             elif self.current_menu == MenuRotation.MAIN:
                 self.write_to_piface("Play Menu", clear=True)
+
+            elif self.current_menu == MenuRotation.ALT_INPUT:
+                self.write_to_piface("Alternate Input", clear=True)
+                self.alt_input_entry = START_ALT_INPUT
+
 
 # SCAN_POSITION, WHITE_TO_MOVE, BLACK_TO_MOVE, REVERSE_ORIENTATION = range(4)
         if self.current_menu == MenuRotation.POSITION:
@@ -953,9 +1014,15 @@ if __name__ == '__main__':
 
         pyco.connect()
     except OSError:
-        print "DGT board not found, trying human input mode\n"
+        print "DGT board not found\n"
         pyco.set_device("human")
-        pyco.poll_screen()
+        if piface:
+            pyco.current_menu = MenuRotation.ALT_INPUT
+            print "Trying piface input mode\n"
+
+        else:
+            print "Piface not found -- Trying keyboard input mode\n"
+            pyco.poll_screen()
 
     # pyco.use_tb = True
     # sf.set_option('SyzygyPath', '/home/pi/syzygy/')
@@ -984,4 +1051,6 @@ if __name__ == '__main__':
 
         if pyco.engine_comp_color == pyco.turn or pyco.play_mode == ANALYSIS_MODE:
             pyco.eng_process_move()
+        else:
+            print "Not processing move, not my turn"
 
