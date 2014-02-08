@@ -17,8 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import struct
-from twisted.python.zipstream import _FileEntry
-from ChessBoard import ChessBoard
 
 # TODO: Also allow writing to opening books and document the class.
 
@@ -91,18 +89,11 @@ class PolyglotOpeningBook(object):
         except struct.error:
             raise StopIteration()
 
-    # def next(self):
-    #     raw_entry = self.next_raw()
-    #     return raw_entry
-    #     # return libchess.PolyglotOpeningBookEntry(raw_entry[0], raw_entry[1],
-    #     #                                       raw_entry[2], raw_entry[3])
-
-
     def getTextMoveFromRaw(self, fx, fy, tx, ty):
-        file =  ['a','b','c','d','e','f','g','h']
-        rank = ['1','2','3','4','5','6','7','8']
+        _file =  ['a','b','c','d','e','f','g','h']
+        _rank = ['1','2','3','4','5','6','7','8']
 
-        return file[fx]+rank[fy]+file[tx]+rank[ty]
+        return _file[fx]+_rank[fy]+_file[tx]+_rank[ty]
 
     def next(self):
         raw_entry = self.next_raw()
@@ -117,6 +108,9 @@ class PolyglotOpeningBook(object):
         promotion = "nbrq"[promote + 1] if promote else None
 
         move = self.getTextMoveFromRaw(source_x, source_y, target_x, target_y)
+
+        if promotion:
+            move+=promotion
 
         # m = board.addMove((source_x,source_y),(target_x,target_y))
         # if not m:
