@@ -589,16 +589,14 @@ class Pycochess(object):
                             self.dgt_fen = new_dgt_fen
                             return m
                         else:
-                            previous_dgt_fen_first_token = self.previous_dgt_fen.split()[0]
-#                            print "previous_dgt_fen_first_token : {0}".format(previous_dgt_fen_first_token)
-                            if new_dgt_first_token == previous_dgt_fen_first_token:
-#                                print "undo"
+                            last_move_fen = sf.get_fen(self.pyfish_fen,  self.move_list[:-1])
+                            last_move_fen_first_tok = last_move_fen.split()[0]
 
-                                self.dgt_fen = self.previous_dgt_fen
-                                if len(self.move_list)>0:
+                            if new_dgt_first_token == last_move_fen_first_tok:
+                                self.dgt_fen = last_move_fen
+                                if len(self.move_list) > 0:
                                     self.move_list.pop()
                                     return "undo"
-#                                    return self.move_list[-1]
 
                 elif new_dgt_fen:
                     self.dgt_fen = new_dgt_fen
@@ -914,10 +912,15 @@ class Pycochess(object):
                 #     # board.addTextMove(m)
                 # else:
                 m = "".join(self.alt_input_entry)
-                self.register_move(m)
-                move_queue.put(m)
-                self.alt_input_entry = START_ALT_INPUT
                 self.write_to_piface("Validating..", clear=True)
+                prev_fen = sf.get_fen(self.pyfish_fen,  self.move_list)
+                if m in sf.legal_moves(prev_fen):
+                    self.write_to_piface("Ok", clear=True)
+                    self.register_move(m)
+                    move_queue.put(m)
+                    self.alt_input_entry = START_ALT_INPUT
+                else:
+                    self.write_to_piface("Invalid", clear=True)
 
 
         if event.pin_num == 4 and self.current_menu == MenuRotation.MAIN:
