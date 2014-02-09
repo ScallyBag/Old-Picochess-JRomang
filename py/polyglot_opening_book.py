@@ -110,27 +110,7 @@ class PolyglotOpeningBook(object):
         move = self.getTextMoveFromRaw(source_x, source_y, target_x, target_y)
 
         if promotion:
-            move+=promotion
-
-        # m = board.addMove((source_x,source_y),(target_x,target_y))
-        # if not m:
-        #     print board.getReason()
-        # move = board.getLastTextMove()
-        #
-        # move = chess.Move(
-        #     source=chess.Square.from_x_and_y(source_x, source_y),
-        #     target=chess.Square.from_x_and_y(target_x, target_y),
-        #     promotion="nbrq"[promote + 1] if promote else None)
-
-        # Replace the non standard castling moves.
-        # if move.uci == "e1h1":
-        #     move = chess.Move.from_uci("e1g1")
-        # elif move.uci == "e1a1":
-        #     move = chess.Move.from_uci("e1c1")
-        # elif move.uci == "e8h8":
-        #     move = chess.Move.from_uci("e8g8")
-        # elif move.uci == "e8a8":
-        #     move = chess.Move.from_uci("e8c8")
+            move += promotion
 
         return {
             "position_hash": raw_entry[0],
@@ -146,7 +126,6 @@ class PolyglotOpeningBook(object):
             self.seek_position(key)
         except KeyError:
             raise StopIteration()
-
         # Iterate.
         while True:
             entry = self.next()

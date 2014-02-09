@@ -8,11 +8,12 @@ from time import sleep
 import datetime
 import itertools as it
 import os
-import fileinput
-import sys
+import ctypes
+
 from ChessBoard import ChessBoard
 from pydgt import DGTBoard
 from pydgt import FEN
+from polyglot_opening_book import PolyglotOpeningBook
 
 START_ALT_INPUT = ['a', '1', 'a', '1']
 
@@ -171,8 +172,6 @@ class Pycochess(object):
 
     def __init__(self, device, **kwargs):
         self.alt_input_entry = START_ALT_INPUT
-
-
         self.use_tb = False
         self.current_menu = MenuRotation.MAIN
         self.pyfish_fen = 'startpos'
@@ -199,6 +198,7 @@ class Pycochess(object):
         self.score = None
         self.engine_mode = Pycochess.PLAY
         self.engine_searching = False
+        self.ponder_move = None
 
         # Game specific stuff
         self.clock_mode = FIXED_TIME
@@ -216,6 +216,9 @@ class Pycochess(object):
         self.computer_move_FEN = ""
         sf.add_observer(self.parse_score)
 
+        # Polyglot book load
+        # Load the GM book for now to provide human reference moves
+        self.polyglot_book = PolyglotOpeningBook(BOOK_PATH+"gm1950.bin")
 
         # Piface display lock
         self.piface_lock = RLock()
@@ -228,8 +231,10 @@ class Pycochess(object):
     #            sleep(sleep_time)
                 if clear:
                     cad.lcd.clear()
+                    # print "piface cleared!"
     #                cad.lcd.home()
                 cad.lcd.write(message)
+                # print "piface wrote: {0}".format(message)
                 # Microsleep before returning lock
                 sleep(0.05)
 
@@ -703,10 +708,11 @@ class Pycochess(object):
         print "Got line: " + line
         tokens = line.split()
         score = self.get_score(tokens)
-
-        if self.play_mode == ANALYSIS_MODE:
+        if score:
             if self.turn == BLACK:
                 score *=-1
+            self.score = score
+        if self.play_mode == ANALYSIS_MODE:
             line_index = tokens.index('pv')
             if line_index>-1:
                 pv = self.get_san(tokens[line_index+1:])
@@ -720,9 +726,15 @@ class Pycochess(object):
                             score = 'TB: 1-0'
                         if self.use_tb and score == -151:
                             score = 'TB: 0-1'
-
                         output = str(score)+' '+first_mv
+                        # if not self.engine_output:
+                        #     self.engine_output = output
+                        #     self.write_to_piface(self.engine_output, clear = True)
+                        #
+                        # if self.engine_output != output:
+                        #     self.engine_output = output
                         self.write_to_piface(output, clear = True)
+
                         #cad.lcd.write(str(score)+' ')
                         #                    cad.lcd.write(self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1))
                         print output
@@ -730,7 +742,8 @@ class Pycochess(object):
                         print self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1)
                         print "\n"
         elif self.play_mode == GAME_MODE:
-            best_move, ponder_move = self.parse_bestmove(line)
+            best_move, self.ponder_move = self.parse_bestmove(line)
+
             if best_move:
                 # print "best_move_san:{0}".format(best_move)
             #                print "best_move_san:{0}".format(sf.to_san([best_move])[0])
@@ -747,7 +760,7 @@ class Pycochess(object):
 #                    print "comp_move_fen : {0}".format(self.computer_move_FEN)
 #                    print self.move_list
 
-                elif self.device=="human":
+                elif self.device == "human":
                     # Not using a DGT board, lets use a chessboard parser in python
                     # board = ChessBoard()
                     # for move in self.move_list:
@@ -758,12 +771,17 @@ class Pycochess(object):
                     self.switch_turn()
                     # self.computer_move_FEN = board.getFEN()
                 if output_move:
+                    # if self.ponder_move and self.ponder_move != '(none)':
+                    #     fen = sf.get_fen(self.pyfish_fen,  self.move_list)
+                    #     self.ponder_move = sf.to_san(fen, self.ponder_move)[0]
+
                     if figlet:
                         print figlet.renderText(output_move)
                     else:
                         print "SAN best_move: {0}".format(output_move)
                     output_move = output_move
                     self.write_to_piface(output_move, clear=True)
+
 
     def eng_process_move(self):
         self.stop_engine()
@@ -838,6 +856,33 @@ class Pycochess(object):
         thread = Thread(target=self.screen_input)
         thread.start()
 
+    def get_polyglot_moves(self, fen, max_num_moves=4):
+        # key = sf.key(fen, [])
+        ## This conversion is needed as pyfish as a bug and returns signed long. The moment this is fixed in the tree (should be soon),
+        # remove this convert and revert to previous line
+        key = ctypes.c_uint64(sf.key(fen, [])).value
+
+        polyglot_moves = []
+        for i, e in enumerate(self.polyglot_book.get_entries_for_position(key)):
+            try:
+                m = e["move"]
+                polyglot_moves.append((sf.to_san(fen, [m]), e["weight"]))
+                if i >= max_num_moves:
+                    break
+            except ValueError:
+                if m == "e1h1":
+                    m = "e1g1"
+                elif m == "e1a1":
+                    m = "e1c1"
+                elif m == "e8a8":
+                    m = "e8c8"
+                elif m == "e8h8":
+                    m = "e8g8"
+                polyglot_moves.append((sf.to_san(fen, [m]), e["weight"]))
+
+                # print sf.to_san(fen, [m])
+        return polyglot_moves
+
     def update_castling_rights(self, fen):
         can_castle = False
         castling_fen = ''
@@ -877,6 +922,49 @@ class Pycochess(object):
         print event.pin_num
         # print event
 
+        if self.current_menu == MenuRotation.MAIN:
+            if event.pin_num == PlayMenu.LAST_MOVE:
+                # Display last move
+                if len(self.move_list) > 0:
+                    self.write_to_piface("Last move: {0}".format(self.move_list[-1]), clear=True)
+            elif event.pin_num == PlayMenu.HINT:
+               # if book move, show those first
+                fen = sf.get_fen(self.pyfish_fen,  self.move_list)
+                # print "fen: {0}".format(fen)
+                book_moves = self.get_polyglot_moves(fen)
+                if book_moves:
+                    # Sort book entries by weight
+                    book_moves = sorted(book_moves, key=lambda el: el[1], reverse=True)
+                    output_str = "Book: "
+                    last_index = len(book_moves)-1
+                    added_newline = False
+                    for j, e in enumerate(book_moves):
+                        if not added_newline and len(output_str) >= 16:
+                            output_str+="\n"
+                            added_newline = True
+                        output_str += " " + e[0][0]
+
+                        if j != last_index:
+                            output_str += ", "
+
+                    self.write_to_piface(output_str, clear=True)
+                else:
+                    self.write_to_piface("Ponder: {0}".format(self.ponder_move), clear=True)
+               # if not, then show a position hint
+            elif event.pin_num == PlayMenu.EVAL:
+                self.write_to_piface("Score: {0}".format(self.score), clear=True)
+                pass
+            elif event.pin_num == PlayMenu.SWITCH_SIDES:
+                # Switch sides?
+                pass
+            elif event.pin_num == PlayMenu.SWITCH_MODE:
+                if self.play_mode == GAME_MODE:
+                    self.play_mode = ANALYSIS_MODE
+                    self.write_to_piface("Analysis mode", clear=True)
+                else:
+                    self.play_mode = GAME_MODE
+                    self.write_to_piface("Game mode", clear=True)
+
         if self.current_menu == MenuRotation.ALT_INPUT:
             if 0 <= event.pin_num <= 3:
                 self.alt_input_entry[event.pin_num] = self.char_add(self.alt_input_entry[event.pin_num], 1)
@@ -913,23 +1001,18 @@ class Pycochess(object):
                 # else:
                 m = "".join(self.alt_input_entry)
                 self.write_to_piface("Validating..", clear=True)
-                prev_fen = sf.get_fen(self.pyfish_fen,  self.move_list)
-                if m in sf.legal_moves(prev_fen):
-                    self.write_to_piface("Ok", clear=True)
-                    self.register_move(m)
+                if m == "h1h1":
                     move_queue.put(m)
-                    self.alt_input_entry = START_ALT_INPUT
+                    # Perform undo
                 else:
-                    self.write_to_piface("Invalid", clear=True)
-
-
-        if event.pin_num == 4 and self.current_menu == MenuRotation.MAIN:
-            if self.play_mode == GAME_MODE:
-                self.play_mode = ANALYSIS_MODE
-                self.write_to_piface("Analysis mode", clear=True)
-            else:
-                self.play_mode = GAME_MODE
-                self.write_to_piface("Game mode", clear=True)
+                    prev_fen = sf.get_fen(self.pyfish_fen,  self.move_list)
+                    if m in sf.legal_moves(prev_fen):
+                        self.write_to_piface("Ok", clear=True)
+                        self.register_move(m)
+                        move_queue.put(m)
+                        self.alt_input_entry = START_ALT_INPUT
+                    else:
+                        self.write_to_piface("Invalid Move", clear=True)
 
 
         if event.pin_num == 6 or event.pin_num == 7:
