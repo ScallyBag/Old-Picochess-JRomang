@@ -113,7 +113,7 @@ extern "C" PyObject* stockfish_key(PyObject* self, PyObject *args)
     }
     buildPosition(&p,states,fen,listObj);
 
-    return Py_BuildValue("L", PolyglotBook::polyglot_key(p));
+    return Py_BuildValue("k", PolyglotBook::polyglot_key(p));
 }
 
 extern "C" PyObject* stockfish_stop(PyObject* self)
