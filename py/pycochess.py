@@ -939,8 +939,8 @@ class Pycochess(object):
                     last_index = len(book_moves)-1
                     added_newline = False
                     for j, e in enumerate(book_moves):
-                        if not added_newline and len(output_str) >= 16:
-                            output_str+="\n"
+                        if not added_newline and len(output_str) + len(e[0][0]) >= 17:
+                            output_str += "\n"
                             added_newline = True
                         output_str += " " + e[0][0]
 
@@ -1122,6 +1122,8 @@ if __name__ == '__main__':
     update_clocks(pyco)
     reached_comp_move = False
 
+    print "Pycochess Successful Start!"
+
     while True:
         #print "Before acquire"
         m = move_queue.get()
@@ -1132,10 +1134,13 @@ if __name__ == '__main__':
 
         if pyco.computer_move_FEN_reached:
             print "Comp_move FEN reached"
+            pyco.write_to_piface("Done", clear=True)
             # pyco.engine_computer_move = False
             continue
 
         if pyco.engine_comp_color == pyco.turn or pyco.play_mode == ANALYSIS_MODE:
+            # if pyco.play_mode != ANALYSIS_MODE:
+            #     pyco.write_to_piface("Ok", clear=True)
             pyco.eng_process_move()
         else:
             print "Not processing move, not my turn"
