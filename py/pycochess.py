@@ -9,6 +9,7 @@ from time import sleep
 import datetime
 import itertools as it
 import os
+import subprocess
 import sys
 import ctypes
 import socket
@@ -31,7 +32,7 @@ GAME_MODE = "Game Mode"
 KIBITZ_MODE = "Kibitz Mode"
 OBSERVE_MODE = "Observe Mode"
 
-VERSION = "0.20"
+VERSION = "0.19"
 
 BOOK_EXTENSION = ".bin"
 try:
@@ -147,7 +148,7 @@ class ClockMode:
 
 class SystemMenu:
     length = 5
-    IP, VERSION, UPDATE, RESTART, SHUTDOWN = range(length)
+    IP, VER, UPDATE, RESTART, SHUTDOWN = range(length)
 
 
 class PositionMenu:
@@ -1035,8 +1036,18 @@ class Pycochess(object):
 
                 if event.pin_num == SystemMenu.UPDATE:
                     self.write_to_piface("Checking for Updates..", clear=True)
-                    updates = os.system("cd {0}; git fetch origin; git rev-list HEAD...origin/pycochess --count".format(PROG_PATH))
-                    # print updates
+                    os.chdir(PROG_PATH)
+                    p = subprocess.Popen(["/usr/bin/git", "fetch", "origin"],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, bufsize=0)
+                    p.communicate()
+
+                    p = subprocess.Popen(["/usr/bin/git", "rev-list", "HEAD...origin/pycochess", "--count"],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, bufsize=0)
+
+
+                    stdout, stderr = p.communicate()
+                    updates = int(stdout)
+                    print updates
                     # print type(updates)
                     if updates == 0:
                         self.write_to_piface("No New Updates", clear=True)
