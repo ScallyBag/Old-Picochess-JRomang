@@ -1,0 +1,30 @@
+#! /bin/sh
+# /etc/init.d/pycochess
+#
+
+# Some things that run always
+touch /var/lock/pycochess
+
+# Carry out specific functions when asked to by the system
+case "$1" in
+  start)
+    echo "Starting pycochess"
+       screen -dmUS sf /home/miniand/git/Stockfish/py/pycochess.py
+    ;;
+  stop)
+    echo "Stopping pycochess"
+    pkill -9 -f pycochess.py
+    ;;
+  restart)
+   echo "Stopping pycochess"
+   pkill -9 -f pycocess.py
+   echo "Starting pycochess"
+   screen -dmUS sf /home/miniand/git/Stockfish/py/pycochess.py 
+   ;;
+  *)
+    echo "Usage: /etc/init.d/pycochess {start|stop}"
+    exit 1
+    ;;
+esac
+
+exit 0
