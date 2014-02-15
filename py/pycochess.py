@@ -4,13 +4,13 @@ from Queue import Queue
 import traceback
 import stockfish as sf
 from threading import Thread, RLock
-from threading import Semaphore
 from threading import Timer
 from time import sleep
 import datetime
 import itertools as it
 import os
 import ctypes
+import socket
 
 from ChessBoard import ChessBoard
 from pydgt import DGTBoard
@@ -143,9 +143,9 @@ class ClockMode:
     FIXEDTIME, INFINITE, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL = range(6)
 
 
-# class MainMenu:
-#     length = 4
-#     PLAY, POSITION_SETUP, ENGINE, SYSTEM = range(length)
+class SystemMenu:
+    length = 5
+    IP, VERSION, CHECK_FOR_UPDATE, UPDATE, SHUTDOWN = range(length)
 
 
 class PositionMenu:
@@ -162,10 +162,9 @@ class AltInputMenu:
 
 
 class MenuRotation:
-    length = 4
-    MAIN, POSITION, ALT_INPUT, SYSTEM = range(length)
+    length = 5
+    MAIN, POSITION, ALT_INPUT, SYSTEM, ENGINE = range(length)
 
-#dgt_sem = Semaphore(value=0)
 move_queue = Queue()
 
 class Pycochess(object):
@@ -231,20 +230,16 @@ class Pycochess(object):
         if piface:
             # Acquire piface write lock to guard against multiple threads writing at the same time
             with self.piface_lock:
-                # Sleep enables that garbage is not written to the screen
-    #            sleep(sleep_time)
                 if clear:
                     cad.lcd.clear()
-                    # print "piface cleared!"
-    #                cad.lcd.home()
-
                 if len(message)>16 and "\n" not in message:
                     # Append "\n"
                     message = message[:16]+"\n"+message[16:]
                 cad.lcd.write(message)
                 # print "piface wrote: {0}".format(message)
                 # Microsleep before returning lock
-                sleep(0.05)
+                # Sleep enables that garbage is not written to the screen
+                sleep(0.3)
 
     def get_legal_move(self, from_fen, to_fen):
         to_fen_first_tok = to_fen.split()[0]
@@ -1021,6 +1016,13 @@ class Pycochess(object):
                     else:
                         self.write_to_piface("Invalid Move", clear=True)
 
+        if self.current_menu == MenuRotation.SYSTEM:
+            if 0 <= event.pin_num <= 4:
+                if event.pin_num == SystemMenu.IP:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    s.connect(("google.com", 80))
+                    self.write_to_piface(s.getsockname()[0], clear=True)
+                    s.close()
 
         if event.pin_num == 6 or event.pin_num == 7:
             if event.pin_num == 6:
@@ -1043,9 +1045,12 @@ class Pycochess(object):
             elif self.current_menu == MenuRotation.ALT_INPUT:
                 self.write_to_piface("Alternate Input", clear=True)
                 self.alt_input_entry = START_ALT_INPUT
+            elif self.current_menu == MenuRotation.SYSTEM:
+                self.write_to_piface("System Menu", clear=True)
+            elif self.current_menu == MenuRotation.ENGINE:
+                self.write_to_piface("Engine Menu", clear=True)
 
-
-# SCAN_POSITION, WHITE_TO_MOVE, BLACK_TO_MOVE, REVERSE_ORIENTATION = range(4)
+        # SCAN_POSITION, WHITE_TO_MOVE, BLACK_TO_MOVE, REVERSE_ORIENTATION = range(4)
         if self.current_menu == MenuRotation.POSITION:
             if event.pin_num == PositionMenu.WHITE_TO_MOVE:
                 self.turn = WHITE

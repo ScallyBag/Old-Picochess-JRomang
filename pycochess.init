@@ -14,10 +14,12 @@ case "$1" in
   stop)
     echo "Stopping pycochess"
     pkill -9 -f pycochess.py
+    screen -wipe
     ;;
   restart)
    echo "Stopping pycochess"
    pkill -9 -f pycocess.py
+   screen -wipe
    echo "Starting pycochess"
    screen -dmUS sf /home/miniand/git/Stockfish/py/pycochess.py 
    ;;
