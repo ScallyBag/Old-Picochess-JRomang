@@ -1023,6 +1023,9 @@ class Pycochess(object):
                     s.connect(("google.com", 80))
                     self.write_to_piface(s.getsockname()[0], clear=True)
                     s.close()
+                if event.pin_num == SystemMenu.SHUTDOWN:
+                    self.write_to_piface("Shutting Down! Bye", clear=True)
+                    os.system("shutdown -h now")
 
         if event.pin_num == 6 or event.pin_num == 7:
             if event.pin_num == 6:
