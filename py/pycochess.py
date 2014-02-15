@@ -1036,7 +1036,7 @@ class Pycochess(object):
                 if event.pin_num == SystemMenu.UPDATE:
                     self.write_to_piface("Checking for Updates..", clear=True)
                     updates = os.system("cd {0}; git fetch origin; git rev-list HEAD...origin/master --count".format(PROG_PATH))
-                    if updates == 0:
+                    if updates == '0':
                         self.write_to_piface("No New Updates", clear=True)
                     else:
                         self.write_to_piface("Updates found. Updating...", clear=True)
