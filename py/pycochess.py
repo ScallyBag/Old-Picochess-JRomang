@@ -1035,12 +1035,14 @@ class Pycochess(object):
 
                 if event.pin_num == SystemMenu.UPDATE:
                     self.write_to_piface("Checking for Updates..", clear=True)
-                    updates = os.system("cd {0}; git fetch origin; git rev-list HEAD...origin/master --count".format(PROG_PATH))
+                    updates = os.system("cd {0}; git fetch origin; git rev-list HEAD...origin/pycochess --count".format(PROG_PATH))
+                    # print updates
+                    # print type(updates)
                     if updates == '0':
                         self.write_to_piface("No New Updates", clear=True)
                     else:
                         self.write_to_piface("Updates found. Updating...", clear=True)
-                        os.system("cd {0};git pull; chmod a+x pycochess.py".format(PROG_PATH))
+                        os.system("cd {0};git pull; chmod a+x py/pycochess.py".format(PROG_PATH))
                         self.write_to_piface("Restarting..", clear=True)
                         os.execl(sys.executable, *([sys.executable]+sys.argv))
         if event.pin_num == 6 or event.pin_num == 7:
