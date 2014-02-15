@@ -32,7 +32,7 @@ GAME_MODE = "Game Mode"
 KIBITZ_MODE = "Kibitz Mode"
 OBSERVE_MODE = "Observe Mode"
 
-VERSION = "0.19"
+VERSION = "0.20"
 
 BOOK_EXTENSION = ".bin"
 try:
@@ -1053,7 +1053,7 @@ class Pycochess(object):
                         self.write_to_piface("No New Updates", clear=True)
                     else:
                         self.write_to_piface("Updates found. Updating...", clear=True)
-                        os.system("cd {0};git pull; chmod a+x py/pycochess.py".format(PROG_PATH))
+                        os.system("cd {0};git pull".format(PROG_PATH))
                         self.write_to_piface("Restarting..", clear=True)
                         os.execl(sys.executable, *([sys.executable]+sys.argv))
         if event.pin_num == 6 or event.pin_num == 7:
