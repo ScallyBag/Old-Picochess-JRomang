@@ -9,6 +9,7 @@ from time import sleep
 import datetime
 import itertools as it
 import os
+import sys
 import ctypes
 import socket
 
@@ -51,7 +52,8 @@ except ImportError:
 WHITE = "w"
 BLACK = "b"
 
-BOOK_PATH="/opt/picochess/books/"
+PROG_PATH = "/home/miniand/git/Stockfish"
+BOOK_PATH = "/opt/picochess/books/"
 DEFAULT_BOOK_FEN = "rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR"
 
 book_map = {
@@ -145,7 +147,7 @@ class ClockMode:
 
 class SystemMenu:
     length = 5
-    IP, VERSION, CHECK_FOR_UPDATE, UPDATE, SHUTDOWN = range(length)
+    IP, VERSION, UPDATE, RESTART, SHUTDOWN = range(length)
 
 
 class PositionMenu:
@@ -1027,6 +1029,20 @@ class Pycochess(object):
                     self.write_to_piface("Shutting Down! Bye", clear=True)
                     os.system("shutdown -h now")
 
+                if event.pin_num == SystemMenu.RESTART:
+                    self.write_to_piface("Restarting..", clear=True)
+                    os.execl(sys.executable, *([sys.executable]+sys.argv))
+
+                if event.pin_num == SystemMenu.UPDATE:
+                    self.write_to_piface("Checking for Updates..", clear=True)
+                    updates = os.system("cd {0}; git fetch origin; git rev-list HEAD...origin/master --count".format(PROG_PATH))
+                    if updates == 0:
+                        self.write_to_piface("No New Updates", clear=True)
+                    else:
+                        self.write_to_piface("Updates found. Updating...", clear=True)
+                        os.system("cd {0};git pull".format(PROG_PATH))
+                        self.write_to_piface("Restarting..", clear=True)
+                        os.execl(sys.executable, *([sys.executable]+sys.argv))
         if event.pin_num == 6 or event.pin_num == 7:
             if event.pin_num == 6:
                 if self.current_menu == 0:
