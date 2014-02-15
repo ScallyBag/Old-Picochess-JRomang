@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from Queue import Queue
 import traceback
 import stockfish as sf
@@ -28,11 +30,13 @@ GAME_MODE = "Game Mode"
 KIBITZ_MODE = "Kibitz Mode"
 OBSERVE_MODE = "Observe Mode"
 
+VERSION = "0.20"
+
 BOOK_EXTENSION = ".bin"
 try:
     import pyfiglet
     figlet = pyfiglet.Figlet()
-    print figlet.renderText("Pycochess 0.1")
+    print figlet.renderText("Pycochess {0}".format(VERSION))
 except ImportError:
     figlet = None
     print "No pyfiglet"
@@ -111,21 +115,21 @@ time_control_map = {
     "rnbqkbnr/pppppppp/5Q2/8/8/8/PPPPPPPP/RNBQKBNR" : [5, "30 sec per move"],
     "rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR" : [6, "60 sec per move"],
     "rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR" : [7, "120 sec per move"],
-    "rnbqkbnr/pppppppp/8/8/Q7/8/PPPPPPPP/RNBQKBNR" : [8, "G/1 min"],
-    "rnbqkbnr/pppppppp/8/8/1Q6/8/PPPPPPPP/RNBQKBNR" : [9, "G/3 min"],
-    "rnbqkbnr/pppppppp/8/8/2Q5/8/PPPPPPPP/RNBQKBNR" : [10, "G/5 min"],
-    "rnbqkbnr/pppppppp/8/8/3Q4/8/PPPPPPPP/RNBQKBNR" : [11, "G/10 min"],
-    "rnbqkbnr/pppppppp/8/8/4Q3/8/PPPPPPPP/RNBQKBNR" : [12, "G/15 min"],
-    "rnbqkbnr/pppppppp/8/8/5Q2/8/PPPPPPPP/RNBQKBNR" : [13, "G/30 min"],
-    "rnbqkbnr/pppppppp/8/8/6Q1/8/PPPPPPPP/RNBQKBNR" : [14, "G/60 min"],
-    "rnbqkbnr/pppppppp/8/8/7Q/8/PPPPPPPP/RNBQKBNR" : [15, "G/90 min"],
-    "rnbqkbnr/pppppppp/8/8/8/Q7/PPPPPPPP/RNBQKBNR" : [16, "G/3 min + 2s"],
-    "rnbqkbnr/pppppppp/8/8/8/1Q6/PPPPPPPP/RNBQKBNR" : [17, "G/4 min + 2s"],
-    "rnbqkbnr/pppppppp/8/8/8/2Q5/PPPPPPPP/RNBQKBNR" : [18, "G/5 min + 3s"],
-    "rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNBQKBNR" : [19, "G/5 min + 5s"],
-    "rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR" : [20, "Handicap G/7 min + 1s"],
-    "rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR" : [21, "G/15 min + 5s"],
-    "rnbqkbnr/pppppppp/8/8/8/6Q1/PPPPPPPP/RNBQKBNR" : [22, "G/90 min + 30s"]
+    "rnbqkbnr/pppppppp/8/8/Q7/8/PPPPPPPP/RNBQKBNR" : [8, "Game in 1 min"],
+    "rnbqkbnr/pppppppp/8/8/1Q6/8/PPPPPPPP/RNBQKBNR" : [9, "Game in 3 mins"],
+    "rnbqkbnr/pppppppp/8/8/2Q5/8/PPPPPPPP/RNBQKBNR" : [10, "Game in 5 mins"],
+    "rnbqkbnr/pppppppp/8/8/3Q4/8/PPPPPPPP/RNBQKBNR" : [11, "Game in 10 mins"],
+    "rnbqkbnr/pppppppp/8/8/4Q3/8/PPPPPPPP/RNBQKBNR" : [12, "Game in 15 mins"],
+    "rnbqkbnr/pppppppp/8/8/5Q2/8/PPPPPPPP/RNBQKBNR" : [13, "Game in 30 mins"],
+    "rnbqkbnr/pppppppp/8/8/6Q1/8/PPPPPPPP/RNBQKBNR" : [14, "Game in 60 mins"],
+    "rnbqkbnr/pppppppp/8/8/7Q/8/PPPPPPPP/RNBQKBNR" : [15, "Game in 90 mins"],
+    "rnbqkbnr/pppppppp/8/8/8/Q7/PPPPPPPP/RNBQKBNR" : [16, "Game in 3 mins + 2s"],
+    "rnbqkbnr/pppppppp/8/8/8/1Q6/PPPPPPPP/RNBQKBNR" : [17, "Game in 4 mins + 2s"],
+    "rnbqkbnr/pppppppp/8/8/8/2Q5/PPPPPPPP/RNBQKBNR" : [18, "Game in 5 mins + 3s"],
+    "rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNBQKBNR" : [19, "Game in 5 mins + 5s"],
+    "rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR" : [20, "Handicap G/7 mins + 1s"],
+    "rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR" : [21, "Game in 15 mins + 5s"],
+    "rnbqkbnr/pppppppp/8/8/8/6Q1/PPPPPPPP/RNBQKBNR" : [22, "Game in 90 mins + 30s"]
 
 }
 
@@ -139,9 +143,9 @@ class ClockMode:
     FIXEDTIME, INFINITE, TOURNAMENT, BLITZ, BLITZFISCHER, SPECIAL = range(6)
 
 
-class MainMenu:
-    length = 4
-    PLAY, POSITION_SETUP, ENGINE, SYSTEM = range(length)
+# class MainMenu:
+#     length = 4
+#     PLAY, POSITION_SETUP, ENGINE, SYSTEM = range(length)
 
 
 class PositionMenu:
@@ -158,8 +162,8 @@ class AltInputMenu:
 
 
 class MenuRotation:
-    length = 3
-    MAIN, POSITION, ALT_INPUT = range(length)
+    length = 4
+    MAIN, POSITION, ALT_INPUT, SYSTEM = range(length)
 
 #dgt_sem = Semaphore(value=0)
 move_queue = Queue()
@@ -233,6 +237,10 @@ class Pycochess(object):
                     cad.lcd.clear()
                     # print "piface cleared!"
     #                cad.lcd.home()
+
+                if len(message)>16 and "\n" not in message:
+                    # Append "\n"
+                    message = message[:16]+"\n"+message[16:]
                 cad.lcd.write(message)
                 # print "piface wrote: {0}".format(message)
                 # Microsleep before returning lock
@@ -789,7 +797,7 @@ class Pycochess(object):
         # self.position(self.move_list, pos='startpos')
         # Needed on the Pi!
         if arm:
-            sleep(1)
+            sleep(0.05)
         if self.play_mode == ANALYSIS_MODE:
             sf.go(self.pyfish_fen, moves=self.move_list, infinite=True)
         elif self.play_mode == GAME_MODE:
@@ -867,8 +875,7 @@ class Pycochess(object):
             try:
                 m = e["move"]
                 polyglot_moves.append((sf.to_san(fen, [m]), e["weight"]))
-                if i >= max_num_moves:
-                    break
+
             except ValueError:
                 if m == "e1h1":
                     m = "e1g1"
@@ -879,7 +886,8 @@ class Pycochess(object):
                 elif m == "e8h8":
                     m = "e8g8"
                 polyglot_moves.append((sf.to_san(fen, [m]), e["weight"]))
-
+            if i >= max_num_moves:
+                break
                 # print sf.to_san(fen, [m])
         return polyglot_moves
 
@@ -937,11 +945,10 @@ class Pycochess(object):
                     book_moves = sorted(book_moves, key=lambda el: el[1], reverse=True)
                     output_str = "Book: "
                     last_index = len(book_moves)-1
-                    added_newline = False
                     for j, e in enumerate(book_moves):
-                        if not added_newline and len(output_str) + len(e[0][0]) >= 17:
-                            output_str += "\n"
-                            added_newline = True
+                        # if not added_newline and len(output_str) + len(e[0][0]) >= 17:
+                        #     output_str += "\n"
+                        #     added_newline = True
                         output_str += " " + e[0][0]
 
                         if j != last_index:
@@ -1077,7 +1084,7 @@ if __name__ == '__main__':
         cad.lcd.blink_off()
         cad.lcd.cursor_off()
         cad.lcd.backlight_on()
-        cad.lcd.write("Pycochess 0.1")
+        cad.lcd.write("Pycochess {0}".format(VERSION))
 
         # Lets assume this is the raspberry Pi for now..
         sf.set_option("OwnBook", "true")
@@ -1134,7 +1141,7 @@ if __name__ == '__main__':
 
         if pyco.computer_move_FEN_reached:
             print "Comp_move FEN reached"
-            pyco.write_to_piface("Done", clear=True)
+            pyco.write_to_piface(" (Done)", clear=False)
             # pyco.engine_computer_move = False
             continue
 
