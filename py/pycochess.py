@@ -1038,7 +1038,7 @@ class Pycochess(object):
                     updates = os.system("cd {0}; git fetch origin; git rev-list HEAD...origin/pycochess --count".format(PROG_PATH))
                     # print updates
                     # print type(updates)
-                    if updates == '0':
+                    if updates == 0:
                         self.write_to_piface("No New Updates", clear=True)
                     else:
                         self.write_to_piface("Updates found. Updating...", clear=True)
