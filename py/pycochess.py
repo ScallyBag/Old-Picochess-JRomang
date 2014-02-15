@@ -31,7 +31,7 @@ GAME_MODE = "Game Mode"
 KIBITZ_MODE = "Kibitz Mode"
 OBSERVE_MODE = "Observe Mode"
 
-VERSION = "0.19"
+VERSION = "0.20"
 
 BOOK_EXTENSION = ".bin"
 try:
