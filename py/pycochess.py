@@ -19,6 +19,8 @@ from pydgt import DGTBoard
 from pydgt import FEN
 from polyglot_opening_book import PolyglotOpeningBook
 
+FORCE_MOVE = "Force"
+
 START_ALT_INPUT = ['a', '1', 'a', '1']
 
 FIXED_TIME = "fixed_time"
@@ -56,6 +58,7 @@ BLACK = "b"
 PROG_PATH = "/home/miniand/git/Stockfish"
 BOOK_PATH = "/opt/picochess/books/"
 DEFAULT_BOOK_FEN = "rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR"
+COMP_PLAYS_WHITE = "rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 
 book_map = {
     "rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR": ["nobook", "No Book"],
@@ -331,6 +334,13 @@ class Pycochess(object):
             self.write_to_piface("Book:\n "+book_map[fen][1], clear=True)
             # Return true so that engine does not think if merely the opening book is changed
             return True
+        elif fen == COMP_PLAYS_WHITE:
+            print "Computer plays white!"
+            self.write_to_piface("Computer plays white", clear=True)
+            self.engine_comp_color = WHITE
+            self.engine_computer_move = True
+            move_queue.put(FORCE_MOVE)
+
         elif game_map.has_key(fen):
             if game_map[fen] == NEW_GAME:
                 if len(self.move_list) > 0:
@@ -790,6 +800,7 @@ class Pycochess(object):
 
 
     def eng_process_move(self):
+        # print "processing move.."
         self.stop_engine()
         self.score_count = 0
         # self.position(self.move_list, pos='startpos')
@@ -1073,7 +1084,6 @@ class Pycochess(object):
                 self.write_to_piface("Setup Position", clear=True)
             elif self.current_menu == MenuRotation.MAIN:
                 self.write_to_piface("Play Menu", clear=True)
-
             elif self.current_menu == MenuRotation.ALT_INPUT:
                 self.write_to_piface("Alternate Input", clear=True)
                 self.alt_input_entry = START_ALT_INPUT
@@ -1182,7 +1192,7 @@ if __name__ == '__main__':
             # pyco.engine_computer_move = False
             continue
 
-        if pyco.engine_comp_color == pyco.turn or pyco.play_mode == ANALYSIS_MODE:
+        if pyco.engine_comp_color == pyco.turn or pyco.play_mode == ANALYSIS_MODE or m == FORCE_MOVE:
             # if pyco.play_mode != ANALYSIS_MODE:
             #     pyco.write_to_piface("Ok", clear=True)
             pyco.eng_process_move()
