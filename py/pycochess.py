@@ -159,13 +159,16 @@ class PositionMenu:
 
 
 class PlayMenu:
-    LAST_MOVE, HINT, EVAL, SWITCH_SIDES, SWITCH_MODE = range(5)
+    LAST_MOVE, HINT, EVAL, SILENT, SWITCH_MODE = range(5)
 
 
 class AltInputMenu:
     length = 5
     FIRST, SECOND, THIRD, FOURTH, VALIDATE = range(length)
 
+class DatabaseMenu:
+    length = 5
+    FIRST_GAME, PREV_GAME, NEXT_GAME, LOAD_GAME, FILLER = range(length)
 
 class MenuRotation:
     length = 5
@@ -193,6 +196,8 @@ class Pycochess(object):
         self.board_updated = False
         self.move_list = []
         self.executed_command = False
+        self.pgn_file = open(PROG_PATH+'/py/game.pgn', 'w', 0)
+        self.silent = False
 
         self.engine_comp_color = BLACK
 
@@ -539,10 +544,11 @@ class Pycochess(object):
                 # else:
                 #     self.engine_score.children[0].text = YOURTURN_MENU.format("hidden", "hidden", self.format_time_str(self.time_white), self.format_time_str(self.time_black))
 
-
     def register_move(self, m):
         self.switch_turn()
+        san = self.get_san([m])[0]
         self.move_list.append(m)
+        self.write_pgn(san)
 
         if not self.engine_computer_move:
             self.engine_computer_move = True
@@ -749,7 +755,10 @@ class Pycochess(object):
                         #
                         # if self.engine_output != output:
                         #     self.engine_output = output
-                        self.write_to_piface(output, clear = True)
+                        if self.silent:
+                            self.write_to_piface("Secret Analysis", clear=True)
+                        else:
+                            self.write_to_piface(output, clear=True)
 
                         #cad.lcd.write(str(score)+' ')
                         #                    cad.lcd.write(self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1))
@@ -798,6 +807,43 @@ class Pycochess(object):
                     output_move = output_move
                     self.write_to_piface(output_move, clear=True)
 
+    def write_pgn(self, san):
+        ply_count = len(self.move_list)
+        if ply_count == 1:
+            self.pgn_file.write("[Event \"Picochess\"]\n")
+
+            if self.pyfish_fen != 'startpos':
+                self.pgn_file.write(" ( FEN: ")
+                self.pgn_file.write(self.pyfish_fen)
+                self.pgn_file.write(" )")
+
+
+            if self.play_mode == ANALYSIS_MODE:
+                self.pgn_file.write ("[White \"Analysis\"]\n")
+                self.pgn_file.write ("[Black \"Analysis\"]\n")
+
+
+            else:
+
+                if self.engine_comp_color == WHITE:
+                    self.pgn_file.write("[White \"Stockfish\"]\n")
+                    self.pgn_file.write("[Black \"User\"]\n")
+
+                else:
+                    self.pgn_file.write("[White \"User\"]\n")
+                    self.pgn_file.write("[Black \"Stockfish\"]\n")
+
+        if ply_count % 2 == 1:
+            self.pgn_file.write(str(ply_count/2+1))
+            self.pgn_file.write(". ")
+
+        self.pgn_file.write(san)
+        self.pgn_file.write(" ")
+
+        if ply_count % 20 == 0:
+            self.pgn_file.write("\n")
+
+        # return pgn;
 
     def eng_process_move(self):
         # print "processing move.."
@@ -970,9 +1016,11 @@ class Pycochess(object):
             elif event.pin_num == PlayMenu.EVAL:
                 self.write_to_piface("Score: {0}".format(self.score), clear=True)
                 pass
-            elif event.pin_num == PlayMenu.SWITCH_SIDES:
-                # Switch sides?
-                pass
+            elif event.pin_num == PlayMenu.SILENT:
+                # Toggle silence
+                self.silent = not self.silent
+                message = "ON" if self.silent else "OFF"
+                self.write_to_piface("Silence {0}".format(message), clear=True)
             elif event.pin_num == PlayMenu.SWITCH_MODE:
                 if self.play_mode == GAME_MODE:
                     self.play_mode = ANALYSIS_MODE
