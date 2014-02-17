@@ -171,8 +171,8 @@ class DatabaseMenu:
     FIRST_GAME, PREV_GAME, NEXT_GAME, LOAD_GAME, FILLER = range(length)
 
 class MenuRotation:
-    length = 5
-    MAIN, POSITION, ALT_INPUT, SYSTEM, ENGINE = range(length)
+    length = 6
+    MAIN, POSITION, DATABASE, ALT_INPUT, SYSTEM, ENGINE = range(length)
 
 move_queue = Queue()
 
@@ -1029,6 +1029,11 @@ class Pycochess(object):
                     self.play_mode = GAME_MODE
                     self.write_to_piface("Game mode", clear=True)
 
+        if self.current_menu == MenuRotation.DATABASE:
+            # Database options
+            if 0 <= event.pin_num <= 4:
+                passs
+
         if self.current_menu == MenuRotation.ALT_INPUT:
             if 0 <= event.pin_num <= 3:
                 self.alt_input_entry[event.pin_num] = self.char_add(self.alt_input_entry[event.pin_num], 1)
@@ -1139,6 +1144,8 @@ class Pycochess(object):
                 self.write_to_piface("System Menu", clear=True)
             elif self.current_menu == MenuRotation.ENGINE:
                 self.write_to_piface("Engine Menu", clear=True)
+            elif self.current_menu == MenuRotation.DATABASE:
+                self.write_to_piface("Database Menu", clear=True)
 
         # SCAN_POSITION, WHITE_TO_MOVE, BLACK_TO_MOVE, REVERSE_ORIENTATION = range(4)
         if self.current_menu == MenuRotation.POSITION:
