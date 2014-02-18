@@ -60,7 +60,10 @@ class ChessDatabase(object):
         # Needs a database index folder (created for the PGN),
         # refer to https://github.com/sshivaji/polyglot for info on creating a database index for a PGN file
         # The index also contains the location of the actual PGN file
-        self.db_index=leveldb.LevelDB(db_index_folder)
+        if leveldb:
+            self.db_index=leveldb.LevelDB(db_index_folder)
+        else:
+            self.db_index = None
 
     def query_position(self, pos_hash, max_games=-1):
         # pos_hash is the polyglot hash of the position
@@ -119,14 +122,17 @@ class ChessDatabase(object):
         # Add variation support later
         game = Game()
         movetext = ""
+        header_line = 0
 
         for i, line in enumerate(text):
+            if i == 0 and not line.strip():
+                header_line +=1
             # print line
             # Decode and strip the line.
             line = line.decode('latin-1').strip()
             # print line
 
-            if i == 0 or i == 1 and not line.startswith('[') and line.endswith(']'):
+            if i == header_line and not line.startswith('[') and line.endswith(']'):
                 # print "changed line"
                 line = "[" + line
             # print line
@@ -143,21 +149,29 @@ class ChessDatabase(object):
                 game.headers[tag_name] = tag_value
             # Parse movetext lines.
             else:
-                movetext += line
+                movetext += line + " "
+                # print movetext
 
         # process movetext
+        # print "orig_movetext"
+        # print movetext
+        # movetext = movetext.replace("\n", " ")
+        # print movetext
         moves = movetext.split(" ")
 
         raw_moves = []
 
         for m in moves:
-            last_index = len(m) - 1
-            index = m.find('.')
-            if -1 < index < last_index:
-                raw_moves.append(m[index+1:])
-            elif index == -1:
-                raw_moves.append(m)
+            if m.strip():
+                last_index = len(m) - 1
+                index = m.find('.')
+                if -1 < index < last_index:
+                    raw_moves.append(m[index+1:])
+                elif index == -1:
+                    raw_moves.append(m)
+
         raw_moves.pop()
+        # print raw_moves
         game.set_moves(raw_moves)
 
         return game
