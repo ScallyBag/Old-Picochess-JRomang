@@ -58,7 +58,8 @@ Bxf6 gxf6 22. Bxe4 Bg4 23. Qc2 Kh8 24. Qc3 Rg8 25. Kh1 Rg6 26. f3 Qh3 1/2-1/2"""
         # first_fen_tok
         fen_first_tok = fen.split(" ")[0]
         if fen_first_tok == search_fen_first_tok:
-            print "Match found after ply {0}".format(i-1)
+            assert i-1 == 4
+            # print "Match found after ply {0}".format(i-1)
             break
         board.addTextMove(m)
 
