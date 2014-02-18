@@ -126,7 +126,8 @@ class ChessDatabase(object):
             line = line.decode('latin-1').strip()
             # print line
 
-            if i == 0 and not line.startswith('[') and line.endswith(']'):
+            if i == 0 or i == 1 and not line.startswith('[') and line.endswith(']'):
+                # print "changed line"
                 line = "[" + line
             # print line
             # Skip empty lines and comments.
