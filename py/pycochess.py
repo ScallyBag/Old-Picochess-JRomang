@@ -59,6 +59,8 @@ PROG_PATH = "/home/miniand/git/Stockfish"
 BOOK_PATH = "/opt/picochess/books/"
 DEFAULT_BOOK_FEN = "rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR"
 COMP_PLAYS_WHITE = "rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
+# Default
+COMP_PLAYS_BLACK = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1BNR"
 
 book_map = {
     "rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR": ["nobook", "No Book"],
@@ -195,8 +197,10 @@ class Pycochess(object):
         self.turn = WHITE
         self.board_updated = False
         self.move_list = []
+        self.san_move_list = []
         self.executed_command = False
         self.pgn_file = open(PROG_PATH+'/py/game.pgn', 'w', 0)
+        self.rewrite_pgn = False
         self.silent = False
 
         self.engine_comp_color = BLACK
@@ -329,6 +333,9 @@ class Pycochess(object):
 #            cad.lcd.backlight_on()
             self.write_to_piface("New Game", clear=True)
 
+        if self.engine_comp_color == WHITE:
+            self.engine_computer_move = True
+            move_queue.put(FORCE_MOVE)
 
     def check_for_command_fen(self, fen):
 
@@ -339,12 +346,15 @@ class Pycochess(object):
             self.write_to_piface("Book:\n "+book_map[fen][1], clear=True)
             # Return true so that engine does not think if merely the opening book is changed
             return True
-        elif fen == COMP_PLAYS_WHITE:
-            print "Computer plays white!"
-            self.write_to_piface("Computer plays white", clear=True)
-            self.engine_comp_color = WHITE
+        elif fen == COMP_PLAYS_WHITE or fen == COMP_PLAYS_BLACK:
+            self.engine_comp_color = WHITE if fen == COMP_PLAYS_WHITE else BLACK
+            color = "white" if self.engine_comp_color == WHITE else "black"
+            print "Computer plays {0}".format(color)
+            self.write_to_piface("Computer plays {0}".format(color), clear=True)
+            # self.engine_comp_color = WHITE
             self.engine_computer_move = True
-            move_queue.put(FORCE_MOVE)
+            if self.engine_comp_color == WHITE:
+                move_queue.put(FORCE_MOVE)
 
         elif game_map.has_key(fen):
             if game_map[fen] == NEW_GAME:
@@ -547,6 +557,7 @@ class Pycochess(object):
     def register_move(self, m):
         self.switch_turn()
         san = self.get_san([m])[0]
+        self.san_move_list.append(san)
         self.move_list.append(m)
         self.write_pgn(san)
 
@@ -623,6 +634,8 @@ class Pycochess(object):
                                 self.dgt_fen = last_move_fen
                                 if len(self.move_list) > 0:
                                     self.move_list.pop()
+                                    self.san_move_list.pop()
+                                    self.rewrite_pgn = True
                                     return "undo"
 
                 elif new_dgt_fen:
@@ -793,6 +806,8 @@ class Pycochess(object):
                     # board.addTextMove(output_move)
 #                    print "Not using DGT board"
                     self.move_list.append(best_move)
+                    if output_move:
+                        self.san_move_list.append(output_move)
                     self.switch_turn()
                     # self.computer_move_FEN = board.getFEN()
                 if output_move:
@@ -804,13 +819,23 @@ class Pycochess(object):
                         print figlet.renderText(output_move)
                     else:
                         print "SAN best_move: {0}".format(output_move)
-                    output_move = output_move
                     self.write_to_piface(output_move, clear=True)
+
+    def write_move(self, ply_count, san):
+        if ply_count % 2 == 1:
+            self.pgn_file.write(str(ply_count / 2 + 1))
+            self.pgn_file.write(". ")
+        self.pgn_file.write(san)
+        self.pgn_file.write(" ")
+        if ply_count % 20 == 0:
+            self.pgn_file.write("\n")
+
+            # return pgn;
 
     def write_pgn(self, san):
         ply_count = len(self.move_list)
-        if ply_count == 1:
-            self.pgn_file.write("[Event \"Picochess\"]\n")
+        if ply_count == 1 or self.rewrite_pgn:
+            self.pgn_file.write("\n[Event \"Picochess\"]\n")
 
             if self.pyfish_fen != 'startpos':
                 self.pgn_file.write(" ( FEN: ")
@@ -822,9 +847,7 @@ class Pycochess(object):
                 self.pgn_file.write ("[White \"Analysis\"]\n")
                 self.pgn_file.write ("[Black \"Analysis\"]\n")
 
-
             else:
-
                 if self.engine_comp_color == WHITE:
                     self.pgn_file.write("[White \"Stockfish\"]\n")
                     self.pgn_file.write("[Black \"User\"]\n")
@@ -833,17 +856,13 @@ class Pycochess(object):
                     self.pgn_file.write("[White \"User\"]\n")
                     self.pgn_file.write("[Black \"Stockfish\"]\n")
 
-        if ply_count % 2 == 1:
-            self.pgn_file.write(str(ply_count/2+1))
-            self.pgn_file.write(". ")
-
-        self.pgn_file.write(san)
-        self.pgn_file.write(" ")
-
-        if ply_count % 20 == 0:
-            self.pgn_file.write("\n")
-
-        # return pgn;
+        if self.rewrite_pgn:
+            # Rewrite old moves
+            for i, san in enumerate(self.san_move_list):
+                self.write_move(i+1, san)
+            self.rewrite_pgn = False
+        else:
+            self.write_move(ply_count, san)
 
     def eng_process_move(self):
         # print "processing move.."
@@ -906,7 +925,7 @@ class Pycochess(object):
             if m == "undo":
                 if len(self.move_list)>0:
                     self.move_list.pop()
-
+                    self.san_move_list.pop()
                 # board = ChessBoard()
                 # for move in self.move_list:
                 #     board.addTextMove(move)
@@ -920,10 +939,9 @@ class Pycochess(object):
         thread.start()
 
     def get_polyglot_moves(self, fen, max_num_moves=4):
-        # key = sf.key(fen, [])
-        ## This conversion is needed as pyfish as a bug and returns signed long. The moment this is fixed in the tree (should be soon),
-        # remove this convert and revert to previous line
-        key = ctypes.c_uint64(sf.key(fen, [])).value
+        key = sf.key(fen, [])
+        # With latest pyfish, the below mod is no longer needed
+        # key = ctypes.c_uint64(sf.key(fen, [])).value
 
         polyglot_moves = []
         for i, e in enumerate(self.polyglot_book.get_entries_for_position(key)):

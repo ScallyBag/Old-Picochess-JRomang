@@ -1,13 +1,13 @@
 from polyglot_opening_book import PolyglotOpeningBook
 import stockfish as sf
-import ctypes
 
 if __name__ == "__main__":
     p = PolyglotOpeningBook('book.bin')
     # fen = 'startpos'
     fen = 'rnbqkbnr/pppp1ppp/4p3/8/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2'
     # conversion until pyfish is updated
-    key = ctypes.c_uint64(sf.key(fen, [])).value
+    # key = ctypes.c_uint64(sf.key(fen, [])).value
+    key = sf.key(fen, [])
 
     for e in p.get_entries_for_position(key):
         try:
