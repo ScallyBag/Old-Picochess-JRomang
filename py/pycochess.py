@@ -324,6 +324,7 @@ class Pycochess(object):
         self.computer_move_FEN_reached = False
         self.computer_move_FEN = ""
         self.move_list = []
+        self.san_move_list = []
         self.turn = WHITE
 
         if piface:
