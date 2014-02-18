@@ -1032,7 +1032,7 @@ class Pycochess(object):
         if self.current_menu == MenuRotation.DATABASE:
             # Database options
             if 0 <= event.pin_num <= 4:
-                passs
+                pass
 
         if self.current_menu == MenuRotation.ALT_INPUT:
             if 0 <= event.pin_num <= 3:
