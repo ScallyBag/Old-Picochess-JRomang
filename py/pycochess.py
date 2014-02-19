@@ -11,13 +11,14 @@ import itertools as it
 import os
 import subprocess
 import sys
-import ctypes
 import socket
 
 from ChessBoard import ChessBoard
 from pydgt import DGTBoard
 from pydgt import FEN
 from polyglot_opening_book import PolyglotOpeningBook
+
+START_GAME_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 
 FORCE_MOVE = "Force"
 
@@ -56,6 +57,8 @@ WHITE = "w"
 BLACK = "b"
 
 PROG_PATH = "/home/miniand/git/Stockfish"
+# PROG_PATH = "/Users/shiv/chess/Stockfish"
+
 BOOK_PATH = "/opt/picochess/books/"
 DEFAULT_BOOK_FEN = "rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR"
 COMP_PLAYS_WHITE = "rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
@@ -78,7 +81,7 @@ book_map = {
 }
 
 game_map = {
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" : NEW_GAME,
+    START_GAME_FEN: NEW_GAME,
     # White Queen on a5
     "rnbqkbnr/pppppppp/8/Q7/8/8/PPPPPPPP/RNBQKBNR" : BOOK_MODE,
     # White Queen on b5
@@ -157,7 +160,8 @@ class SystemMenu:
 
 
 class PositionMenu:
-    WHITE_TO_MOVE, BLACK_TO_MOVE, REVERSE_ORIENTATION, SCAN_POSITION = range(4)
+    length = 5
+    TO_MOVE_TOGGLE, COMP_PLAY_TOGGLE, REVERSE_ORIENTATION, SPACER, SCAN_POSITION = range(length)
 
 
 class PlayMenu:
@@ -189,6 +193,7 @@ class Pycochess(object):
         self.use_tb = False
         self.current_menu = MenuRotation.MAIN
         self.pyfish_fen = 'startpos'
+        self.pyfish_castling_fen = None
         self.dgt = None
         self.current_fen = None
         self.dgt_fen = None
@@ -202,6 +207,7 @@ class Pycochess(object):
         self.pgn_file = open(PROG_PATH+'/py/game.pgn', 'w', 0)
         self.rewrite_pgn = False
         self.silent = False
+        self.first_dgt_fen = None
 
         self.engine_comp_color = BLACK
 
@@ -231,7 +237,7 @@ class Pycochess(object):
 
         # Help user execute comp moves
         self.computer_move_FEN_reached = False
-        self.computer_move_FEN = ""
+        self.computer_move_FEN = None
         sf.add_observer(self.parse_score)
 
         # Polyglot book load
@@ -277,9 +283,26 @@ class Pycochess(object):
     def on_observe_dgt_move(self, attr):
         if attr.type == FEN:
             fen = attr.message
+            # print "pyfish_fen: {0}".format(self.pyfish_fen)
+            print "move_list: {0}".format(self.move_list)
+            # print "Fen: {0}".format(fen)
+
+            if self.pyfish_castling_fen and self.pyfish_fen!='startpos':
+                fen = fen.replace('KQkq', self.pyfish_castling_fen)
+
+            if not self.first_dgt_fen:
+                if fen.split(" ")[0] != START_GAME_FEN:
+                    fen = self.update_castling_rights(fen)
+                self.first_dgt_fen = fen
+
+                # self.update_castling_rights()
+                print "first dgt fen : {0}".format(self.first_dgt_fen)
             print "Fen: {0}".format(fen)
+
             self.current_fen = fen
+            # print "Probing for move.."
             m = self.probe_move(fen)
+            # print "move: {0}".format(m)
             if m:
                 move_queue.put(m)
         #        dgt_sem.release()
@@ -322,7 +345,7 @@ class Pycochess(object):
         self.engine_computer_move = False
         # Help user execute comp moves
         self.computer_move_FEN_reached = False
-        self.computer_move_FEN = ""
+        self.computer_move_FEN = None
         self.move_list = []
         self.san_move_list = []
         self.turn = WHITE
@@ -505,11 +528,11 @@ class Pycochess(object):
         if self.play_mode == GAME_MODE:
             if self.engine_computer_move:
 #                print "computer_move"
-                if len(self.move_list) > 0 and self.engine_searching:
+                if self.engine_searching:
                     self.update_time(color=self.engine_comp_color)
 #                    print "comp_time: {0}".format(self.time_black)
 
-                if len(self.move_list) > 0 and self.engine_searching and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
+                if self.engine_searching and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
                     self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), clear=True)
                 elif self.clock_mode == FIXED_TIME and self.engine_searching:
                     # If FIXED_TIME
@@ -528,7 +551,7 @@ class Pycochess(object):
 #                print "engine_searching : {0}".format(self.engine_searching)
                 player_move = not self.engine_computer_move and not self.engine_searching and self.computer_move_FEN_reached
                 # print "player_move: {0}".format(player_move)
-                if player_move  and len(self.move_list) > 0 and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
+                if player_move and len(self.move_list) > 0 and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
                     self.update_player_time()
                     self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), clear=True)
 
@@ -608,17 +631,22 @@ class Pycochess(object):
                         else:
                             self.computer_move_FEN_reached = False
 
-
-#                        print "old_dgt_fen: {0}".format(self.dgt_fen)
-#                        print "new_dgt_fen: {0}".format(new_dgt_fen)
+                        # print "Checking for legal moves"
+                        # print "pref fen: {0}".format(self.dgt_fen)
+                        # print "new fen: {0}".format(new_dgt_fen)
                         m = self.get_legal_move(self.dgt_fen, new_dgt_fen)
+                        # print "After legal move check is complete"
                         if not m:
+                            # print "Checking for quick input"
+                            # print "comp_move_fen: {0}".format(self.computer_move_FEN)
                             # If the user made a quick move, try to see if the current position is playable from the computer_move_FEN
-                            if self.is_fen(self.computer_move_FEN):
+                            if self.computer_move_FEN and self.is_fen(self.computer_move_FEN):
+                                # print "checking for comp_move_fen legal move"
                                 m = self.get_legal_move(self.computer_move_FEN, new_dgt_fen)
 #                                print "Quick move made"
-
+#                             print "After quick input check"
                         if m:
+                            # print "Got Legal move"
 #                            print "Move processed: {0}".format(m)
                             self.previous_dgt_fen = self.dgt_fen
                             self.register_move(m)# Start player clock!
@@ -628,18 +656,21 @@ class Pycochess(object):
                             self.dgt_fen = new_dgt_fen
                             return m
                         else:
-                            last_move_fen = sf.get_fen(self.pyfish_fen,  self.move_list[:-1])
-                            last_move_fen_first_tok = last_move_fen.split()[0]
+                            # print "No legal move found"
+                            if len(self.move_list) > 0:
+                                last_move_fen = sf.get_fen(self.pyfish_fen,  self.move_list[:-1])
+                                last_move_fen_first_tok = last_move_fen.split()[0]
 
-                            if new_dgt_first_token == last_move_fen_first_tok:
-                                self.dgt_fen = last_move_fen
-                                if len(self.move_list) > 0:
-                                    self.move_list.pop()
-                                    self.san_move_list.pop()
-                                    self.rewrite_pgn = True
-                                    return "undo"
+                                if new_dgt_first_token == last_move_fen_first_tok:
+                                    self.dgt_fen = last_move_fen
+                                    if len(self.move_list) > 0:
+                                        self.move_list.pop()
+                                        self.san_move_list.pop()
+                                        self.rewrite_pgn = True
+                                        return "undo"
 
                 elif new_dgt_fen:
+                    # print "elif new_dgt_fen"
                     self.dgt_fen = new_dgt_fen
                     self.previous_dgt_fen = new_dgt_fen
 #                if play_mode == GAME_MODE and self.engine_computer_move:
@@ -693,7 +724,8 @@ class Pycochess(object):
     #     sf.position(pos, move_list)
     #     self.move_list = move_list
 
-    def generate_move_list(self, all_moves, eval=None, start_move_num = 1):
+    @staticmethod
+    def generate_move_list(all_moves, eval=None, start_move_num = 1):
         score = ""
         if eval:
             score = str(eval) + " "
@@ -866,7 +898,7 @@ class Pycochess(object):
             self.write_move(ply_count, san)
 
     def eng_process_move(self):
-        # print "processing move.."
+        print "processing move.."
         self.stop_engine()
         self.score_count = 0
         # self.position(self.move_list, pos='startpos')
@@ -885,6 +917,10 @@ class Pycochess(object):
 
                     else:
                         self.time_white = self.comp_time
+                    # print "Before sf.go()"
+                    # print "move_list: "
+                    # print self.move_list
+                    # print "pyfish_fen: {0}".format(self.pyfish_fen)
                     sf.go(self.pyfish_fen, moves=self.move_list, movetime=self.comp_time)
 #                    self.reset_clock_update()
                 else:
@@ -971,24 +1007,27 @@ class Pycochess(object):
         board = ChessBoard()
         board.setFEN(fen)
         b = board.getBoard()
-        if b[-1][4] == "K" and  b[-1][7] == "R":
+        if b[-1][4] == "K" and b[-1][7] == "R":
             can_castle = True
             castling_fen += 'K'
 
-        if b[-1][4] == "K" and  b[-1][0] == "R":
+        if b[-1][4] == "K" and b[-1][0] == "R":
             can_castle = True
             castling_fen += 'Q'
 
-        if b[0][4] == "k" and  b[0][7] == "r":
+        if b[0][4] == "k" and b[0][7] == "r":
             can_castle = True
             castling_fen += 'k'
 
-        if b[0][4] == "k" and  b[0][0] == "r":
+        if b[0][4] == "k" and b[0][0] == "r":
             can_castle = True
             castling_fen += 'q'
 
         if not can_castle:
             castling_fen = '-'
+
+        self.pyfish_castling_fen = castling_fen
+        # print "castling fen: {0}".format(castling_fen)
 
         # TODO: Support fen positions where castling is not possible even if king and rook are on right squares
         fen = fen.replace("KQkq", castling_fen)
@@ -1168,12 +1207,19 @@ class Pycochess(object):
 
         # SCAN_POSITION, WHITE_TO_MOVE, BLACK_TO_MOVE, REVERSE_ORIENTATION = range(4)
         if self.current_menu == MenuRotation.POSITION:
-            if event.pin_num == PositionMenu.WHITE_TO_MOVE:
-                self.turn = WHITE
-                self.write_to_piface("White to Move", clear=True)
-            elif event.pin_num == PositionMenu.BLACK_TO_MOVE:
-                self.turn = BLACK
-                self.write_to_piface("Black to Move", clear=True)
+            if event.pin_num == PositionMenu.TO_MOVE_TOGGLE:
+                # print self.turn
+                self.turn = BLACK if self.turn == WHITE else WHITE
+                color = "White" if self.turn == WHITE else "Black"
+                print "{0} to move".format(color)
+                self.write_to_piface("{0} to move".format(color), clear=True)
+
+            elif event.pin_num == PositionMenu.COMP_PLAY_TOGGLE:
+                print "current engine color: {0}".format(self.engine_comp_color)
+                self.engine_comp_color = WHITE if self.engine_comp_color == BLACK else BLACK
+                color = "White" if self.engine_comp_color == WHITE else "Black"
+                print "Computer plays {0}".format(color)
+                self.write_to_piface("Computer plays {0}".format(color), clear=True)
             elif event.pin_num == PositionMenu.REVERSE_ORIENTATION:
                 self.dgt.reverse_board()
                 self.write_to_piface("Reverse Board", clear=True)
@@ -1181,7 +1227,13 @@ class Pycochess(object):
                 # Scan current fen
                 fen = self.fen_to_move(self.current_fen, self.turn)
                 self.pyfish_fen = self.update_castling_rights(fen)
+                print "pyfish_fen : {0}".format(self.pyfish_fen)
+
                 self.write_to_piface("Scan Position", clear=True)
+                if self.engine_comp_color == self.turn:
+                    print "Forcing comp to move"
+                    self.engine_computer_move = True
+                    move_queue.put(FORCE_MOVE)
 
     def set_device(self, device):
         self.device = device
