@@ -237,7 +237,7 @@ class Pycochess(object):
 
         # Help user execute comp moves
         self.computer_move_FEN_reached = False
-        self.computer_move_FEN = None
+        self.computer_move_FEN = ""
         sf.add_observer(self.parse_score)
 
         # Polyglot book load
@@ -302,7 +302,7 @@ class Pycochess(object):
             self.current_fen = fen
             # print "Probing for move.."
             m = self.probe_move(fen)
-            # print "move: {0}".format(m)
+            print "move: {0}".format(m)
             if m:
                 move_queue.put(m)
         #        dgt_sem.release()
@@ -345,7 +345,7 @@ class Pycochess(object):
         self.engine_computer_move = False
         # Help user execute comp moves
         self.computer_move_FEN_reached = False
-        self.computer_move_FEN = None
+        self.computer_move_FEN = ""
         self.move_list = []
         self.san_move_list = []
         self.turn = WHITE
@@ -591,7 +591,7 @@ class Pycochess(object):
     def probe_move(self, fen, *args):
         if self.dgt_connected and self.dgt:
             try:
-                new_dgt_fen = fen # color
+                new_dgt_fen = fen  # color
 #                print "mod_fen : {0}".format(fen)
 
 #                print "old_dgt_fen: {0}".format(self.dgt_fen)
@@ -602,7 +602,6 @@ class Pycochess(object):
                     old_dgt_first_token = self.dgt_fen.split()[0]
                     new_dgt_first_token = new_dgt_fen.split()[0]
 
-
                     if old_dgt_first_token == new_dgt_first_token and self.dgt_fen != new_dgt_fen:
                         # Update fen if only color to move has changed
                         self.dgt_fen = new_dgt_fen
@@ -612,12 +611,14 @@ class Pycochess(object):
 #                        print "new_dgt_first_token: {0}".format(new_dgt_first_token)
 
                         if self.check_for_command_fen(new_dgt_first_token):
+                            # print "got Command FEN"
                             self.previous_dgt_fen = self.dgt_fen
                             self.dgt_fen = new_dgt_fen
 
                             # Return no legal move if its a command FEN, we simply change levels, books, time, options,
-                        # and there is no need to process a move
+                            # and there is no need to process a move
                             return False
+                        # print "Not a command FEN"
 
                         computer_move_first_tok = None
                         if self.computer_move_FEN:
@@ -636,6 +637,7 @@ class Pycochess(object):
                         # print "new fen: {0}".format(new_dgt_fen)
                         m = self.get_legal_move(self.dgt_fen, new_dgt_fen)
                         # print "After legal move check is complete"
+                        # print m
                         if not m:
                             # print "Checking for quick input"
                             # print "comp_move_fen: {0}".format(self.computer_move_FEN)
@@ -657,17 +659,16 @@ class Pycochess(object):
                             return m
                         else:
                             # print "No legal move found"
-                            if len(self.move_list) > 0:
-                                last_move_fen = sf.get_fen(self.pyfish_fen,  self.move_list[:-1])
-                                last_move_fen_first_tok = last_move_fen.split()[0]
+                            last_move_fen = sf.get_fen(self.pyfish_fen,  self.move_list[:-1])
+                            last_move_fen_first_tok = last_move_fen.split()[0]
 
-                                if new_dgt_first_token == last_move_fen_first_tok:
-                                    self.dgt_fen = last_move_fen
-                                    if len(self.move_list) > 0:
-                                        self.move_list.pop()
-                                        self.san_move_list.pop()
-                                        self.rewrite_pgn = True
-                                        return "undo"
+                            if new_dgt_first_token == last_move_fen_first_tok:
+                                self.dgt_fen = last_move_fen
+                                if len(self.move_list) > 0:
+                                    self.move_list.pop()
+                                    self.san_move_list.pop()
+                                    self.rewrite_pgn = True
+                                    return "undo"
 
                 elif new_dgt_fen:
                     # print "elif new_dgt_fen"
@@ -724,7 +725,6 @@ class Pycochess(object):
     #     sf.position(pos, move_list)
     #     self.move_list = move_list
 
-    @staticmethod
     def generate_move_list(all_moves, eval=None, start_move_num = 1):
         score = ""
         if eval:
