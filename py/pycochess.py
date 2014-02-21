@@ -588,6 +588,11 @@ class Pycochess(object):
         if not self.engine_computer_move:
             self.engine_computer_move = True
 
+    def perform_undo(self):
+        self.move_list.pop()
+        self.san_move_list.pop()
+        self.rewrite_pgn = True
+
     def probe_move(self, fen, *args):
         if self.dgt_connected and self.dgt:
             try:
@@ -632,6 +637,10 @@ class Pycochess(object):
                         else:
                             self.computer_move_FEN_reached = False
 
+                        # invalid_comp_move = False
+                        # if not self.engine_searching and not self.computer_move_FEN_reached and computer_move_first_tok and computer_move_first_tok != new_dgt_first_token:
+                        #     invalid_comp_move = True
+
                         # print "Checking for legal moves"
                         # print "pref fen: {0}".format(self.dgt_fen)
                         # print "new fen: {0}".format(new_dgt_fen)
@@ -665,9 +674,7 @@ class Pycochess(object):
                             if new_dgt_first_token == last_move_fen_first_tok:
                                 self.dgt_fen = last_move_fen
                                 if len(self.move_list) > 0:
-                                    self.move_list.pop()
-                                    self.san_move_list.pop()
-                                    self.rewrite_pgn = True
+                                    self.perform_undo()
                                     return "undo"
 
                 elif new_dgt_fen:
@@ -981,9 +988,10 @@ class Pycochess(object):
         # key = ctypes.c_uint64(sf.key(fen, [])).value
 
         polyglot_moves = []
-        for i, e in enumerate(self.polyglot_book.get_entries_for_position(key)):
+        for j, e in enumerate(self.polyglot_book.get_entries_for_position(key)):
             try:
                 m = e["move"]
+                # print m
                 polyglot_moves.append((sf.to_san(fen, [m]), e["weight"]))
 
             except ValueError:
@@ -996,7 +1004,7 @@ class Pycochess(object):
                 elif m == "e8h8":
                     m = "e8g8"
                 polyglot_moves.append((sf.to_san(fen, [m]), e["weight"]))
-            if i >= max_num_moves:
+            if j >= max_num_moves:
                 break
                 # print sf.to_san(fen, [m])
         return polyglot_moves
@@ -1053,6 +1061,7 @@ class Pycochess(object):
                 fen = sf.get_fen(self.pyfish_fen,  self.move_list)
                 # print "fen: {0}".format(fen)
                 book_moves = self.get_polyglot_moves(fen)
+                # print book_moves
                 if book_moves:
                     # Sort book entries by weight
                     book_moves = sorted(book_moves, key=lambda el: el[1], reverse=True)
@@ -1128,8 +1137,12 @@ class Pycochess(object):
                 # else:
                 m = "".join(self.alt_input_entry)
                 self.write_to_piface("Validating..", clear=True)
-                if m == "h1h1":
-                    move_queue.put(m)
+                if m == "a1a1":
+                    # self.perform_undo()
+                    move_queue.put("undo_pop")
+                    sleep(3)
+                    move_queue.put("undo_pop")
+
                     # Perform undo
                 else:
                     prev_fen = sf.get_fen(self.pyfish_fen,  self.move_list)
@@ -1245,8 +1258,11 @@ def update_clocks(pyco):
 
 
 def process_undo(pyco, m):
-    if m == "undo" and len(pyco.move_list) > 0:
+
+    if m.startswith("undo") and len(pyco.move_list) > 0:
         pyco.write_to_piface("Undo - " + pyco.move_list[-1], clear=True)
+        if m == "undo_pop":
+            pyco.perform_undo()
         pyco.switch_turn()
         return True
 
@@ -1308,7 +1324,6 @@ if __name__ == '__main__':
         #print "Before acquire"
         m = move_queue.get()
         print "Board Updated!"
-        # print "Got move: {0}".format(m)
         if process_undo(pyco, m):
             continue
 
