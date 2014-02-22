@@ -264,6 +264,8 @@ class Pycochess(object):
                 # Microsleep before returning lock
                 # Sleep enables that garbage is not written to the screen
                 sleep(0.3)
+        else:
+            print "Piface: [{0}]".format(message)
 
     def get_legal_move(self, from_fen, to_fen):
         to_fen_first_tok = to_fen.split()[0]
