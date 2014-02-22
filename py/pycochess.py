@@ -256,7 +256,9 @@ class Pycochess(object):
             with self.piface_lock:
                 if clear:
                     cad.lcd.clear()
-                if len(message)>16 and "\n" not in message:
+                if len(message) > 32:
+                    message = message[:32]
+                if len(message) > 16 and "\n" not in message:
                     # Append "\n"
                     message = message[:16]+"\n"+message[16:]
                 cad.lcd.write(message)
@@ -739,21 +741,25 @@ class Pycochess(object):
     #     sf.position(pos, move_list)
     #     self.move_list = move_list
 
-    def generate_move_list(all_moves, eval=None, start_move_num = 1):
+    def generate_move_list(self, all_moves, eval=None, start_move_num = 1):
         score = ""
+        if start_move_num % 2 == 0:
+            turn_sep = '..'
+        else:
+            turn_sep = ''
         if eval:
-            score = str(eval) + " "
+            score = str(eval) + " " + turn_sep
 
         for i, mv in it.izip(it.count(start_move_num), all_moves):
-            move = "b"
+            # move = "b"
             if i % 2 == 1:
                 score += "%d." % ((i + 1) / 2)
-                move = "w"
+                # move = "w"
             if mv:
             #                if raw:
                 score += "%s " % mv
-                if i % 6 == 0:
-                    score += "\n"
+                # if i % 6 == 0:
+                #     score += "\n"
                 #                else:
                 #                    score += " [ref=%d:%s] %s [/ref]"%((i + 1) / 2, move, mv)
         return score
@@ -796,19 +802,27 @@ class Pycochess(object):
             self.score = score
         if self.play_mode == ANALYSIS_MODE:
             line_index = tokens.index('pv')
-            if line_index>-1:
+            # print "line_index : {0}".format(line_index)
+            if line_index > -1:
                 pv = self.get_san(tokens[line_index+1:])
+                # print "pv : {0}".format(pv)
+
                 if len(pv)>0:
                     self.score_count += 1
+                    # print "score_count : {0}".format(self.score_count)
                     if self.score_count > 5:
                         self.score_count = 0
-                    if piface and self.score_count==1:
-                        first_mv = pv[0]
+                    if piface and self.score_count == 1:
+                        # first_mv = pv[0]
                         if self.use_tb and score == 151:
                             score = 'TB: 1-0'
                         if self.use_tb and score == -151:
                             score = 'TB: 0-1'
-                        output = str(score)+' '+first_mv
+                        # separator = ".." if self.turn == BLACK else ""
+                        # print self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1)
+
+                        output = self.generate_move_list(pv, eval=score, start_move_num=len(self.move_list)+1)
+
                         # if not self.engine_output:
                         #     self.engine_output = output
                         #     self.write_to_piface(self.engine_output, clear = True)
@@ -1273,7 +1287,7 @@ def process_undo(pyco, m):
         pyco.switch_turn()
         # print "dgt_fen: {0}".format(pyco.dgt_fen)
         # print "pre_comp_dgt_fen: {0}".format(pyco.pre_computer_move_FEN)
-        if pyco.dgt_fen.split(" ")[0] == pyco.pre_computer_move_FEN.split(" ")[0]:
+        if pyco.pre_computer_move_FEN and pyco.dgt_fen.split(" ")[0] == pyco.pre_computer_move_FEN.split(" ")[0]:
             pyco.write_to_piface(pyco.last_output_move, clear=True)
         return True
 
@@ -1336,7 +1350,8 @@ if __name__ == '__main__':
         m = move_queue.get()
         print "Board Updated!"
         if process_undo(pyco, m):
-            continue
+            if pyco.play_mode == GAME_MODE:
+                continue
 
         if pyco.computer_move_FEN_reached:
             print "Comp_move FEN reached"
