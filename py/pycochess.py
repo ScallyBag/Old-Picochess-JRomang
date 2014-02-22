@@ -238,6 +238,9 @@ class Pycochess(object):
         # Help user execute comp moves
         self.computer_move_FEN_reached = False
         self.computer_move_FEN = ""
+        self.pre_computer_move_FEN = None
+        self.invalid_computer_move = False
+        self.last_output_move = None
         sf.add_observer(self.parse_score)
 
         # Polyglot book load
@@ -632,15 +635,17 @@ class Pycochess(object):
 #                            print "new_dgt_first_token : {0}".format(new_dgt_first_token)
                         if not self.engine_searching and not self.computer_move_FEN_reached and computer_move_first_tok and computer_move_first_tok == new_dgt_first_token:
                             self.computer_move_FEN_reached = True
+                            self.invalid_computer_move = False
 #                            self.switch_turn()
                             print "computer move Fen reached"
+                            self.computer_move_FEN = ""
                         else:
                             self.computer_move_FEN_reached = False
-
-                        # invalid_comp_move = False
-                        # if not self.engine_searching and not self.computer_move_FEN_reached and computer_move_first_tok and computer_move_first_tok != new_dgt_first_token:
+                            if self.computer_move_FEN:
+                                self.invalid_computer_move = True
+                        # if self.computer_move_FEN and not self.computer_move_FEN_reached and computer_move_first_tok and computer_move_first_tok != new_dgt_first_token:
                         #     invalid_comp_move = True
-
+                        #     print "Invalid computer move!"
                         # print "Checking for legal moves"
                         # print "pref fen: {0}".format(self.dgt_fen)
                         # print "new fen: {0}".format(new_dgt_fen)
@@ -825,14 +830,14 @@ class Pycochess(object):
             if best_move:
                 # print "best_move_san:{0}".format(best_move)
             #                print "best_move_san:{0}".format(sf.to_san([best_move])[0])
-                output_move = self.get_san([best_move])[0]
+                self.last_output_move = self.get_san([best_move])[0]
                 # print "output_move: {0}".format(output_move)
                 self.engine_computer_move = False
                 self.computer_move_FEN_reached = False
                 self.engine_searching = False
                 if self.dgt_fen:
 #                    print "dgt_fen : {0}".format(self.dgt_fen)
-
+                    self.pre_computer_move_FEN = sf.get_fen(self.dgt_fen, [])
                     self.computer_move_FEN = sf.get_fen(self.dgt_fen, [best_move])
 #                    print "dgt_fen : {0}".format(self.dgt_fen)
 #                    print "comp_move_fen : {0}".format(self.computer_move_FEN)
@@ -846,20 +851,20 @@ class Pycochess(object):
                     # board.addTextMove(output_move)
 #                    print "Not using DGT board"
                     self.move_list.append(best_move)
-                    if output_move:
+                    if self.last_output_move:
                         self.san_move_list.append(output_move)
                     self.switch_turn()
                     # self.computer_move_FEN = board.getFEN()
-                if output_move:
+                if self.last_output_move:
                     # if self.ponder_move and self.ponder_move != '(none)':
                     #     fen = sf.get_fen(self.pyfish_fen,  self.move_list)
                     #     self.ponder_move = sf.to_san(fen, self.ponder_move)[0]
 
                     if figlet:
-                        print figlet.renderText(output_move)
+                        print figlet.renderText(self.last_output_move)
                     else:
-                        print "SAN best_move: {0}".format(output_move)
-                    self.write_to_piface(output_move, clear=True)
+                        print "SAN best_move: {0}".format(self.last_output_move)
+                    self.write_to_piface(self.last_output_move, clear=True)
 
     def write_move(self, ply_count, san):
         if ply_count % 2 == 1:
@@ -1264,6 +1269,10 @@ def process_undo(pyco, m):
         if m == "undo_pop":
             pyco.perform_undo()
         pyco.switch_turn()
+        # print "dgt_fen: {0}".format(pyco.dgt_fen)
+        # print "pre_comp_dgt_fen: {0}".format(pyco.pre_computer_move_FEN)
+        if pyco.dgt_fen.split(" ")[0] == pyco.pre_computer_move_FEN.split(" ")[0]:
+            pyco.write_to_piface(pyco.last_output_move, clear=True)
         return True
 
 
@@ -1331,6 +1340,14 @@ if __name__ == '__main__':
             print "Comp_move FEN reached"
             pyco.write_to_piface(" (Done)", clear=False)
             # pyco.engine_computer_move = False
+            continue
+
+        if pyco.invalid_computer_move:
+            print "Invalid Computer Move"
+            pyco.write_to_piface("{0} (Invalid Computer Move)".format(m), clear=True)
+            # sleep(2)
+            # process_undo(pyco, "undo_pop")
+
             continue
 
         if pyco.engine_comp_color == pyco.turn or pyco.play_mode == ANALYSIS_MODE or m == FORCE_MOVE:
