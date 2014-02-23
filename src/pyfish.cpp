@@ -113,7 +113,8 @@ extern "C" PyObject* stockfish_key(PyObject* self, PyObject *args)
     }
     buildPosition(&p,states,fen,listObj);
 
-    return Py_BuildValue("k", PolyglotBook::polyglot_key(p));
+    // This needs to be capital "K" so that it works both on 32 bit ARM devices and 64 bit machines.
+    return Py_BuildValue("K", PolyglotBook::polyglot_key(p));
 }
 
 extern "C" PyObject* stockfish_stop(PyObject* self)
