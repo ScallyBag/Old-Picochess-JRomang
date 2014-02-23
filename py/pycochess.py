@@ -168,6 +168,9 @@ class PlayMenu:
     LAST_MOVE, HINT, EVAL, SILENT, SWITCH_MODE = range(5)
 
 
+class EngineMenu:
+    TBASES, ENG_INFO = range(2)
+
 class AltInputMenu:
     length = 5
     FIRST, SECOND, THIRD, FOURTH, VALIDATE = range(length)
@@ -191,6 +194,9 @@ class Pycochess(object):
     def __init__(self, device, **kwargs):
         self.alt_input_entry = START_ALT_INPUT
         self.use_tb = False
+        sf.set_option('SyzygyPath', '/home/pi/syzygy/')
+        sf.set_option('SyzygyProbeLimit', 0)
+
         self.current_menu = MenuRotation.MAIN
         self.pyfish_fen = 'startpos'
         self.pyfish_castling_fen = None
@@ -353,6 +359,11 @@ class Pycochess(object):
         # Help user execute comp moves
         self.computer_move_FEN_reached = False
         self.computer_move_FEN = ""
+
+        self.pre_computer_move_FEN = None
+        self.invalid_computer_move = False
+        self.last_output_move = None
+
         self.move_list = []
         self.san_move_list = []
         self.turn = WHITE
@@ -532,9 +543,10 @@ class Pycochess(object):
         return fmt_time_a+" "*num_spaces+fmt_time_b
 
     def update_clocks(self, *args):
+        # print "updating clocks"
         if self.play_mode == GAME_MODE:
             if self.engine_computer_move:
-#                print "computer_move"
+                # print "computer_move"
                 if self.engine_searching:
                     self.update_time(color=self.engine_comp_color)
 #                    print "comp_time: {0}".format(self.time_black)
@@ -553,37 +565,15 @@ class Pycochess(object):
                             self.write_to_piface(self.format_time_str(self.time_black), clear = True)
 
                         # self.engine_score.children[0].text = "[color=000000]Thinking..\n[size=24]{0}    [b]{1}[/size][/b][/color]".format(self.format_time_str(self.time_white), self.format_time_str(self.time_black))
-            else:
-#                print "player move"
+            # print "not comp move"
 #                print "engine_searching : {0}".format(self.engine_searching)
-                player_move = not self.engine_computer_move and not self.engine_searching and self.computer_move_FEN_reached
-                # print "player_move: {0}".format(player_move)
-                if player_move and len(self.move_list) > 0 and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
-                    self.update_player_time()
-                    self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), clear=True)
+            player_move = not self.engine_searching and self.computer_move_FEN_reached
+            # print "player_move: {0}".format(player_move)
+            if player_move and len(self.move_list) > 0 and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
+                # print "player_move"
+                self.update_player_time()
+                self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), clear=True)
 
-#                    self.write_to_piface(self.format_time_str(self.time_white) + " "*5+ self.format_time_str(self.time_black), clear=True)
-
-                # if self.show_hint:
-                #     if not self.ponder_move_san and self.ponder_move and self.ponder_move!='(none)':
-                #         # print self.ponder_move
-                #         try:
-                #             self.ponder_move_san = sf.toSAN([self.ponder_move])[0]
-                #             # print "ponder_move_san: "+self.ponder_move_san
-                #             # if not self.spoke_hint:
-                #             #     self.spoke_hint = True
-                #             #     self.speak_move(self.ponder_move)
-                #         except IndexError:
-                #             self.ponder_move_san = "None"
-                #     if self.ponder_move_san:
-                #         self.engine_score.children[0].text = YOURTURN_MENU.format(self.ponder_move_san, self.eng_eval, self.format_time_str(self.time_white), self.format_time_str(self.time_black))
-                #         if not self.spoke_hint:
-                #             self.spoke_hint = True
-                #             self.speak_move(self.ponder_move, immediate=True)
-                #     else:
-                #         self.engine_score.children[0].text = YOURTURN_MENU.format("Not available", self.eng_eval, self.format_time_str(self.time_white), self.format_time_str(self.time_black))
-                # else:
-                #     self.engine_score.children[0].text = YOURTURN_MENU.format("hidden", "hidden", self.format_time_str(self.time_white), self.format_time_str(self.time_black))
 
     def register_move(self, m):
         self.switch_turn()
@@ -747,7 +737,7 @@ class Pycochess(object):
             turn_sep = '..'
         else:
             turn_sep = ''
-        if eval:
+        if eval is not None:
             score = str(eval) + " " + turn_sep
 
         for i, mv in it.izip(it.count(start_move_num), all_moves):
@@ -829,9 +819,9 @@ class Pycochess(object):
                         #
                         # if self.engine_output != output:
                         #     self.engine_output = output
-                        if self.silent:
-                            self.write_to_piface("Secret Analysis", clear=True)
-                        else:
+                        if not self.silent:
+                        #     self.write_to_piface("Secret Analysis", clear=True)
+                        # else:
                             self.write_to_piface(output, clear=True)
 
                         #cad.lcd.write(str(score)+' ')
@@ -1108,10 +1098,18 @@ class Pycochess(object):
                 # Toggle silence
                 self.silent = not self.silent
                 message = "ON" if self.silent else "OFF"
+                # if self.silent:
+                #     sf.stop()
+
                 self.write_to_piface("Silence {0}".format(message), clear=True)
             elif event.pin_num == PlayMenu.SWITCH_MODE:
                 if self.play_mode == GAME_MODE:
                     self.play_mode = ANALYSIS_MODE
+
+                    self.pre_computer_move_FEN = None
+                    self.invalid_computer_move = False
+                    self.last_output_move = None
+
                     self.write_to_piface("Analysis mode", clear=True)
                 else:
                     self.play_mode = GAME_MODE
@@ -1122,6 +1120,22 @@ class Pycochess(object):
             if 0 <= event.pin_num <= 4:
                 pass
 
+        if self.current_menu == MenuRotation.ENGINE:
+            print "got {0}".format(event.pin_num)
+            print "tbases is {0}".format(EngineMenu.TBASES)
+            if 0 <= event.pin_num <= 4:
+                if event.pin_num == EngineMenu.TBASES:
+                    self.use_tb = not self.use_tb
+                    status = "ON" if self.use_tb else "OFF"
+
+                    if self.use_tb:
+                        sf.set_option('SyzygyProbeLimit', 5)
+                    else:
+                        sf.set_option('SyzygyProbeLimit', 0)
+
+                    msg = "Tablebases {0}".format(status)
+                    print msg
+                    self.write_to_piface(msg, clear=True)
         if self.current_menu == MenuRotation.ALT_INPUT:
             if 0 <= event.pin_num <= 3:
                 self.alt_input_entry[event.pin_num] = self.char_add(self.alt_input_entry[event.pin_num], 1)
@@ -1262,6 +1276,8 @@ class Pycochess(object):
                 fen = self.fen_to_move(self.current_fen, self.turn)
                 self.pyfish_fen = self.update_castling_rights(fen)
                 print "pyfish_fen : {0}".format(self.pyfish_fen)
+                self.move_list = []
+                self.san_move_list = []
 
                 self.write_to_piface("Scan Position", clear=True)
                 if self.engine_comp_color == self.turn:
@@ -1312,13 +1328,19 @@ if __name__ == '__main__':
 
     arm = False
 #    print os.uname()[4][:3]
+    device = None
+    if sys.argv:
+        device = sys.argv[-1]
+        print "Device :: {0}".format(device)
+    if not device.startswith("/dev"):
+        device = "/dev/ttyUSB0"
+
     try:
         if os.uname()[4][:3] == 'arm':
-            pyco = Pycochess("/dev/ttyUSB0")
+            pyco = Pycochess(device)
             arm = True
         else:
-            pyco = Pycochess("/dev/cu.usbserial-00001004")
-
+            pyco = Pycochess(device)
         pyco.connect()
     except OSError:
         print "DGT board not found\n"

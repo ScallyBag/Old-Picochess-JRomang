@@ -9,20 +9,18 @@ touch /var/lock/pycochess
 case "$1" in
   start)
     echo "Starting pycochess"
-       screen -dmUS sf /home/miniand/git/Stockfish/py/pycochess.py
+      if /home/miniand/git/Stockfish/pico_dgt_bt
+      then
+         screen -dmUS sf /home/miniand/git/Stockfish/py/pycochess.py /dev/rfcomm0
+      else
+         screen -dmUS sf /home/miniand/git/Stockfish/py/pycochess.py
+      fi
     ;;
   stop)
     echo "Stopping pycochess"
     pkill -9 -f pycochess.py
     screen -wipe
     ;;
-  restart)
-   echo "Stopping pycochess"
-   pkill -9 -f pycocess.py
-   screen -wipe
-   echo "Starting pycochess"
-   screen -dmUS sf /home/miniand/git/Stockfish/py/pycochess.py 
-   ;;
   *)
     echo "Usage: /etc/init.d/pycochess {start|stop}"
     exit 1
