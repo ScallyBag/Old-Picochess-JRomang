@@ -325,7 +325,7 @@ class Pycochess(object):
         thread.start()
 
     def connect(self):
-        if self.device!="human":
+        if self.device != "human":
             self.dgt = DGTBoard(self.device)
             self.dgt.subscribe(self.on_observe_dgt_move)
             self.poll_dgt()
@@ -374,6 +374,7 @@ class Pycochess(object):
 #            cad.lcd.backlight_off()
 #            cad.lcd.backlight_on()
             self.write_to_piface("New Game", clear=True)
+        self.reset_clocks()
 
         if self.engine_comp_color == WHITE:
             self.engine_computer_move = True
@@ -484,6 +485,7 @@ class Pycochess(object):
                     self.comp_time = 90 * 60 * 1000
                     self.comp_inc = 30 * 1000
 
+            self.reset_clocks()
             self.write_to_piface(message, clear=True)
             return True
 
@@ -512,9 +514,9 @@ class Pycochess(object):
 
     def time_add_increment(self, color=WHITE):
         if color == WHITE:
-            self.time_white+=self.time_inc_white
+            self.time_white += self.time_inc_white
         else:
-            self.time_black+=self.time_inc_black
+            self.time_black += self.time_inc_black
 
     def update_player_time(self):
         color = WHITE
@@ -523,12 +525,18 @@ class Pycochess(object):
         self.update_time(color=color)
 
     def format_time_str(self, time_a):
-        seconds = int(time_a)/1000
+
+        seconds = time_a*1.0/1000
+        # print "seconds: {0}".format(seconds)
         m, s = divmod(seconds, 60)
+        # print "m : {0}".format(m)
+        # print "s : {0}".format(s)
+
         if m >=60:
             h, m = divmod(m, 60)
             return "%d:%02d:%02d" % (h, m, s)
         else:
+            # print "%02d:%02d" % (m, s)
             return "%02d:%02d" % (m, s)
 
     def format_time_strs(self, time_a, time_b, disp_length=16):
@@ -557,11 +565,11 @@ class Pycochess(object):
                     # If FIXED_TIME
                     if self.engine_comp_color == WHITE:
 #                        print "comp_time: {0}".format(self.time_white)
-                        if self.time_white and self.time_white>=1000:
+                        if self.time_white and self.time_white >= 1000:
                             self.write_to_piface(self.format_time_str(self.time_white), clear = True)
                     else:
 #                        print "comp_time: {0}".format(self.time_black)
-                        if self.time_black and self.time_black>=1000:
+                        if self.time_black and self.time_black >= 1000:
                             self.write_to_piface(self.format_time_str(self.time_black), clear = True)
 
                         # self.engine_score.children[0].text = "[color=000000]Thinking..\n[size=24]{0}    [b]{1}[/size][/b][/color]".format(self.format_time_str(self.time_white), self.format_time_str(self.time_black))
@@ -576,14 +584,23 @@ class Pycochess(object):
 
 
     def register_move(self, m):
-        self.switch_turn()
         san = self.get_san([m])[0]
         self.san_move_list.append(san)
         self.move_list.append(m)
         self.write_pgn(san)
-
         if not self.engine_computer_move:
             self.engine_computer_move = True
+        if self.clock_mode == BLITZ_FISCHER and self.play_mode == GAME_MODE:
+            # print "white_time : {0}".format(self.time_white)
+            # print "black_time : {0}".format(self.time_black)
+
+            self.time_add_increment(color=self.turn)
+            # print "Adding increment for {0}".format(self.turn)
+            # print "white_time : {0}".format(self.time_white)
+            # print "black_time : {0}".format(self.time_black)
+        self.switch_turn()
+
+
 
     def perform_undo(self):
         self.move_list.pop()
@@ -915,6 +932,21 @@ class Pycochess(object):
         else:
             self.write_move(ply_count, san)
 
+    def reset_clocks(self):
+        if not self.player_time:
+            self.player_time = self.comp_time
+        if not self.player_inc:
+            self.player_inc = self.comp_inc
+        # if not self.time_white or not self.time_black:
+        self.time_white = int(self.comp_time)
+        self.time_inc_white = int(self.comp_inc)
+        self.time_black = int(self.player_time)
+        self.time_inc_black = int(self.player_inc)
+
+        if self.engine_comp_color == BLACK:
+            self.time_white, self.time_black = self.time_black, self.time_white
+            self.time_inc_white, self.time_inc_black = self.time_inc_black, self.time_inc_white
+
     def eng_process_move(self):
         print "processing move.."
         self.stop_engine()
@@ -942,26 +974,13 @@ class Pycochess(object):
                     sf.go(self.pyfish_fen, moves=self.move_list, movetime=self.comp_time)
 #                    self.reset_clock_update()
                 else:
-                    if not self.player_time:
-                        self.player_time = self.comp_time
-                    if not self.player_inc:
-                        self.player_inc = self.comp_inc
-
-                    if not self.time_white or not self.time_black:
-                        self.time_white = int(self.comp_time)
-                        self.time_inc_white = int(self.comp_inc)
-                        self.time_black = int(self.player_time)
-                        self.time_inc_black = int(self.player_inc)
-
-                        if self.engine_comp_color == BLACK:
-                            self.time_white, self.time_black = self.time_black, self.time_white
-                            self.time_inc_white, self.time_inc_black = self.time_inc_black, self.time_inc_white
+                    # self.reset_clocks()
 
                     if self.clock_mode == BLITZ:
                         sf.go(self.pyfish_fen, moves=self.move_list, wtime=int(self.time_white), btime=int(self.time_black))
 #                        print "starting wtime: {0}, starting btime: {1}".format(self.time_white, self.time_black)
                     elif self.clock_mode == BLITZ_FISCHER:
-                        sf.go('startpos', moves=self.move_list, wtime=int(self.time_white), btime=int(self.time_black),
+                        sf.go(self.pyfish_fen, moves=self.move_list, wtime=int(self.time_white), btime=int(self.time_black),
                             winc=int(self.time_inc_white), binc=int(self.time_inc_black))
 
 #                    self.reset_clock_update()
