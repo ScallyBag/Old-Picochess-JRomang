@@ -61,23 +61,30 @@ PROG_PATH = "/home/miniand/git/Stockfish"
 
 BOOK_PATH = "/opt/picochess/books/"
 DEFAULT_BOOK_FEN = "rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR"
+DEFAULT_BOOK_INDEX = 5
 COMP_PLAYS_WHITE = "rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 # Default
 COMP_PLAYS_BLACK = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1BNR"
 
+book_list = [("nobook", "No Book"), ("fun", "Fun"), ("anand", "Anand"), ("korchnoi", "Korchnoi"), ("larsen", "Larsen"),
+             ("pro", "Pro"), ("gm2001", "GM >2001"), ("varied", "Varied"),
+             ("gm1950", "GM >1950"), ("performance", "Performance"), ("stfish", "Stockfish")]
+
+max_book_index = len(book_list) - 1
+
 book_map = {
-    "rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR": ["nobook", "No Book"],
-    "rnbqkbnr/pppppppp/8/8/8/1q6/PPPPPPPP/RNBQKBNR": ["fun", "Fun"],
-    "rnbqkbnr/pppppppp/8/8/8/2q5/PPPPPPPP/RNBQKBNR": ["anand", "Anand"],
-    "rnbqkbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR": ["korchnoi", "Korchnoi"],
-    "rnbqkbnr/pppppppp/8/8/8/4q3/PPPPPPPP/RNBQKBNR": ["larsen", "Larsen"],
+    "rnbqkbnr/pppppppp/8/8/8/q7/PPPPPPPP/RNBQKBNR": book_list[0],
+    "rnbqkbnr/pppppppp/8/8/8/1q6/PPPPPPPP/RNBQKBNR": book_list[1],
+    "rnbqkbnr/pppppppp/8/8/8/2q5/PPPPPPPP/RNBQKBNR": book_list[2],
+    "rnbqkbnr/pppppppp/8/8/8/3q4/PPPPPPPP/RNBQKBNR": book_list[3],
+    "rnbqkbnr/pppppppp/8/8/8/4q3/PPPPPPPP/RNBQKBNR": book_list[4],
     # Default
-    "rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR": ["pro", "Pro"],
-    "rnbqkbnr/pppppppp/8/8/8/6q1/PPPPPPPP/RNBQKBNR": ["gm2001", "GM >2001"],
-    "rnbqkbnr/pppppppp/8/8/8/7q/PPPPPPPP/RNBQKBNR": ["varied", "Varied"],
-    "rnbqkbnr/pppppppp/8/8/7q/8/PPPPPPPP/RNBQKBNR": ["gm1950", "GM >1950"],
-    "rnbqkbnr/pppppppp/8/8/6q1/8/PPPPPPPP/RNBQKBNR": ["performance", "Performance"],
-    "rnbqkbnr/pppppppp/8/8/5q2/8/PPPPPPPP/RNBQKBNR": ["stfish", "Stockfish"]
+    "rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR": book_list[5],
+    "rnbqkbnr/pppppppp/8/8/8/6q1/PPPPPPPP/RNBQKBNR": book_list[6],
+    "rnbqkbnr/pppppppp/8/8/8/7q/PPPPPPPP/RNBQKBNR": book_list[7],
+    "rnbqkbnr/pppppppp/8/8/7q/8/PPPPPPPP/RNBQKBNR": book_list[8],
+    "rnbqkbnr/pppppppp/8/8/6q1/8/PPPPPPPP/RNBQKBNR": book_list[9],
+    "rnbqkbnr/pppppppp/8/8/5q2/8/PPPPPPPP/RNBQKBNR": book_list[10]
 }
 
 game_map = {
@@ -117,30 +124,39 @@ level_map = ["rnbqkbnr/pppppppp/q7/8/8/8/PPPPPPPP/RNBQKBNR",
              "rnbqkbnr/pppppppp/8/8/4q3/8/PPPPPPPP/RNBQKBNR"
             ]
 
+time_control_list = ["1 sec per move", "3 sec per move", "5 sec per move", "10 sec per move",
+                     "15 sec per move", "30 sec per move", "60 sec per move", "120 sec per move",
+                     "Game in 1 min", "Game in 3 mins", "Game in 5 mins", "Game in 10 mins",  "Game in 15 mins",
+                     "Game in 30 mins", "Game in 60 mins", "Game in 90 mins", "Game in 3 mins + 2s",
+                     "Game in 4 mins + 2s", "Game in 5 mins + 3s", "Game in 5 mins + 5s", "Handicap G/7 mins + 1s",
+                     "Game in 15 mins + 5s", "Game in 90 mins + 30s"
+                     ]
+max_time_control_index = len(time_control_list) - 1
+
 time_control_map = {
-    "rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR": [0, "1 sec per move"],
-    "rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR": [1, "3 sec per move"],
-    "rnbqkbnr/pppppppp/2Q5/8/8/8/PPPPPPPP/RNBQKBNR" : [2, "5 sec per move"],
-    "rnbqkbnr/pppppppp/3Q4/8/8/8/PPPPPPPP/RNBQKBNR" : [3, "10 sec per move"],
-    "rnbqkbnr/pppppppp/4Q3/8/8/8/PPPPPPPP/RNBQKBNR" : [4, "15 sec per move"],
-    "rnbqkbnr/pppppppp/5Q2/8/8/8/PPPPPPPP/RNBQKBNR" : [5, "30 sec per move"],
-    "rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR" : [6, "60 sec per move"],
-    "rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR" : [7, "120 sec per move"],
-    "rnbqkbnr/pppppppp/8/8/Q7/8/PPPPPPPP/RNBQKBNR" : [8, "Game in 1 min"],
-    "rnbqkbnr/pppppppp/8/8/1Q6/8/PPPPPPPP/RNBQKBNR" : [9, "Game in 3 mins"],
-    "rnbqkbnr/pppppppp/8/8/2Q5/8/PPPPPPPP/RNBQKBNR" : [10, "Game in 5 mins"],
-    "rnbqkbnr/pppppppp/8/8/3Q4/8/PPPPPPPP/RNBQKBNR" : [11, "Game in 10 mins"],
-    "rnbqkbnr/pppppppp/8/8/4Q3/8/PPPPPPPP/RNBQKBNR" : [12, "Game in 15 mins"],
-    "rnbqkbnr/pppppppp/8/8/5Q2/8/PPPPPPPP/RNBQKBNR" : [13, "Game in 30 mins"],
-    "rnbqkbnr/pppppppp/8/8/6Q1/8/PPPPPPPP/RNBQKBNR" : [14, "Game in 60 mins"],
-    "rnbqkbnr/pppppppp/8/8/7Q/8/PPPPPPPP/RNBQKBNR" : [15, "Game in 90 mins"],
-    "rnbqkbnr/pppppppp/8/8/8/Q7/PPPPPPPP/RNBQKBNR" : [16, "Game in 3 mins + 2s"],
-    "rnbqkbnr/pppppppp/8/8/8/1Q6/PPPPPPPP/RNBQKBNR" : [17, "Game in 4 mins + 2s"],
-    "rnbqkbnr/pppppppp/8/8/8/2Q5/PPPPPPPP/RNBQKBNR" : [18, "Game in 5 mins + 3s"],
-    "rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNBQKBNR" : [19, "Game in 5 mins + 5s"],
-    "rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR" : [20, "Handicap G/7 mins + 1s"],
-    "rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR" : [21, "Game in 15 mins + 5s"],
-    "rnbqkbnr/pppppppp/8/8/8/6Q1/PPPPPPPP/RNBQKBNR" : [22, "Game in 90 mins + 30s"]
+    "rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR": (0, time_control_list[0]),
+    "rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR": (1, time_control_list[1]),
+    "rnbqkbnr/pppppppp/2Q5/8/8/8/PPPPPPPP/RNBQKBNR" : (2, time_control_list[2]),
+    "rnbqkbnr/pppppppp/3Q4/8/8/8/PPPPPPPP/RNBQKBNR" : (3, time_control_list[3]),
+    "rnbqkbnr/pppppppp/4Q3/8/8/8/PPPPPPPP/RNBQKBNR" : (4, time_control_list[4]),
+    "rnbqkbnr/pppppppp/5Q2/8/8/8/PPPPPPPP/RNBQKBNR" : (5, time_control_list[5]),
+    "rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR" : (6, time_control_list[6]),
+    "rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR" :  (7, time_control_list[7]),
+    "rnbqkbnr/pppppppp/8/8/Q7/8/PPPPPPPP/RNBQKBNR" :  (8, time_control_list[8]),
+    "rnbqkbnr/pppppppp/8/8/1Q6/8/PPPPPPPP/RNBQKBNR" : (9, time_control_list[9]),
+    "rnbqkbnr/pppppppp/8/8/2Q5/8/PPPPPPPP/RNBQKBNR" : (10, time_control_list[10]),
+    "rnbqkbnr/pppppppp/8/8/3Q4/8/PPPPPPPP/RNBQKBNR" : (11, time_control_list[11]),
+    "rnbqkbnr/pppppppp/8/8/4Q3/8/PPPPPPPP/RNBQKBNR" : (12, time_control_list[12]),
+    "rnbqkbnr/pppppppp/8/8/5Q2/8/PPPPPPPP/RNBQKBNR" : (13, time_control_list[13]),
+    "rnbqkbnr/pppppppp/8/8/6Q1/8/PPPPPPPP/RNBQKBNR" : (14, time_control_list[14]),
+    "rnbqkbnr/pppppppp/8/8/7Q/8/PPPPPPPP/RNBQKBNR" :  (15, time_control_list[15]),
+    "rnbqkbnr/pppppppp/8/8/8/Q7/PPPPPPPP/RNBQKBNR" :  (16, time_control_list[16]),
+    "rnbqkbnr/pppppppp/8/8/8/1Q6/PPPPPPPP/RNBQKBNR" : (17, time_control_list[17]),
+    "rnbqkbnr/pppppppp/8/8/8/2Q5/PPPPPPPP/RNBQKBNR" : (18, time_control_list[18]),
+    "rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNBQKBNR" : (19, time_control_list[19]),
+    "rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR" : (20, time_control_list[20]),
+    "rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR" : (21, time_control_list[21]),
+    "rnbqkbnr/pppppppp/8/8/8/6Q1/PPPPPPPP/RNBQKBNR" : (22, time_control_list[22])
 
 }
 
@@ -169,7 +185,7 @@ class PlayMenu:
 
 
 class EngineMenu:
-    TBASES, ENG_INFO = range(2)
+    LEVEL, BOOK, TIME, TBASES, ENG_INFO = range(5)
 
 class AltInputMenu:
     length = 5
@@ -196,6 +212,9 @@ class Pycochess(object):
         self.use_tb = False
         sf.set_option('SyzygyPath', '/home/pi/syzygy/')
         sf.set_option('SyzygyProbeLimit', 0)
+
+        self.level = 20
+        self.book_index = DEFAULT_BOOK_INDEX
 
         self.current_menu = MenuRotation.MAIN
         self.pyfish_fen = 'startpos'
@@ -235,6 +254,7 @@ class Pycochess(object):
         self.play_mode = GAME_MODE
 
         # 5 seconds
+        self.time_control_mode = 2
         self.comp_time = 5000
         self.comp_inc = 0
         self.player_time = 0
@@ -262,6 +282,11 @@ class Pycochess(object):
             with self.piface_lock:
                 if clear:
                     cad.lcd.clear()
+
+                if not clear:
+                    col, row = cad.lcd.get_cursor()
+                    if row == 0 and col + len(message)>16:
+                        cad.lcd.set_cursor(0, 1)
                 if len(message) > 32:
                     message = message[:32]
                 if len(message) > 16 and "\n" not in message:
@@ -380,24 +405,109 @@ class Pycochess(object):
             self.engine_computer_move = True
             move_queue.put(FORCE_MOVE)
 
+    def set_level(self, level):
+        sf.set_option("Skill Level", level)
+        self.write_to_piface("Now on Level " + str(level), clear=True)
+
+    def set_book(self, book_map_entry):
+        filepath = BOOK_PATH + book_map_entry[0] + BOOK_EXTENSION
+        print "book filepath : {0}".format(filepath)
+        sf.set_option("Book File", filepath)
+        self.write_to_piface("Book:\n " + book_map_entry[1], clear=True)
+
+    def set_time_control(self, message, mode):
+        if 0 <= mode <= 7:
+            self.clock_mode = FIXED_TIME
+
+            if mode == 0:
+                self.comp_time = 1000
+            elif mode == 1:
+                self.comp_time = 3000
+            elif mode == 2:
+                self.comp_time = 5000
+            elif mode == 3:
+                self.comp_time = 10000
+            elif mode == 4:
+                self.comp_time = 15000
+            elif mode == 5:
+                self.comp_time = 30000
+            elif mode == 6:
+                self.comp_time = 60000
+            elif mode == 7:
+                self.comp_time = 120000
+
+        elif 8 <= mode <= 15:
+            self.clock_mode = BLITZ
+
+            if mode == 8:
+                self.comp_time = 60 * 1000
+            elif mode == 9:
+                self.comp_time = 180 * 1000
+            elif mode == 10:
+                self.comp_time = 300 * 1000
+            elif mode == 11:
+                self.comp_time = 600 * 1000
+            elif mode == 12:
+                self.comp_time = 900 * 1000
+            elif mode == 13:
+                self.comp_time = 1800 * 1000
+            elif mode == 14:
+                self.comp_time = 3600 * 1000
+            elif mode == 15:
+                self.comp_time = 5400 * 1000
+
+        elif 16 <= mode <= 22:
+            self.clock_mode = BLITZ_FISCHER
+
+            if mode == 16:
+                self.comp_time = 3 * 60 * 1000
+                self.comp_inc = 2 * 1000
+            elif mode == 17:
+                self.comp_time = 4 * 60 * 1000
+                self.comp_inc = 2 * 1000
+            elif mode == 18:
+                self.comp_time = 5 * 60 * 1000
+                self.comp_inc = 3 * 1000
+            elif mode == 19:
+                self.comp_time = 5 * 60 * 1000
+                self.comp_inc = 5 * 1000
+            elif mode == 20:
+                # Handicap time control
+                # Seems to work well for training
+                # Player has 7m + 10s increment
+                # Computer has 1m + 3s increment
+                self.comp_time = 1 * 60 * 1000
+                self.comp_inc = 3 * 1000
+                self.player_time = 7 * 60 * 1000
+                self.player_inc = 10 * 1000
+            elif mode == 21:
+                self.comp_time = 15 * 60 * 1000
+                self.comp_inc = 5 * 1000
+            elif mode == 22:
+                self.comp_time = 90 * 60 * 1000
+                self.comp_inc = 30 * 1000
+        self.reset_clocks()
+        self.write_to_piface(message, clear=True)
+
+    def set_comp_color(self, fen):
+        self.engine_comp_color = WHITE if fen == COMP_PLAYS_WHITE else BLACK
+        color = "white" if self.engine_comp_color == WHITE else "black"
+        print "Computer plays {0}".format(color)
+        self.write_to_piface("Computer plays {0}".format(color), clear=True)
+        # self.engine_comp_color = WHITE
+        self.engine_computer_move = True
+        if self.engine_comp_color == WHITE:
+            move_queue.put(FORCE_MOVE)
+
     def check_for_command_fen(self, fen):
 
         if book_map.has_key(fen):
-            filepath = BOOK_PATH + book_map[fen][0] + BOOK_EXTENSION
-            print "book filepath : {0}".format(filepath)
-            sf.set_option("Book File", filepath)
-            self.write_to_piface("Book:\n "+book_map[fen][1], clear=True)
+            book_map_entry = book_map[fen]
+            self.set_book(book_map_entry)
             # Return true so that engine does not think if merely the opening book is changed
             return True
         elif fen == COMP_PLAYS_WHITE or fen == COMP_PLAYS_BLACK:
-            self.engine_comp_color = WHITE if fen == COMP_PLAYS_WHITE else BLACK
-            color = "white" if self.engine_comp_color == WHITE else "black"
-            print "Computer plays {0}".format(color)
-            self.write_to_piface("Computer plays {0}".format(color), clear=True)
-            # self.engine_comp_color = WHITE
-            self.engine_computer_move = True
-            if self.engine_comp_color == WHITE:
-                move_queue.put(FORCE_MOVE)
+            self.set_comp_color(fen)
 
         elif game_map.has_key(fen):
             if game_map[fen] == NEW_GAME:
@@ -408,92 +518,20 @@ class Pycochess(object):
                 play_mode = game_map[fen]
                 return True
         elif time_control_map.has_key(fen):
-            mode = time_control_map[fen][0]
-            message = time_control_map[fen][1]
+            time_control_entry = time_control_map[fen]
+            mode = time_control_entry[0]
+            message = time_control_entry[1]
 
 #            print "time_control_mode: {0}".format(mode)
 #            print "time_control_message: {0}".format(message)
 
-            if 0 <= mode <= 7:
-                self.clock_mode = FIXED_TIME
-
-                if mode == 0:
-                    self.comp_time = 1000
-                elif mode == 1:
-                    self.comp_time = 3000
-                elif mode == 2:
-                    self.comp_time = 5000
-                elif mode == 3:
-                    self.comp_time = 10000
-                elif mode == 4:
-                    self.comp_time = 15000
-                elif mode == 5:
-                    self.comp_time = 30000
-                elif mode == 6:
-                    self.comp_time = 60000
-                elif mode == 7:
-                    self.comp_time = 120000
-
-            elif 8 <= mode <= 15:
-                self.clock_mode = BLITZ
-
-                if mode == 8:
-                    self.comp_time = 60   * 1000
-                elif mode == 9:
-                    self.comp_time = 180  * 1000
-                elif mode == 10:
-                    self.comp_time = 300  * 1000
-                elif mode == 11:
-                    self.comp_time = 600  * 1000
-                elif mode == 12:
-                    self.comp_time = 900  * 1000
-                elif mode == 13:
-                    self.comp_time = 1800 * 1000
-                elif mode == 14:
-                    self.comp_time = 3600 * 1000
-                elif mode == 15:
-                    self.comp_time = 5400 * 1000
-
-            elif 16 <= mode <= 22:
-                self.clock_mode = BLITZ_FISCHER
-
-                if mode == 16:
-                    self.comp_time = 3 * 60 * 1000
-                    self.comp_inc = 2 * 1000
-                elif mode == 17:
-                    self.comp_time = 4 * 60 * 1000
-                    self.comp_inc = 2 * 1000
-                elif mode == 18:
-                    self.comp_time = 5 * 60 * 1000
-                    self.comp_inc = 3 * 1000
-                elif mode == 19:
-                    self.comp_time = 5 * 60 * 1000
-                    self.comp_inc = 5 * 1000
-                elif mode == 20:
-                    # Handicap time control
-                    # Seems to work well for training
-                    # Player has 7m + 10s increment
-                    # Computer has 1m + 3s increment
-                    self.comp_time = 1 * 60 * 1000
-                    self.comp_inc = 3 * 1000
-                    self.player_time = 7 * 60 * 1000
-                    self.player_inc = 10 * 1000
-                elif mode == 21:
-                    self.comp_time = 15 * 60 * 1000
-                    self.comp_inc = 5 * 1000
-                elif mode == 22:
-                    self.comp_time = 90 * 60 * 1000
-                    self.comp_inc = 30 * 1000
-
-            self.reset_clocks()
-            self.write_to_piface(message, clear=True)
+            self.set_time_control(message, mode)
             return True
 
         else:
             try:
                 level = level_map.index(fen)
-                sf.set_option("Skill Level", level)
-                self.write_to_piface("Now on Level "+str(level), clear=True)
+                self.set_level(level)
                 return True
             except ValueError:
                 return False
@@ -875,7 +913,7 @@ class Pycochess(object):
 #                    print "Not using DGT board"
                     self.move_list.append(best_move)
                     if self.last_output_move:
-                        self.san_move_list.append(output_move)
+                        self.san_move_list.append(self.last_output_move)
                     self.switch_turn()
                     # self.computer_move_FEN = board.getFEN()
                 if self.last_output_move:
@@ -887,7 +925,11 @@ class Pycochess(object):
                         print figlet.renderText(self.last_output_move)
                     else:
                         print "SAN best_move: {0}".format(self.last_output_move)
-                    self.write_to_piface(self.last_output_move, clear=True)
+                    # print self.ponder_move
+                    if self.ponder_move == '(none)':
+                        self.write_to_piface(self.last_output_move + " (Book)", clear=True)
+                    else:
+                        self.write_to_piface(self.last_output_move, clear=True)
 
     def write_move(self, ply_count, san):
         if ply_count % 2 == 1:
@@ -1143,7 +1185,22 @@ class Pycochess(object):
             print "got {0}".format(event.pin_num)
             print "tbases is {0}".format(EngineMenu.TBASES)
             if 0 <= event.pin_num <= 4:
-                if event.pin_num == EngineMenu.TBASES:
+                if event.pin_num == EngineMenu.LEVEL:
+                    self.level+=1
+                    if self.level > 20:
+                        self.level = 0
+                    self.set_level(self.level)
+                elif event.pin_num == EngineMenu.BOOK:
+                    self.book_index+=1
+                    if self.book_index > max_book_index:
+                        self.book_index = 0
+                    self.set_book(book_list[self.book_index])
+                elif event.pin_num == EngineMenu.TIME:
+                    self.time_control_mode+=1
+                    if self.time_control_mode > max_time_control_index:
+                        self.time_control_mode = 0
+                    self.set_time_control(time_control_list[self.time_control_mode], self.time_control_mode)
+                elif event.pin_num == EngineMenu.TBASES:
                     self.use_tb = not self.use_tb
                     status = "ON" if self.use_tb else "OFF"
 
@@ -1155,6 +1212,8 @@ class Pycochess(object):
                     msg = "Tablebases {0}".format(status)
                     print msg
                     self.write_to_piface(msg, clear=True)
+                elif event.pin_num == EngineMenu.ENG_INFO:
+                    self.write_to_piface(sf.info(), clear=True)
         if self.current_menu == MenuRotation.ALT_INPUT:
             if 0 <= event.pin_num <= 3:
                 self.alt_input_entry[event.pin_num] = self.char_add(self.alt_input_entry[event.pin_num], 1)
@@ -1191,10 +1250,17 @@ class Pycochess(object):
                 # else:
                 m = "".join(self.alt_input_entry)
                 self.write_to_piface("Validating..", clear=True)
-                if m == "a1a1":
+                if m == "b1b1":
+                    self.start_new_game()
+                elif m == "e8e8":
+                    self.set_comp_color(COMP_PLAYS_WHITE)
+                elif m == "e1e1":
+                    self.set_comp_color(COMP_PLAYS_BLACK)
+
+                elif m == "a1a1":
                     # self.perform_undo()
                     move_queue.put("undo_pop")
-                    sleep(3)
+                    sleep(2)
                     move_queue.put("undo_pop")
 
                     # Perform undo
@@ -1212,9 +1278,14 @@ class Pycochess(object):
             if 0 <= event.pin_num <= 4:
                 if event.pin_num == SystemMenu.IP:
                     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    s.connect(("google.com", 80))
-                    self.write_to_piface(s.getsockname()[0], clear=True)
-                    s.close()
+                    try:
+                        s.connect(("google.com", 80))
+                        self.write_to_piface(s.getsockname()[0], clear=True)
+                        s.close()
+                    # TODO: Better handling of exceptions of socket connect
+                    except socket.error, v:
+                        self.write_to_piface("No Internet Connection!", clear=True)
+
                 if event.pin_num == SystemMenu.SHUTDOWN:
                     self.write_to_piface("Shutting Down! Bye", clear=True)
                     os.system("shutdown -h now")
