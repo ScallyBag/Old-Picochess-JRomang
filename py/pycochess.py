@@ -493,15 +493,16 @@ class Pycochess(object):
         self.reset_clocks()
         self.write_to_piface(message, clear=True)
 
-    def set_comp_color(self, fen):
+    def set_comp_color(self, fen, start_new_game = True):
         self.engine_comp_color = WHITE if fen == COMP_PLAYS_WHITE else BLACK
         color = "white" if self.engine_comp_color == WHITE else "black"
         print "Computer plays {0}".format(color)
         self.write_to_piface("Computer plays {0}".format(color), clear=True)
         # self.engine_comp_color = WHITE
         self.engine_computer_move = True
-        if self.engine_comp_color == WHITE:
-            move_queue.put(FORCE_MOVE)
+        if start_new_game:
+            self.start_new_game()
+            #move_queue.put(FORCE_MOVE)
 
     def check_for_command_fen(self, fen):
 
@@ -657,7 +658,6 @@ class Pycochess(object):
             try:
                 new_dgt_fen = fen  # color
 #                print "mod_fen : {0}".format(fen)
-
 #                print "old_dgt_fen: {0}".format(self.dgt_fen)
 #                print "new_dgt_fen: {0}".format(new_dgt_fen)
 
@@ -666,9 +666,9 @@ class Pycochess(object):
                     old_dgt_first_token = self.dgt_fen.split()[0]
                     new_dgt_first_token = new_dgt_fen.split()[0]
 
-                    if old_dgt_first_token == new_dgt_first_token and self.dgt_fen != new_dgt_fen:
-                        # Update fen if only color to move has changed
-                        self.dgt_fen = new_dgt_fen
+                    #if old_dgt_first_token == new_dgt_first_token and self.dgt_fen != new_dgt_fen:
+                    #    # Update fen if only color to move has changed
+                    #    self.dgt_fen = new_dgt_fen
 
                     if old_dgt_first_token != new_dgt_first_token:
 #                        print "old_dgt_first_token: {0}".format(old_dgt_first_token)
