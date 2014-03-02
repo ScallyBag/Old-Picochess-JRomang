@@ -276,7 +276,7 @@ class Pycochess(object):
         # Piface display lock
         self.piface_lock = RLock()
 
-    def write_to_piface(self, message, clear = False):
+    def write_to_piface(self, message, custom_bitmap = None, clear = False):
         if piface:
             # Acquire piface write lock to guard against multiple threads writing at the same time
             with self.piface_lock:
@@ -287,12 +287,16 @@ class Pycochess(object):
                     col, row = cad.lcd.get_cursor()
                     if row == 0 and col + len(message)>16:
                         cad.lcd.set_cursor(0, 1)
+
                 if len(message) > 32:
                     message = message[:32]
                 if len(message) > 16 and "\n" not in message:
                     # Append "\n"
                     message = message[:16]+"\n"+message[16:]
                 cad.lcd.write(message)
+                if custom_bitmap is not None:
+                    cad.lcd.set_cursor(15,1)
+                    cad.lcd.write_custom_bitmap(custom_bitmap)
                 # print "piface wrote: {0}".format(message)
                 # Microsleep before returning lock
                 # Sleep enables that garbage is not written to the screen
@@ -591,24 +595,27 @@ class Pycochess(object):
     def update_clocks(self, *args):
         # print "updating clocks"
         if self.play_mode == GAME_MODE:
+            custom_bitmap = 0
+            if self.turn == BLACK:
+                custom_bitmap = 1
             if self.engine_computer_move:
                 # print "computer_move"
                 if self.engine_searching:
                     self.update_time(color=self.engine_comp_color)
 #                    print "comp_time: {0}".format(self.time_black)
-
+                
                 if self.engine_searching and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
-                    self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), clear=True)
+                    self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), custom_bitmap=custom_bitmap, clear=True)
                 elif self.clock_mode == FIXED_TIME and self.engine_searching:
                     # If FIXED_TIME
                     if self.engine_comp_color == WHITE:
 #                        print "comp_time: {0}".format(self.time_white)
                         if self.time_white and self.time_white >= 1000:
-                            self.write_to_piface(self.format_time_str(self.time_white), clear = True)
+                            self.write_to_piface(self.format_time_str(self.time_white), custom_bitmap=custom_bitmap, clear = True)
                     else:
 #                        print "comp_time: {0}".format(self.time_black)
                         if self.time_black and self.time_black >= 1000:
-                            self.write_to_piface(self.format_time_str(self.time_black), clear = True)
+                            self.write_to_piface(self.format_time_str(self.time_black), custom_bitmap=custom_bitmap, clear = True)
 
                         # self.engine_score.children[0].text = "[color=000000]Thinking..\n[size=24]{0}    [b]{1}[/size][/b][/color]".format(self.format_time_str(self.time_white), self.format_time_str(self.time_black))
             # print "not comp move"
@@ -618,7 +625,7 @@ class Pycochess(object):
             if player_move and len(self.move_list) > 0 and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
                 # print "player_move"
                 self.update_player_time()
-                self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), clear=True)
+                self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), custom_bitmap=custom_bitmap, clear=True)
 
 
     def register_move(self, m):
@@ -926,10 +933,13 @@ class Pycochess(object):
                     else:
                         print "SAN best_move: {0}".format(self.last_output_move)
                     # print self.ponder_move
+                    custom_bitmap = 0
+                    if self.turn == BLACK:
+                        custom_bitmap = 1
                     if self.ponder_move == '(none)':
-                        self.write_to_piface(self.last_output_move + " (Book)", clear=True)
+                        self.write_to_piface(self.last_output_move + " (Book)", custom_bitmap=custom_bitmap, clear=True)
                     else:
-                        self.write_to_piface(self.last_output_move, clear=True)
+                        self.write_to_piface(self.last_output_move, custom_bitmap=custom_bitmap, clear=True)
 
     def write_move(self, ply_count, san):
         if ply_count % 2 == 1:
@@ -1404,6 +1414,12 @@ if __name__ == '__main__':
         cad.lcd.blink_off()
         cad.lcd.cursor_off()
         cad.lcd.backlight_on()
+
+        white_box = pifacecad.LCDBitmap([31,17,17,17,17,17,17,31])
+        cad.lcd.store_custom_bitmap(0, white_box)
+        black_box = pifacecad.LCDBitmap([31,31,31,31,31,31,31,31])
+        cad.lcd.store_custom_bitmap(1, black_box)
+
         cad.lcd.write("Pycochess {0}".format(VERSION))
 
         # Lets assume this is the raspberry Pi for now..
@@ -1467,7 +1483,10 @@ if __name__ == '__main__':
 
         if pyco.computer_move_FEN_reached:
             print "Comp_move FEN reached"
-            pyco.write_to_piface(" (Done)", clear=False)
+            custom_bitmap = 0
+            if pyco.turn == BLACK:
+                custom_bitmap = 1
+            pyco.write_to_piface(pyco.last_output_move + " (Done)", custom_bitmap=custom_bitmap, clear=True)
             # pyco.engine_computer_move = False
             continue
 
