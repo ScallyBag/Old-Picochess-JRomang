@@ -35,7 +35,7 @@ GAME_MODE = "Game Mode"
 KIBITZ_MODE = "Kibitz Mode"
 OBSERVE_MODE = "Observe Mode"
 
-VERSION = "0.21"
+VERSION = "0.22"
 
 BOOK_EXTENSION = ".bin"
 try:
@@ -604,7 +604,7 @@ class Pycochess(object):
                 if self.engine_searching:
                     self.update_time(color=self.engine_comp_color)
 #                    print "comp_time: {0}".format(self.time_black)
-                
+
                 if self.engine_searching and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
                     self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), custom_bitmap=custom_bitmap, clear=True)
                 elif self.clock_mode == FIXED_TIME and self.engine_searching:
