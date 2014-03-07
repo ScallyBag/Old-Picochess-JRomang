@@ -35,7 +35,7 @@ GAME_MODE = "Game Mode"
 KIBITZ_MODE = "Kibitz Mode"
 OBSERVE_MODE = "Observe Mode"
 
-VERSION = "0.21"
+VERSION = "0.22"
 
 BOOK_EXTENSION = ".bin"
 try:
@@ -47,17 +47,24 @@ except ImportError:
     print "No pyfiglet"
 
 piface = None
+arduino = False
 try:
     import pifacecad
     piface = True
 except ImportError:
     piface = False
+    try:
+        import nanpy
+        arduino = True
+    except ImportError:
+        arduino = False
+
 
 WHITE = "w"
 BLACK = "b"
 
-PROG_PATH = "/home/miniand/git/Stockfish"
-# PROG_PATH = "/Users/shiv/chess/Stockfish"
+# PROG_PATH = "/home/miniand/git/Stockfish"
+PROG_PATH = "/Users/shiv/chess/Stockfish"
 
 BOOK_PATH = "/opt/picochess/books/"
 DEFAULT_BOOK_FEN = "rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR"
@@ -273,13 +280,19 @@ class Pycochess(object):
         # Load the GM book for now to provide human reference moves
         self.polyglot_book = PolyglotOpeningBook(BOOK_PATH+"gm1950.bin")
 
-        # Piface display lock
-        self.piface_lock = RLock()
+        # display lock
+        self.display_lock = RLock()
+
 
     def write_to_piface(self, message, custom_bitmap = None, clear = False):
+        if len(message) > 32:
+            message = message[:32]
+        if len(message) > 16 and "\n" not in message:
+            # Append "\n"
+            message = message[:16]+"\n"+message[16:]
         if piface:
             # Acquire piface write lock to guard against multiple threads writing at the same time
-            with self.piface_lock:
+            with self.display_lock:
                 if clear:
                     cad.lcd.clear()
 
@@ -288,11 +301,7 @@ class Pycochess(object):
                     if row == 0 and col + len(message)>16:
                         cad.lcd.set_cursor(0, 1)
 
-                if len(message) > 32:
-                    message = message[:32]
-                if len(message) > 16 and "\n" not in message:
-                    # Append "\n"
-                    message = message[:16]+"\n"+message[16:]
+
                 cad.lcd.write(message)
                 if custom_bitmap is not None:
                     cad.lcd.set_cursor(15,1)
@@ -301,6 +310,24 @@ class Pycochess(object):
                 # Microsleep before returning lock
                 # Sleep enables that garbage is not written to the screen
                 sleep(0.3)
+        elif arduino:
+            with self.display_lock:
+                # lcd.printString("                ", 0, 0)
+                # lcd.printString("                ", 1, 0)
+                if clear:
+                    lcd.printString("                ", 0, 0)
+                    lcd.printString("                ", 0, 1)
+
+                    # lcd.printString("      ",0,1)
+                if "\n" in message:
+                    first, second = message.split("\n")
+                    # print first
+                    # print second
+                    lcd.printString(first, 0, 0)
+                    lcd.printString(second, 0, 1)
+                else:
+                    lcd.printString(message, 0, 0)
+                sleep(0.1)
         else:
             print "Piface: [{0}]".format(message)
 
@@ -397,12 +424,12 @@ class Pycochess(object):
         self.san_move_list = []
         self.turn = WHITE
 
-        if piface:
+        # if piface:
 #            cad.lcd.blink_off()
 #            cad.lcd.cursor_off()
 #            cad.lcd.backlight_off()
 #            cad.lcd.backlight_on()
-            self.write_to_piface("New Game", clear=True)
+        self.write_to_piface("New Game", clear=True)
         self.reset_clocks()
 
         if self.engine_comp_color == WHITE:
@@ -420,6 +447,8 @@ class Pycochess(object):
         self.write_to_piface("Book:\n " + book_map_entry[1], clear=True)
 
     def set_time_control(self, message, mode):
+        self.player_time = 0
+        self.player_inc = 0
         if 0 <= mode <= 7:
             self.clock_mode = FIXED_TIME
 
@@ -466,6 +495,7 @@ class Pycochess(object):
             if mode == 16:
                 self.comp_time = 3 * 60 * 1000
                 self.comp_inc = 2 * 1000
+
             elif mode == 17:
                 self.comp_time = 4 * 60 * 1000
                 self.comp_inc = 2 * 1000
@@ -1409,6 +1439,12 @@ def process_undo(pyco, m):
 
 
 if __name__ == '__main__':
+    sf.set_option("OwnBook", "true")
+
+    # In case someone has the pi rev A
+    sf.set_option("Hash", 128)
+    sf.set_option("Emergency Base Time", 1300)
+    sf.set_option("Book File", BOOK_PATH+book_map[DEFAULT_BOOK_FEN][0]+ BOOK_EXTENSION)
     if piface:
         cad = pifacecad.PiFaceCAD()
         cad.lcd.blink_off()
@@ -1423,15 +1459,20 @@ if __name__ == '__main__':
         cad.lcd.write("Pycochess {0}".format(VERSION))
 
         # Lets assume this is the raspberry Pi for now..
-        sf.set_option("OwnBook", "true")
 
-        # In case someone has the pi rev A
-        sf.set_option("Hash", 128)
-        sf.set_option("Emergency Base Time", 1300)
-        sf.set_option("Book File", BOOK_PATH+book_map[DEFAULT_BOOK_FEN][0]+ BOOK_EXTENSION)
         # Make this an option later
         # self.use_tb = True
+    elif arduino:
+        from nanpy import SerialManager
+        from nanpy.lcd import Lcd
+        from nanpy import Arduino
+        from nanpy import serial_manager
+        connection = SerialManager(device='/dev/cu.usbmodem411')
+        # Arduino(serial_connection('/dev/tty.usbmodem411')).digitalRead(13)
 
+        # time.sleep(3)
+        lcd = Lcd([8, 9, 4, 5, 6, 7 ], [16, 2], connection=connection)
+        lcd.printString('Pycochess {0}'.format(VERSION))
     arm = False
 #    print os.uname()[4][:3]
     device = None
