@@ -59,12 +59,13 @@ except ImportError:
     except ImportError:
         arduino = False
 
-
 WHITE = "w"
 BLACK = "b"
 
-# PROG_PATH = "/home/miniand/git/Stockfish"
-PROG_PATH = "/Users/shiv/chess/Stockfish"
+if piface:
+    PROG_PATH = "/home/miniand/git/Stockfish"
+else:
+    PROG_PATH = os.path.realpath("..")
 
 BOOK_PATH = "/opt/picochess/books/"
 DEFAULT_BOOK_FEN = "rnbqkbnr/pppppppp/8/8/8/5q2/PPPPPPPP/RNBQKBNR"
