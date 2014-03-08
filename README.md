@@ -22,6 +22,7 @@ To test the Python native DGT driver:
 
 To run on the piface and desktop:
 
+
 To build pyfish:
 
 1. This needs pyfish. To build pyfish (just needed one time):
@@ -31,6 +32,29 @@ To build pyfish:
 4. Execute "sudo python setup.py install"
 
 After pyfish:
+
+To run on desktop Mac (or similar hardware) with the Oduino One:
+
+One time flash of Oduino One:
+
+1. Git clone https://github.com/sshivaji/nanpy
+1. Go to the firmware/Nanpy folder
+1. "export BOARD=uno"
+1. Modify cfg.h if needed (there is likely NO need to do this).
+1. "make"
+1. After a successful build, execute "make upload /dev/tty.usbmodem411" (or whatever your device name is for the Oduino One).
+1. Install the nanpy library, go to the root folder of https://github.com/sshivaji/nanpy.
+1. "sudo python setup.py install"
+ 
+
+To run on desktop (after one-time flash is complete and the nanpy library is installed):
+
+1. Go to the py/ folder
+1. "python pycochess.py <DGT device_name>". E.g. my device name is /dev/cu.usbserial-0000\*\*\*\*  
+1. Enjoy! Currently buttons on the Oduino One are not supported but they will be soon..
+
+
+To run on the raspberry Pi:
 
 1. Go to the py/ folder
 1. Do this one time: https://github.com/piface/pifacecad
