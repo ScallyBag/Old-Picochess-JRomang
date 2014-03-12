@@ -327,6 +327,15 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
     if(strcmp(fen,"startpos")==0) fen=StartFEN;
     p.set(fen, false, Threads.main());
 
+    int numSearchMoves = PyList_Size(listSearchMoves);
+    for (int i=0; i<numSearchMoves ; i++) {
+        string moveStr( PyString_AsString( PyList_GetItem(listSearchMoves, i)) );
+        Move m;
+        if((m = move_from_uci(p, moveStr)) != MOVE_NONE) {
+            searchMoves.push_back(m);
+        }
+    }
+
     // parse the move list
     int numMoves = PyList_Size(moveList);
     for (int i=0; i<numMoves ; i++) {
