@@ -309,7 +309,7 @@ extern "C" PyObject* stockfish_toCAN(PyObject* self, PyObject *args)
 extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwargs) {
     Search::LimitsType limits;
     vector<Move> searchMoves;
-    PyObject *listSearchMoves;
+    PyObject *listSearchMoves = PyList_New(0);
     PyObject *moveList;
     const char *fen=NULL;
     Position p;
@@ -327,15 +327,6 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
     if(strcmp(fen,"startpos")==0) fen=StartFEN;
     p.set(fen, false, Threads.main());
 
-    int numSearchMoves = PyList_Size(listSearchMoves);
-    for (int i=0; i<numSearchMoves ; i++) {
-        string moveStr( PyString_AsString( PyList_GetItem(listSearchMoves, i)) );
-        Move m;
-        if((m = move_from_uci(p, moveStr)) != MOVE_NONE) {
-            searchMoves.push_back(m);
-        }
-    }
-
     // parse the move list
     int numMoves = PyList_Size(moveList);
     for (int i=0; i<numMoves ; i++) {
@@ -345,6 +336,19 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
         {
             SetupStates->push(StateInfo());
             p.do_move(m, SetupStates->top());
+        }
+        else
+        {
+            PyErr_SetString(PyExc_ValueError, (string("Invalid move '")+moveStr+"'").c_str());
+        }
+    }
+    
+    int numSearchMoves = PyList_Size(listSearchMoves);
+    for (int i=0; i<numSearchMoves ; i++) {
+        string moveStr( PyString_AsString( PyList_GetItem(listSearchMoves, i)) );
+        Move m;
+        if((m = move_from_uci(p, moveStr)) != MOVE_NONE) {
+            searchMoves.push_back(m);
         }
         else
         {
