@@ -1,4 +1,37 @@
-### Overview
+### PyFish
+
+Pyfish is a python wrapper for the Stockfish engine. It wraps Stockfish as a C module.
+
+To build and install pyfish: 
+
+1. Install git if you dont already have it via ``sudo apt-get install git`` if you have Ubuntu.
+1. ``git clone https://github.com/jromang/Stockfish``
+1. Switch to the pyfish branch - ``git checkout pyfish``
+1. Go to the src directory - ``cd src``
+1. Install the python-dev package if you dont already have it - For Ubuntu, its ``sudo apt-get install python-dev``
+1. Install the pyfish package via ``sudo python setup.py install``
+1. If this step succeeds, you are done.
+
+Pyfish python API:
+
+1. To call pyfish in your code - ``import stockfish as sf``
+1. You can then call methods from the stockfish/sf module.
+1. Supported methods: 
+   1. ``add_observer`` :
+   1. ``remove_observer``
+   1. ``go`` 
+   1. ``info`` : Get version info from stockfish.
+   1. ``key`` : Get the polyglot opening book key.
+   1. ``legal_moves`` : Get legal moves for a position, need fen as the first argument and the moves played as the next argument. An empty list is fine for moves played if you want legal moves for the fen position.
+   1. ``get_fen``
+   1. ``to_can``
+   1. ``to_san``
+   1. ``ponderhit`` : If stockfish is set to stop on ponder via a UCI option, calling this api will make Stockfish stop searching when a ponder is hit.
+   1. ``set_option`` : Set a particular UCI option with a value
+   1. ``get_options`` : Get the list of supported UCI options along with current and supported values as a dictionary.
+   1. ``stop``      
+
+### Stockfish Overview
 
 Stockfish is a free UCI chess engine derived from Glaurung 2.1. It is
 not a complete chess program and requires some UCI-compatible GUI
