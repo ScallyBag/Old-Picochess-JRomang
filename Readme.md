@@ -15,11 +15,20 @@ To build and install pyfish:
 Pyfish python API:
 
 1. To call pyfish in your code - ``import stockfish as sf``
-1. You can then call methods from the stockfish/sf module.
+1. You can then call methods from the stockfish/sf module. Note that the go, legal\_moves, to\_can, to\_san methods required a fen and a move list as the first two parameters. The move list can be an empty ([]) if the processing can be done on the fen itself. 
 1. Supported methods: 
-   1. ``add_observer`` :
-   1. ``remove_observer``
-   1. ``go`` 
+   1. ``add_observer`` : Add an observer method that processes every line returned by stockfish.
+   1. ``remove_observer`` : Remove an observer. This is probably not needed unless you want to register an observer.
+   1. ``go`` : Start thinking. The parameters supported are ``"fen", "moves", "searchmoves", "wtime", "btime", "winc", "binc", "movestogo", "depth", "nodes", "movetime", "mate", "infinite", and "ponder"``
+       1. searchmoves is the set of moves to restrict the search to 
+       1. wtime is the amount of time in milliseconds to give to white
+       1. btime is the same for black
+       1. winc is the increment in milliseconds given every move
+       1. binc is the same figure for black
+       1. depth is the search depth
+       1. if ``infinite=True``, the search depth is infinite
+       1. if ``movetime`` is provided, that is the amount of fixed time for a move
+       1. 
    1. ``info`` : Get version info from stockfish.
    1. ``key`` : Get the polyglot opening book key.
    1. ``legal_moves`` : Get legal moves for a position, need fen as the first argument and the moves played as the next argument. An empty list is fine for moves played if you want legal moves for the fen position.
