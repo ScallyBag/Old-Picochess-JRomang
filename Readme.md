@@ -17,28 +17,33 @@ Pyfish python API:
 1. To call pyfish in your code - ``import stockfish as sf``
 1. You can then call methods from the stockfish/sf module. Note that the go, legal\_moves, to\_can, to\_san methods required a fen and a move list as the first two parameters. The move list can be an empty ([]) if the processing can be done on the fen itself. 
 1. Supported methods: 
-   1. ``add_observer`` : Add an observer method that processes every line returned by stockfish.
+   1. ``add_observer`` : Add an observer method that processes every line returned by stockfish. Example - ``sf.add_observer(<your method>)``
    1. ``remove_observer`` : Remove an observer. This is probably not needed unless you want to register an observer.
-   1. ``go`` : Start thinking. The parameters supported are ``"fen", "moves", "searchmoves", "wtime", "btime", "winc", "binc", "movestogo", "depth", "nodes", "movetime", "mate", "infinite", and "ponder"``
-       1. searchmoves is the set of moves to restrict the search to 
-       1. wtime is the amount of time in milliseconds to give to white
-       1. btime is the same for black
-       1. winc is the increment in milliseconds given every move
-       1. binc is the same figure for black
-       1. depth is the search depth
+   1. ``go`` : Start thinking. The parameters supported are listed below. Fen and moves are required, the rest of the params are optional. They call all be passed as keyword params. Example - ``sf.go(fen='startpos', moves=[], wtime=int(5000*1000), btime=int(5000*1000), winc=int(5*1000), binc=int(5*1000))`` for a G/5 with a 5 second increment every move. Example of infinite search - ``sf.go(fen='startpos', moves=[], infinite=True)`` launches an infinite search on the start position. Note: You MUST terminate an infinite search with sf.stop() at some point!
+   
+       1. fen is the first parameter and is a string. For the start position, ``'startpos'`` is acceptable.
+       1. moves is a list of moves that have been played from the fen position. This can be an empty list.
+       1. ``searchmoves`` is the set of moves to restrict the search to.
+       1. ``wtime`` is the amount of time in milliseconds to give to white
+       1. ``btime`` is the same for black
+       1. ``winc`` is the increment in milliseconds given every move
+       1. ``binc`` is the same figure for black
+       1. ``depth`` is the search depth, is an integer
        1. if ``infinite=True``, the search depth is infinite
-       1. if ``movetime`` is provided, that is the amount of fixed time for a move
-       1. 
+       1. if ``movetime`` is provided, that becomes the amount of fixed time for a move
    1. ``info`` : Get version info from stockfish.
    1. ``key`` : Get the polyglot opening book key.
-   1. ``legal_moves`` : Get legal moves for a position, need fen as the first argument and the moves played as the next argument. An empty list is fine for moves played if you want legal moves for the fen position.
-   1. ``get_fen``
-   1. ``to_can``
-   1. ``to_san``
-   1. ``ponderhit`` : If stockfish is set to stop on ponder via a UCI option, calling this api will make Stockfish stop searching when a ponder is hit.
-   1. ``set_option`` : Set a particular UCI option with a value
+   1. ``legal_moves`` : Get legal moves for a position, need fen as the first argument and the moves played as the next argument. An empty list is fine for moves played if you want legal moves for the fen position. Example - ``sf.legal_moves('startpos')`` will return a list of legal moves from the start position.
+   1. ``get_fen`` : Get resulting fen after executing a bunch of moves, first parameter is fen, and second parameter is the move list to execute. Example - ``sf.get_fen('startpos',['e2e4'])`` will return the FEN after 1.e4 from the start position.
+   1. ``to_can`` : Given a fen, and a list of moves in SAN notation, return a list of CAN moves. e.g. ``sf.to_can('startpos', ['e4','c5']) will return ['e2e4', 'c7c5']
+   1. ``to_san`` : Given a fen, and a list of moves in CAN notation, return a list of SAN moves. e.g. ``sf.to_can('startpos', ['e2e4','c7c5']) will return ['e4', 'c5']
+   1. ``ponderhit`` : If stockfish is set to stop on ponder via a UCI option, calling this method will make Stockfish stop searching when a ponder is hit.
+   1. ``set_option`` : Set a particular UCI option with a value. Example - ``sf.set_option('skill level', 10)`` will set stockfish to level 10
    1. ``get_options`` : Get the list of supported UCI options along with current and supported values as a dictionary.
-   1. ``stop``      
+   1. ``stop`` : Stop the current search, if there is an active search. Example - ``sf.stop()``
+1. More examples are in pyfish_test.py
+   
+
 
 ### Stockfish Overview
 
