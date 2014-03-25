@@ -41,9 +41,12 @@ Pyfish python API:
    1. ``set_option`` : Set a particular UCI option with a value. Example - ``sf.set_option('skill level', 10)`` will set stockfish to level 10
    1. ``get_options`` : Get the list of supported UCI options along with current and supported values as a dictionary.
    1. ``stop`` : Stop the current search, if there is an active search. Example - ``sf.stop()``
-1. More examples are in pyfish_test.py
+1. More examples are in pyfish\_test.py
    
+FAQ:
 
+1. I called sf.go(), why dont I see any analysis on the screen?
+   You must register a listener to see analysis, refer to pyfish\_test.py for an example on the ``add_observer`` method.
 
 ### Stockfish Overview
 
