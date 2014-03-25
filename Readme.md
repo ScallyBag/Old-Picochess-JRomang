@@ -33,7 +33,7 @@ Pyfish python API:
        1. if ``movetime`` is provided, that becomes the amount of fixed time for a move
    1. ``info`` : Get version info from stockfish.
    1. ``key`` : Get the polyglot opening book key.
-   1. ``legal_moves`` : Get legal moves for a position, need fen as the first argument and the moves played as the next argument. An empty list is fine for moves played if you want legal moves for the fen position. Example - ``sf.legal_moves('startpos')`` will return a list of legal moves from the start position.
+   1. ``legal_moves`` : Get legal moves for a position, need fen as the first argument and the moves played as the next argument. An empty list is fine for moves played if you want legal moves for the fen position. Example - ``sf.legal_moves('startpos')`` will return a list of legal moves from the start position. If you want to get the legal moves in SAN format, you can call ``sf.legal_moves('startpos',toSan=True)``
    1. ``get_fen`` : Get resulting fen after executing a bunch of moves, first parameter is fen, and second parameter is the move list to execute. Example - ``sf.get_fen('startpos',['e2e4'])`` will return the FEN after 1.e4 from the start position.
    1. ``to_can`` : Given a fen, and a list of moves in SAN notation, return a list of CAN moves. e.g. ``sf.to_can('startpos', ['e4','c5']) will return ['e2e4', 'c7c5']
    1. ``to_san`` : Given a fen, and a list of moves in CAN notation, return a list of SAN moves. e.g. ``sf.to_can('startpos', ['e2e4','c7c5']) will return ['e4', 'c5']
