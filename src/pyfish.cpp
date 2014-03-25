@@ -177,19 +177,33 @@ extern "C" PyObject* stockfish_removeObserver(PyObject* self, PyObject *args)
 }
 
 //INPUT fen
-extern "C" PyObject* stockfish_legalMoves(PyObject* self, PyObject *args)
+extern "C" PyObject* stockfish_legalMoves(PyObject* self, PyObject *args, PyObject *kwargs)
 {
     PyObject* list = PyList_New(0);
     Position p;
 
     const char *fen=NULL;
-    if (!PyArg_ParseTuple(args, "s", &fen)) return NULL;
+    const char *kwlist[] = {"fen", "tosan", NULL};
+
+    // if tosan = True, return legal moves in SAN format
+    // This is a boolean but gets converted to int
+    int toSan = 0;
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|i", const_cast<char **>(kwlist), &fen, &toSan))
+        return NULL;
+
+
     if(strcmp(fen,"startpos")==0) fen=StartFEN;
     p.set(fen, false, Threads.main());
 
     for (MoveList<LEGAL> it(p); *it; ++it)
     {
-        PyObject *move=Py_BuildValue("s", move_to_uci(*it,false).c_str());
+        PyObject *move;
+        if (toSan == 0) {
+            move=Py_BuildValue("s", move_to_uci(*it,false).c_str());
+        }
+        else {
+            move=Py_BuildValue("s", move_to_san(p,*it).c_str());
+        }
         PyList_Append(list, move);
         Py_XDECREF(move);
     }
@@ -402,7 +416,7 @@ static PyMethodDef stockfish_funcs[] = {
     {"go", (PyCFunction)stockfish_go, METH_VARARGS | METH_KEYWORDS, stockfish_docs},
     {"info", (PyCFunction)stockfish_info, METH_NOARGS, stockfish_docs},
     {"key", (PyCFunction)stockfish_key, METH_VARARGS, stockfish_docs},
-    {"legal_moves", (PyCFunction)stockfish_legalMoves, METH_VARARGS, stockfish_docs},
+    {"legal_moves", (PyCFunction)stockfish_legalMoves, METH_VARARGS| METH_KEYWORDS, stockfish_docs},
     {"get_fen", (PyCFunction)stockfish_getFEN, METH_VARARGS, stockfish_docs},
     {"to_can", (PyCFunction)stockfish_toCAN, METH_VARARGS, stockfish_docs},
     {"to_san", (PyCFunction)stockfish_toSAN, METH_VARARGS, stockfish_docs},
