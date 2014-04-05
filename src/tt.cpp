@@ -69,18 +69,25 @@ void TranspositionTable::clear() {
 /// position is not found.
 
 const TTEntry* TranspositionTable::probe(const Key key) const {
-
-  TTEntry* tte = first_entry(key);
-  uint32_t key32 = key >> 32;
-
-  for (unsigned i = 0; i < ClusterSize; ++i, ++tte)
-      if (tte->key32 == key32)
-      {
-          tte->generation8 = generation; // Refresh
-          return tte;
-      }
-
-  return NULL;
+	TTEntry* tte = first_entry(key);
+	uint32_t key32 = key >> 32;
+ 
+	__m128i cluster_keys = _mm_set_epi32 ((tte+3)->key32, (tte+2)->key32, (tte+1)->key32, tte->key32);
+	__m128i key_vector = _mm_set1_epi32(key32);
+	__m128i result = _mm_cmpeq_epi32(cluster_keys, key_vector);
+	__m128i mask = _mm_set_epi32 (4,3,2,1);
+	__m128i vsum = _mm_and_si128(result, mask);
+	// horizontal add of four 32 bit partial sums and return result
+	vsum = _mm_add_epi32(vsum, _mm_srli_si128(vsum, 8));
+	vsum = _mm_add_epi32(vsum, _mm_srli_si128(vsum, 4));
+	uint32_t sum = _mm_cvtsi128_si32(vsum);
+ 
+	if(sum)
+	{
+		tte[--sum].generation8 = generation;
+		return tte+sum;
+	}
+	else return NULL;
 }
 
 
