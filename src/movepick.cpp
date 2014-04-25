@@ -49,9 +49,9 @@ namespace {
     }
   }
 
-  // Unary predicate used by std::partition to split positive scores from remaining
+  // Unary predicate used by std::partition to split positive values from remaining
   // ones so as to sort the two sets separately, with the second sort delayed.
-  inline bool has_positive_score(const ExtMove& ms) { return ms.score > 0; }
+  inline bool has_positive_value(const ExtMove& ms) { return ms.value > 0; }
 
   // Picks the best move in the range (begin, end) and moves it to the front.
   // It's faster than sorting all the moves in advance when there are few
@@ -81,7 +81,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats&
   followupmoves = fm;
   ss = s;
 
-  if (p.checkers())
+  if (pos.checkers())
       stage = EVASION;
 
   else
@@ -92,11 +92,11 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats&
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats& h,
-                       Square sq) : pos(p), history(h), cur(moves), end(moves) {
+                       Square s) : pos(p), history(h), cur(moves), end(moves) {
 
   assert(d <= DEPTH_ZERO);
 
-  if (p.checkers())
+  if (pos.checkers())
       stage = EVASION;
 
   else if (d > DEPTH_QS_NO_CHECKS)
@@ -115,7 +115,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats&
   else
   {
       stage = RECAPTURE;
-      recaptureSquare = sq;
+      recaptureSquare = s;
       ttm = MOVE_NONE;
   }
 
@@ -142,8 +142,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, const HistoryStats& h, Piece
 }
 
 
-/// score() assign a numerical move ordering score to each move in a move list.
-/// The moves with highest scores will be picked first.
+/// score() assign a numerical value to each move in a move list. The moves with
+/// highest values will be picked first.
 template<>
 void MovePicker::score<CAPTURES>() {
   // Winning and equal captures in the main search are ordered by MVV/LVA.
@@ -164,14 +164,14 @@ void MovePicker::score<CAPTURES>() {
   for (ExtMove* it = moves; it != end; ++it)
   {
       m = it->move;
-      it->score =  PieceValue[MG][pos.piece_on(to_sq(m))]
-                 - type_of(pos.moved_piece(m));
+      it->value =  PieceValue[MG][pos.piece_on(to_sq(m))]
+                 - Value(type_of(pos.moved_piece(m)));
 
-      if (type_of(m) == PROMOTION)
-          it->score += PieceValue[MG][promotion_type(m)] - PieceValue[MG][PAWN];
+      if (type_of(m) == ENPASSANT)
+          it->value += PieceValue[MG][PAWN];
 
-      else if (type_of(m) == ENPASSANT)
-          it->score += PieceValue[MG][PAWN];
+      else if (type_of(m) == PROMOTION)
+          it->value += PieceValue[MG][promotion_type(m)] - PieceValue[MG][PAWN];
   }
 }
 
@@ -183,7 +183,7 @@ void MovePicker::score<QUIETS>() {
   for (ExtMove* it = moves; it != end; ++it)
   {
       m = it->move;
-      it->score = history[pos.moved_piece(m)][to_sq(m)];
+      it->value = history[pos.moved_piece(m)][to_sq(m)];
   }
 }
 
@@ -191,29 +191,29 @@ template<>
 void MovePicker::score<EVASIONS>() {
   // Try good captures ordered by MVV/LVA, then non-captures if destination square
   // is not under attack, ordered by history value, then bad-captures and quiet
-  // moves with a negative SEE. This last group is ordered by the SEE score.
+  // moves with a negative SEE. This last group is ordered by the SEE value.
   Move m;
-  int seeScore;
+  Value see;
 
   for (ExtMove* it = moves; it != end; ++it)
   {
       m = it->move;
-      if ((seeScore = pos.see_sign(m)) < 0)
-          it->score = seeScore - HistoryStats::Max; // At the bottom
+      if ((see = pos.see_sign(m)) < VALUE_ZERO)
+          it->value = see - HistoryStats::Max; // At the bottom
 
       else if (pos.capture(m))
-          it->score =  PieceValue[MG][pos.piece_on(to_sq(m))]
-                     - type_of(pos.moved_piece(m)) + HistoryStats::Max;
+          it->value =  PieceValue[MG][pos.piece_on(to_sq(m))]
+                     - Value(type_of(pos.moved_piece(m))) + HistoryStats::Max;
       else
-          it->score = history[pos.moved_piece(m)][to_sq(m)];
+          it->value = history[pos.moved_piece(m)][to_sq(m)];
   }
 }
 
 
-/// generate_next() generates, scores and sorts the next bunch of moves, when
-/// there are no more moves to try for the current phase.
+/// generate_next_stage() generates, scores and sorts the next bunch of moves,
+/// when there are no more moves to try for the current stage.
 
-void MovePicker::generate_next() {
+void MovePicker::generate_next_stage() {
 
   cur = moves;
 
@@ -233,14 +233,14 @@ void MovePicker::generate_next() {
       killers[2].move = killers[3].move = MOVE_NONE;
       killers[4].move = killers[5].move = MOVE_NONE;
 
+      // Please note that following code is racy and could yield to rare (less
+      // than 1 out of a million) duplicated entries in SMP case. This is harmless.
+
       // Be sure countermoves are different from killers
       for (int i = 0; i < 2; ++i)
           if (   countermoves[i] != (cur+0)->move
               && countermoves[i] != (cur+1)->move)
               (end++)->move = countermoves[i];
-
-      if (countermoves[1] && countermoves[1] == countermoves[0]) // Due to SMP races
-          killers[3].move = MOVE_NONE;
 
       // Be sure followupmoves are different from killers and countermoves
       for (int i = 0; i < 2; ++i)
@@ -249,16 +249,12 @@ void MovePicker::generate_next() {
               && followupmoves[i] != (cur+2)->move
               && followupmoves[i] != (cur+3)->move)
               (end++)->move = followupmoves[i];
-
-      if (followupmoves[1] && followupmoves[1] == followupmoves[0]) // Due to SMP races
-          (--end)->move = MOVE_NONE;
-
       return;
 
   case QUIETS_1_S1:
       endQuiets = end = generate<QUIETS>(pos, moves);
       score<QUIETS>();
-      end = std::partition(cur, end, has_positive_score);
+      end = std::partition(cur, end, has_positive_value);
       insertion_sort(cur, end);
       return;
 
@@ -299,7 +295,7 @@ void MovePicker::generate_next() {
 
 /// next_move() is the most important method of the MovePicker class. It returns
 /// a new pseudo legal move every time it is called, until there are no more moves
-/// left. It picks the move with the biggest score from a list of generated moves
+/// left. It picks the move with the biggest value from a list of generated moves
 /// taking care not to return the ttMove if it has already been searched.
 template<>
 Move MovePicker::next_move<false>() {
@@ -309,7 +305,7 @@ Move MovePicker::next_move<false>() {
   while (true)
   {
       while (cur == end)
-          generate_next();
+          generate_next_stage();
 
       switch (stage) {
 
@@ -321,7 +317,7 @@ Move MovePicker::next_move<false>() {
           move = pick_best(cur++, end)->move;
           if (move != ttMove)
           {
-              if (pos.see_sign(move) >= 0)
+              if (pos.see_sign(move) >= VALUE_ZERO)
                   return move;
 
               // Losing capture, move it to the tail of the array

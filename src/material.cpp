@@ -34,7 +34,7 @@ namespace {
   // Polynomial material balance parameters
 
   //                                  pair  pawn knight bishop rook queen
-  const int LinearCoefficients[6] = { 1852, -162, -1122, -183,  249, -52 };
+  const int LinearCoefficients[6] = { 1852, -162, -1122, -183,  249, -154 };
 
   const int QuadraticCoefficientsSameColor[][PIECE_TYPE_NB] = {
     // pair pawn knight bishop rook queen
@@ -43,7 +43,7 @@ namespace {
     {  35,  271,  -4                    }, // Knight
     {   0,  105,   4,    0              }, // Bishop
     { -27,   -2,  46,   100,  -141      }, // Rook
-    {  58,   29,  83,   148,  -163,   0 }  // Queen
+    {-177,   25, 129,   142,  -137,   0 }  // Queen
   };
 
   const int QuadraticCoefficientsOppositeColor[][PIECE_TYPE_NB] = {
@@ -54,7 +54,7 @@ namespace {
     {  10,   62,   0                    }, // Knight      OUR PIECES
     {  57,   64,  39,     0             }, // Bishop
     {  50,   40,  23,   -22,    0       }, // Rook
-    { 106,  101,   3,   151,  171,    0 }  // Queen
+    {  98,  105, -39,   141,  274,    0 }  // Queen
   };
 
   // Endgame evaluation and scaling functions are accessed directly and not through
@@ -115,6 +115,7 @@ namespace {
 
         value += pc * v;
     }
+
     return value;
   }
 
@@ -174,7 +175,7 @@ Entry* probe(const Position& pos, Table& entries, Endgames& endgames) {
       return e;
   }
 
-  // Generic scaling functions that refer to more then one material
+  // Generic scaling functions that refer to more than one material
   // distribution. They should be probed after the specialized ones.
   // Note that these ones don't return after setting the function.
   if (is_KBPsKs<WHITE>(pos))
@@ -192,7 +193,7 @@ Entry* probe(const Position& pos, Table& entries, Endgames& endgames) {
   Value npm_w = pos.non_pawn_material(WHITE);
   Value npm_b = pos.non_pawn_material(BLACK);
 
-  if (npm_w + npm_b == VALUE_ZERO)
+  if (npm_w + npm_b == VALUE_ZERO && pos.pieces(PAWN))
   {
       if (!pos.count<PAWN>(BLACK))
       {
@@ -217,24 +218,16 @@ Entry* probe(const Position& pos, Table& entries, Endgames& endgames) {
   // catches some trivial draws like KK, KBK and KNK and gives a very drawish
   // scale factor for cases such as KRKBP and KmmKm (except for KBBKN).
   if (!pos.count<PAWN>(WHITE) && npm_w - npm_b <= BishopValueMg)
-  {
-      e->factor[WHITE] = npm_w < RookValueMg ? 0 : npm_b <= BishopValueMg ? 4 : 12;
-  }
+      e->factor[WHITE] = uint8_t(npm_w < RookValueMg ? SCALE_FACTOR_DRAW : npm_b <= BishopValueMg ? 4 : 12);
 
   if (!pos.count<PAWN>(BLACK) && npm_b - npm_w <= BishopValueMg)
-  {
-      e->factor[BLACK] = npm_b < RookValueMg ? 0 : npm_w <= BishopValueMg ? 4 : 12;
-  }
+      e->factor[BLACK] = uint8_t(npm_b < RookValueMg ? SCALE_FACTOR_DRAW : npm_w <= BishopValueMg ? 4 : 12);
 
   if (pos.count<PAWN>(WHITE) == 1 && npm_w - npm_b <= BishopValueMg)
-  {
       e->factor[WHITE] = (uint8_t) SCALE_FACTOR_ONEPAWN;
-  }
 
   if (pos.count<PAWN>(BLACK) == 1 && npm_b - npm_w <= BishopValueMg)
-  {
       e->factor[BLACK] = (uint8_t) SCALE_FACTOR_ONEPAWN;
-  }
 
   // Compute the space weight
   if (npm_w + npm_b >= 2 * QueenValueMg + 4 * RookValueMg + 2 * KnightValueMg)

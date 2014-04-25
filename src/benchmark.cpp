@@ -126,7 +126,7 @@ void benchmark(const Position& current, istream& is) {
       file.close();
   }
 
-  int64_t nodes = 0;
+  uint64_t nodes = 0;
   Search::StateStackPtr st;
   Time::point elapsed = Time::now();
 
@@ -138,19 +138,21 @@ void benchmark(const Position& current, istream& is) {
 
       if (limitType == "perft")
       {
-          size_t cnt = Search::perft(pos, limits.depth * ONE_PLY);
+          uint64_t cnt = Search::perft(pos, limits.depth * ONE_PLY);
           cerr << "\nPerft " << limits.depth  << " leaf nodes: " << cnt << endl;
           nodes += cnt;
       }
       else
       {
-          Threads.start_thinking(pos, limits, vector<Move>(), st);
+          Threads.start_thinking(pos, limits, st);
           Threads.wait_for_think_finished();
           nodes += Search::RootPos.nodes_searched();
       }
   }
 
   elapsed = Time::now() - elapsed + 1; // Ensure positivity to avoid a 'divide by zero'
+
+  dbg_print(); // Just before to exit
 
   cerr << "\n==========================="
        << "\nTotal time (ms) : " << elapsed

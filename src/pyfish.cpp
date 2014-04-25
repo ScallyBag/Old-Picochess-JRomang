@@ -38,6 +38,7 @@
 #include "ucioption.h"
 #include "notation.h"
 #include "book.h"
+#include "tbprobe.h"
 
 
 using namespace std;
@@ -370,7 +371,7 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
         }
     }
 
-    Threads.start_thinking(p, limits, searchMoves, SetupStates);
+    Threads.start_thinking(p, limits, SetupStates);
     Py_RETURN_NONE;
 }
 
@@ -440,7 +441,8 @@ PyMODINIT_FUNC initstockfish(void)
     Pawns::init();
     Eval::init();
     Threads.init();
-    TT.set_size(Options["Hash"]);
+    TT.resize(Options["Hash"]);
+    Tablebases::init(Options["SyzygyPath"]);
 
     lock_init(bestmoveLock);
     cond_init(bestmoveCondition);
