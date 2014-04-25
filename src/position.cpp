@@ -1110,7 +1110,7 @@ Value Position::see(Move m) const {
 
 /// Position::is_draw() tests whether the position is drawn by material, 50 moves
 /// rule or repetition. It does not detect stalemates.
-
+template<bool SkipThreeFoldCheck>
 bool Position::is_draw() const {
 
   if (   !pieces(PAWN)
@@ -1121,16 +1121,23 @@ bool Position::is_draw() const {
       return true;
 
   StateInfo* stp = st;
-  for (int i = 2, e = std::min(st->rule50, st->pliesFromNull); i <= e; i += 2)
+  for (int i = 2, e = std::min(st->rule50, st->pliesFromNull), rep_count=0; i <= e; i += 2)
   {
       stp = stp->previous->previous;
 
       if (stp->key == st->key)
-          return true; // Draw at first repetition
+      {
+          if(SkipThreeFoldCheck) return true; // Draw at first repetition
+          else if(++rep_count>=2) return true;
+      }
   }
 
   return false;
 }
+
+// Explicit template instantiations
+template bool Position::is_draw<false>() const;
+template bool Position::is_draw<true>() const;
 
 
 /// Position::flip() flips position with the white and black sides reversed. This

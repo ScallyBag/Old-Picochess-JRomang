@@ -502,7 +502,7 @@ namespace {
     if (!RootNode)
     {
         // Step 2. Check for aborted search and immediate draw
-        if (Signals.stop || pos.is_draw() || ss->ply > MAX_PLY)
+        if (Signals.stop || pos.is_draw<true>() || ss->ply > MAX_PLY)
             return ss->ply > MAX_PLY && !inCheck ? evaluate(pos) : DrawValue[pos.side_to_move()];
 
         // Step 3. Mate distance pruning. Even if we mate at the next move our score
@@ -515,6 +515,10 @@ namespace {
         beta = std::min(mate_in(ss->ply+1), beta);
         if (alpha >= beta)
             return alpha;
+    }
+    else 
+    {
+        if(pos.is_draw<false>()) return DrawValue[pos.side_to_move()];
     }
 
     // Step 4. Transposition table lookup
@@ -1067,7 +1071,7 @@ moves_loop: // When in check and at SpNode search starts from here
     ss->ply = (ss-1)->ply + 1;
 
     // Check for an instant draw or if the maximum ply has been reached
-    if (pos.is_draw() || ss->ply > MAX_PLY)
+    if (pos.is_draw<true>() || ss->ply > MAX_PLY)
         return ss->ply > MAX_PLY && !InCheck ? evaluate(pos) : DrawValue[pos.side_to_move()];
 
     // Decide whether or not to include checks: this fixes also the type of
@@ -1413,7 +1417,7 @@ void RootMove::extract_pv_from_tt(Position& pos) {
            && pos.pseudo_legal(m = tte->move()) // Local copy, TT could change
            && pos.legal(m, pos.pinned_pieces(pos.side_to_move()))
            && ply < MAX_PLY
-           && (!pos.is_draw() || ply < 2));
+           && (!pos.is_draw<true>() || ply < 2));
 
   pv.push_back(MOVE_NONE); // Must be zero-terminating
 
