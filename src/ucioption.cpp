@@ -91,7 +91,7 @@ void init(OptionsMap& o) {
   o["UCI_Chess960"]             << Option(false);
 
 // ??
-  o["UCI_AnalyseMode"]          << Option(false, on_eval);
+//  o["UCI_AnalyseMode"]          << Option(false, on_eval);
 
 #ifdef PA_GTB
   o["Use Persistent Hash"]         << Option(false);
