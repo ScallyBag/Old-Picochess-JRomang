@@ -163,7 +163,11 @@ inline int popcount<CNT_PA_GTB_MAX15>(Bitboard b) {
 
 inline void initPopCnt()
 {
+#ifdef USE_POPCNT
   HasPopCnt = popCntAvailable();
+#else
+  HasPopCnt = 0;
+#endif
 }
 #endif
 
