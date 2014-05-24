@@ -1,7 +1,7 @@
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
   Copyright (C) 2004-2008 Tord Romstad (Glaurung author)
-  Copyright (C) 2008-2013 Marco Costalba, Joona Kiiski, Tord Romstad
+  Copyright (C) 2008-2014 Marco Costalba, Joona Kiiski, Tord Romstad
 
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 */
 
 #include <iostream>
-#include <string>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -56,18 +55,13 @@ int main(int argc, char* argv[]) {
   Pawns::init();
   Eval::init();
   Threads.init();
-  TT.set_size(Options["Hash"]);
-  PH.set_size(4);
+  TT.resize(Options["Hash"]);
+  PH.resize(4);
 #if defined(PA_GTB) && defined(USE_EGTB)
   init_egtb(); // Init here, not at the top of each move. Setting uci options will check this and update if necessary.
 #endif
 
-  std::string args;
-
-  for (int i = 1; i < argc; ++i)
-      args += std::string(argv[i]) + " ";
-
-  UCI::loop(args);
+  UCI::loop(argc, argv);
 
 #ifdef PA_GTB
   PHInst.quit_phash();
@@ -75,5 +69,6 @@ int main(int argc, char* argv[]) {
   close_egtb();
 #endif
 #endif
+
   Threads.exit();
 }

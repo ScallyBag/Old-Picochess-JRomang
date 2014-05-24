@@ -1,7 +1,7 @@
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
   Copyright (C) 2004-2008 Tord Romstad (Glaurung author)
-  Copyright (C) 2008-2013 Marco Costalba, Joona Kiiski, Tord Romstad
+  Copyright (C) 2008-2014 Marco Costalba, Joona Kiiski, Tord Romstad
 
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -43,18 +43,19 @@ typedef std::map<std::string, Option, CaseInsensitiveLess> OptionsMap;
 /// Option class implements an option as defined by UCI protocol
 class Option {
 
-  typedef void (Fn)(const Option&);
+  typedef void (*OnChange)(const Option&);
 
 public:
-  Option(Fn* = NULL);
-  Option(bool v, Fn* = NULL);
-  Option(const char* v, Fn* = NULL);
-  Option(int v, int min, int max, Fn* = NULL);
+  Option(OnChange = NULL);
+  Option(bool v, OnChange = NULL);
+  Option(const char* v, OnChange = NULL);
+  Option(int v, int min, int max, OnChange = NULL);
 #ifdef PA_GTB
-  Option(std::string defaultValue, StrVector comboValues, Fn* = NULL);
+  Option(std::string defaultValue, StrVector comboValues, OnChange = NULL);
 #endif
 
   Option& operator=(const std::string& v);
+  void operator<<(const Option& o);
   operator int() const;
   operator std::string() const;
 
@@ -67,11 +68,11 @@ private:
   StrVector comboValues;
 #endif
   size_t idx;
-  Fn* on_change;
+  OnChange on_change;
 };
 
 void init(OptionsMap&);
-void loop(const std::string&);
+void loop(int argc, char* argv[]);
 
 } // namespace UCI
 
