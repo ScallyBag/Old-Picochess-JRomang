@@ -65,7 +65,7 @@ std::ostream& operator<<(std::ostream&, SyncCout);
 extern std::stringstream strout;
 extern void stockfish_notifyObservers(std::string s);
 
-#define sync_cout std::cout << IO_LOCK
+#define sync_cout strout << IO_LOCK
 #define sync_endl std::endl << IO_UNLOCK
 
 #endif // #ifndef MISC_H_INCLUDED

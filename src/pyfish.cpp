@@ -363,7 +363,7 @@ extern "C" PyObject* stockfish_go(PyObject *self, PyObject *args, PyObject *kwar
         string moveStr( PyString_AsString( PyList_GetItem(listSearchMoves, i)) );
         Move m;
         if((m = move_from_uci(p, moveStr)) != MOVE_NONE) {
-            searchMoves.push_back(m);
+            limits.searchmoves.push_back(m);
         }
         else
         {
