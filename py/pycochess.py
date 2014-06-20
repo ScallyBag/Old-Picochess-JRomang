@@ -48,6 +48,8 @@ except ImportError:
 
 piface = None
 arduino = False
+dgt_clock = False
+
 try:
     import pifacecad
     piface = True
@@ -139,32 +141,42 @@ time_control_list = ["1 sec per move", "3 sec per move", "5 sec per move", "10 s
                      "Game in 4 mins + 2s", "Game in 5 mins + 3s", "Game in 5 mins + 5s", "Handicap G/7 mins + 1s",
                      "Game in 15 mins + 5s", "Game in 90 mins + 30s"
                      ]
+
+dgt_time_control_list = ["mov001", "mov003", "mov005", "mov010",
+                     "mov015", "mov030", "mov060", "mov120",
+                     "bli100", "bli300", "bli500", "bli000",  "bli500",
+                     "bli030", "bli100", "bli130", "f 32  ",
+                     "f 42  ", "f 53  ", "f 55  ", "h 71  ",
+                     "f155  ", "f9030  "
+                     ]
+
+
 max_time_control_index = len(time_control_list) - 1
 
 time_control_map = {
-    "rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR": (0, time_control_list[0]),
-    "rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR": (1, time_control_list[1]),
-    "rnbqkbnr/pppppppp/2Q5/8/8/8/PPPPPPPP/RNBQKBNR" : (2, time_control_list[2]),
-    "rnbqkbnr/pppppppp/3Q4/8/8/8/PPPPPPPP/RNBQKBNR" : (3, time_control_list[3]),
-    "rnbqkbnr/pppppppp/4Q3/8/8/8/PPPPPPPP/RNBQKBNR" : (4, time_control_list[4]),
-    "rnbqkbnr/pppppppp/5Q2/8/8/8/PPPPPPPP/RNBQKBNR" : (5, time_control_list[5]),
-    "rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR" : (6, time_control_list[6]),
-    "rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR" :  (7, time_control_list[7]),
-    "rnbqkbnr/pppppppp/8/8/Q7/8/PPPPPPPP/RNBQKBNR" :  (8, time_control_list[8]),
-    "rnbqkbnr/pppppppp/8/8/1Q6/8/PPPPPPPP/RNBQKBNR" : (9, time_control_list[9]),
-    "rnbqkbnr/pppppppp/8/8/2Q5/8/PPPPPPPP/RNBQKBNR" : (10, time_control_list[10]),
-    "rnbqkbnr/pppppppp/8/8/3Q4/8/PPPPPPPP/RNBQKBNR" : (11, time_control_list[11]),
-    "rnbqkbnr/pppppppp/8/8/4Q3/8/PPPPPPPP/RNBQKBNR" : (12, time_control_list[12]),
-    "rnbqkbnr/pppppppp/8/8/5Q2/8/PPPPPPPP/RNBQKBNR" : (13, time_control_list[13]),
-    "rnbqkbnr/pppppppp/8/8/6Q1/8/PPPPPPPP/RNBQKBNR" : (14, time_control_list[14]),
-    "rnbqkbnr/pppppppp/8/8/7Q/8/PPPPPPPP/RNBQKBNR" :  (15, time_control_list[15]),
-    "rnbqkbnr/pppppppp/8/8/8/Q7/PPPPPPPP/RNBQKBNR" :  (16, time_control_list[16]),
-    "rnbqkbnr/pppppppp/8/8/8/1Q6/PPPPPPPP/RNBQKBNR" : (17, time_control_list[17]),
-    "rnbqkbnr/pppppppp/8/8/8/2Q5/PPPPPPPP/RNBQKBNR" : (18, time_control_list[18]),
-    "rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNBQKBNR" : (19, time_control_list[19]),
-    "rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR" : (20, time_control_list[20]),
-    "rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR" : (21, time_control_list[21]),
-    "rnbqkbnr/pppppppp/8/8/8/6Q1/PPPPPPPP/RNBQKBNR" : (22, time_control_list[22])
+    "rnbqkbnr/pppppppp/Q7/8/8/8/PPPPPPPP/RNBQKBNR": (0, time_control_list[0], dgt_time_control_list[0]),
+    "rnbqkbnr/pppppppp/1Q6/8/8/8/PPPPPPPP/RNBQKBNR": (1, time_control_list[1], dgt_time_control_list[1]),
+    "rnbqkbnr/pppppppp/2Q5/8/8/8/PPPPPPPP/RNBQKBNR" : (2, time_control_list[2], dgt_time_control_list[2]),
+    "rnbqkbnr/pppppppp/3Q4/8/8/8/PPPPPPPP/RNBQKBNR" : (3, time_control_list[3], dgt_time_control_list[3]),
+    "rnbqkbnr/pppppppp/4Q3/8/8/8/PPPPPPPP/RNBQKBNR" : (4, time_control_list[4], dgt_time_control_list[4]),
+    "rnbqkbnr/pppppppp/5Q2/8/8/8/PPPPPPPP/RNBQKBNR" : (5, time_control_list[5], dgt_time_control_list[5]),
+    "rnbqkbnr/pppppppp/6Q1/8/8/8/PPPPPPPP/RNBQKBNR" : (6, time_control_list[6], dgt_time_control_list[6]),
+    "rnbqkbnr/pppppppp/7Q/8/8/8/PPPPPPPP/RNBQKBNR" :  (7, time_control_list[7], dgt_time_control_list[7]),
+    "rnbqkbnr/pppppppp/8/8/Q7/8/PPPPPPPP/RNBQKBNR" :  (8, time_control_list[8], dgt_time_control_list[8]),
+    "rnbqkbnr/pppppppp/8/8/1Q6/8/PPPPPPPP/RNBQKBNR" : (9, time_control_list[9], dgt_time_control_list[9]),
+    "rnbqkbnr/pppppppp/8/8/2Q5/8/PPPPPPPP/RNBQKBNR" : (10, time_control_list[10], dgt_time_control_list[10]),
+    "rnbqkbnr/pppppppp/8/8/3Q4/8/PPPPPPPP/RNBQKBNR" : (11, time_control_list[11], dgt_time_control_list[11]),
+    "rnbqkbnr/pppppppp/8/8/4Q3/8/PPPPPPPP/RNBQKBNR" : (12, time_control_list[12], dgt_time_control_list[12]),
+    "rnbqkbnr/pppppppp/8/8/5Q2/8/PPPPPPPP/RNBQKBNR" : (13, time_control_list[13], dgt_time_control_list[13]),
+    "rnbqkbnr/pppppppp/8/8/6Q1/8/PPPPPPPP/RNBQKBNR" : (14, time_control_list[14], dgt_time_control_list[14]),
+    "rnbqkbnr/pppppppp/8/8/7Q/8/PPPPPPPP/RNBQKBNR" :  (15, time_control_list[15], dgt_time_control_list[15]),
+    "rnbqkbnr/pppppppp/8/8/8/Q7/PPPPPPPP/RNBQKBNR" :  (16, time_control_list[16], dgt_time_control_list[16]),
+    "rnbqkbnr/pppppppp/8/8/8/1Q6/PPPPPPPP/RNBQKBNR" : (17, time_control_list[17], dgt_time_control_list[17]),
+    "rnbqkbnr/pppppppp/8/8/8/2Q5/PPPPPPPP/RNBQKBNR" : (18, time_control_list[18], dgt_time_control_list[18]),
+    "rnbqkbnr/pppppppp/8/8/8/3Q4/PPPPPPPP/RNBQKBNR" : (19, time_control_list[19], dgt_time_control_list[19]),
+    "rnbqkbnr/pppppppp/8/8/8/5Q2/PPPPPPPP/RNBQKBNR" : (20, time_control_list[20], dgt_time_control_list[20]),
+    "rnbqkbnr/pppppppp/8/8/8/4Q3/PPPPPPPP/RNBQKBNR" : (21, time_control_list[21], dgt_time_control_list[21]),
+    "rnbqkbnr/pppppppp/8/8/8/6Q1/PPPPPPPP/RNBQKBNR" : (22, time_control_list[22], dgt_time_control_list[22])
 
 }
 
@@ -275,6 +287,7 @@ class Pycochess(object):
         self.pre_computer_move_FEN = None
         self.invalid_computer_move = False
         self.last_output_move = None
+        self.last_output_move_can = None
         sf.add_observer(self.parse_score)
 
         # Polyglot book load
@@ -284,6 +297,9 @@ class Pycochess(object):
         # display lock
         self.display_lock = RLock()
 
+    def write_to_dgt(self, message, move=False, dots=False, beep=True):
+        if self.dgt.dgt_clock:
+            self.dgt.send_message_to_clock(message, move=move, dots=dots, beep=beep)
 
     def write_to_piface(self, message, custom_bitmap = None, clear = False):
         if len(message) > 32:
@@ -330,6 +346,8 @@ class Pycochess(object):
                     lcd.printString(message, 0, 0)
                 sleep(0.1)
         else:
+            # if self.dgt.dgt_clock:
+            #     self.dgt.send_message_to_clock(message, False, False)
             print "Piface: [{0}]".format(message)
 
     def get_legal_move(self, from_fen, to_fen):
@@ -384,8 +402,16 @@ class Pycochess(object):
     def connect(self):
         if self.device != "human":
             self.dgt = DGTBoard(self.device)
+
             self.dgt.subscribe(self.on_observe_dgt_move)
             self.poll_dgt()
+            # sleep(1)
+            self.dgt.test_for_dgt_clock()
+            if self.dgt.dgt_clock:
+                print "Found DGT Clock"
+            # else:
+            #     print "No DGT Clock found"
+            self.dgt.get_board()
 
         # board.poll()
 
@@ -420,6 +446,7 @@ class Pycochess(object):
         self.pre_computer_move_FEN = None
         self.invalid_computer_move = False
         self.last_output_move = None
+        self.last_output_move_can = None
 
         self.move_list = []
         self.san_move_list = []
@@ -431,6 +458,7 @@ class Pycochess(object):
 #            cad.lcd.backlight_off()
 #            cad.lcd.backlight_on()
         self.write_to_piface("New Game", clear=True)
+        self.write_to_dgt("newgam")
         self.reset_clocks()
 
         if self.engine_comp_color == WHITE:
@@ -440,6 +468,7 @@ class Pycochess(object):
     def set_level(self, level):
         sf.set_option("Skill Level", level)
         self.write_to_piface("Now on Level " + str(level), clear=True)
+        self.write_to_dgt("lvl{: >3}".format(level))
 
     def set_book(self, book_map_entry):
         filepath = BOOK_PATH + book_map_entry[0] + BOOK_EXTENSION
@@ -447,7 +476,7 @@ class Pycochess(object):
         sf.set_option("Book File", filepath)
         self.write_to_piface("Book:\n " + book_map_entry[1], clear=True)
 
-    def set_time_control(self, message, mode):
+    def set_time_control(self, message, dgt_message, mode):
         self.player_time = 0
         self.player_inc = 0
         if 0 <= mode <= 7:
@@ -523,6 +552,8 @@ class Pycochess(object):
                 self.comp_inc = 30 * 1000
         self.reset_clocks()
         self.write_to_piface(message, clear=True)
+        self.write_to_dgt(dgt_message, move=False, beep=False, dots=True)
+
 
     def set_comp_color(self, fen, start_new_game = True):
         self.engine_comp_color = WHITE if fen == COMP_PLAYS_WHITE else BLACK
@@ -557,11 +588,11 @@ class Pycochess(object):
             time_control_entry = time_control_map[fen]
             mode = time_control_entry[0]
             message = time_control_entry[1]
-
+            dgt_message = time_control_entry[2]
 #            print "time_control_mode: {0}".format(mode)
 #            print "time_control_message: {0}".format(message)
 
-            self.set_time_control(message, mode)
+            self.set_time_control(message, dgt_message, mode)
             return True
 
         else:
@@ -628,8 +659,13 @@ class Pycochess(object):
         # print "updating clocks"
         if self.play_mode == GAME_MODE:
             custom_bitmap = 0
+            b_blink = False
+            w_blink = False
             if self.turn == BLACK:
                 custom_bitmap = 1
+                b_blink = True
+            else:
+                w_blink = True
             if self.engine_computer_move:
                 # print "computer_move"
                 if self.engine_searching:
@@ -638,16 +674,27 @@ class Pycochess(object):
 
                 if self.engine_searching and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
                     self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), custom_bitmap=custom_bitmap, clear=True)
+                    # self.write_to_dgt(self.format_time_strs(self.time_white, self.time_black, disp_length=6), beep=False, dots=True)
+
+
+                    self.dgt.print_time_on_clock(self.time_white, self.time_black, w_blink=w_blink, b_blink=b_blink)
+
                 elif self.clock_mode == FIXED_TIME and self.engine_searching:
                     # If FIXED_TIME
                     if self.engine_comp_color == WHITE:
 #                        print "comp_time: {0}".format(self.time_white)
                         if self.time_white and self.time_white >= 1000:
                             self.write_to_piface(self.format_time_str(self.time_white), custom_bitmap=custom_bitmap, clear = True)
+                            # print "DGT time: {0}".format(self.dgt.compute_dgt_time_string(self.time_white))
+                            # self.write_to_dgt(self.format_time_str(self.time_white), beep=False, dots=True)
+                            self.write_to_dgt(self.dgt.compute_dgt_time_string(self.time_white), beep=False, dots=True)
                     else:
 #                        print "comp_time: {0}".format(self.time_black)
                         if self.time_black and self.time_black >= 1000:
                             self.write_to_piface(self.format_time_str(self.time_black), custom_bitmap=custom_bitmap, clear = True)
+                            # self.write_to_dgt(self.format_time_str(self.time_black), beep=False, dots=True)
+                            # print "DGT time: {0}".format(self.dgt.compute_dgt_time_string(self.time_black))
+                            self.write_to_dgt(self.dgt.compute_dgt_time_string(self.time_black), beep=False, dots=True)
 
                         # self.engine_score.children[0].text = "[color=000000]Thinking..\n[size=24]{0}    [b]{1}[/size][/b][/color]".format(self.format_time_str(self.time_white), self.format_time_str(self.time_black))
             # print "not comp move"
@@ -658,6 +705,9 @@ class Pycochess(object):
                 # print "player_move"
                 self.update_player_time()
                 self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), custom_bitmap=custom_bitmap, clear=True)
+                # self.write_to_dgt(self.format_time_strs(self.time_white, self.time_black, disp_length=6), beep=False, dots=True)
+                self.dgt.print_time_on_clock(self.time_white, self.time_black, w_blink=w_blink, b_blink=b_blink)
+
 
 
     def register_move(self, m):
@@ -930,6 +980,7 @@ class Pycochess(object):
                 # print "best_move_san:{0}".format(best_move)
             #                print "best_move_san:{0}".format(sf.to_san([best_move])[0])
                 self.last_output_move = self.get_san([best_move])[0]
+                self.last_output_move_can = best_move
                 # print "output_move: {0}".format(output_move)
                 self.engine_computer_move = False
                 self.computer_move_FEN_reached = False
@@ -967,10 +1018,16 @@ class Pycochess(object):
                     custom_bitmap = 0
                     if self.turn == BLACK:
                         custom_bitmap = 1
+
                     if self.ponder_move == '(none)':
                         self.write_to_piface(self.last_output_move + " (Book)", custom_bitmap=custom_bitmap, clear=True)
+                        self.write_to_dgt("  book", beep=False, dots=False)
+                        self.write_to_dgt(best_move, move=True, beep=True, dots=False)
+
                     else:
                         self.write_to_piface(self.last_output_move, custom_bitmap=custom_bitmap, clear=True)
+                        self.write_to_dgt(best_move, move=True, beep=True, dots=False)
+
 
     def write_move(self, ply_count, san):
         if ply_count % 2 == 1:
@@ -1211,6 +1268,7 @@ class Pycochess(object):
                     self.pre_computer_move_FEN = None
                     self.invalid_computer_move = False
                     self.last_output_move = None
+                    self.last_output_move_can = None
 
                     self.write_to_piface("Analysis mode", clear=True)
                 else:
@@ -1429,6 +1487,9 @@ def process_undo(pyco, m):
 
     if m.startswith("undo") and len(pyco.move_list) > 0:
         pyco.write_to_piface("Undo - " + pyco.move_list[-1], clear=True)
+        pyco.write_to_dgt("  undo")
+        pyco.write_to_dgt(pyco.move_list[-1], move=True)
+
         if m == "undo_pop":
             pyco.perform_undo()
         pyco.switch_turn()
@@ -1436,6 +1497,7 @@ def process_undo(pyco, m):
         # print "pre_comp_dgt_fen: {0}".format(pyco.pre_computer_move_FEN)
         if pyco.pre_computer_move_FEN and pyco.dgt_fen.split(" ")[0] == pyco.pre_computer_move_FEN.split(" ")[0]:
             pyco.write_to_piface(pyco.last_output_move, clear=True)
+            pyco.write_to_dgt(pyco.last_output_move_can, move=True)
         return True
 
 
@@ -1472,8 +1534,12 @@ if __name__ == '__main__':
         # Arduino(serial_connection('/dev/tty.usbmodem411')).digitalRead(13)
 
         # time.sleep(3)
-        lcd = Lcd([8, 9, 4, 5, 6, 7 ], [16, 2], connection=connection)
-        lcd.printString('Pycochess {0}'.format(VERSION))
+        try:
+            lcd = Lcd([8, 9, 4, 5, 6, 7 ], [16, 2], connection=connection)
+            lcd.printString('Pycochess {0}'.format(VERSION))
+        except OSError:
+            arduino = False
+
     arm = False
 #    print os.uname()[4][:3]
     device = None
@@ -1529,12 +1595,15 @@ if __name__ == '__main__':
             if pyco.turn == BLACK:
                 custom_bitmap = 1
             pyco.write_to_piface(pyco.last_output_move + " (Done)", custom_bitmap=custom_bitmap, clear=True)
+            if pyco.clock_mode == FIXED_TIME:
+                pyco.write_to_dgt("  done", beep=False)
             # pyco.engine_computer_move = False
             continue
 
         if pyco.invalid_computer_move:
             print "Invalid Computer Move"
             pyco.write_to_piface("{0} (Invalid Computer Move)".format(m), clear=True)
+            pyco.write_to_dgt(" wrong")
             # sleep(2)
             # process_undo(pyco, "undo_pop")
 
