@@ -105,8 +105,8 @@ class DGTBoard(object):
         # self.clock_queue = Queue()
         self.dgt_clock = False
         self.dgt_clock_lock = RLock()
-        self.dgt_clock_ack_lock = RLock()
-
+        # self.dgt_clock_ack_lock = RLock()
+        # self.dgt_clock_ack_queue = Queue()
 
         if not virtual:
             self.ser = serial.Serial(device,stopbits=serial.STOPBITS_ONE)
@@ -377,7 +377,7 @@ class DGTBoard(object):
     #     dgtnixPrintMessageOnClock (s.c_str (), false, dots);
         self.send_message_to_clock(s, False, dots)
 
-    def send_message_to_clock(self, message, beep, dots, move=False, test_clock=False):
+    def send_message_to_clock(self, message, beep, dots, move=False, test_clock=False, max_num_tries = 5):
         # Todo locking?
         print "Got message to clock: {0}".format(message)
         if move:
@@ -389,7 +389,7 @@ class DGTBoard(object):
             self._sendMessageToClock(self.char_to_lcd_code(message[0]), self.char_to_lcd_code(message[1]),
                                 self.char_to_lcd_code(message[2]), self.char_to_lcd_code(message[3]),
                                 self.char_to_lcd_code(message[4]), self.char_to_lcd_code(message[5]),
-                                beep, dots, test_clock=test_clock)
+                                beep, dots, test_clock=test_clock, max_num_tries = max_num_tries)
             self.clock_ack_recv = False
 
 
@@ -427,7 +427,7 @@ class DGTBoard(object):
             mod_s+=" "
         return mod_s
 
-    def _sendMessageToClock(self, a, b, c, d, e, f, beep, dots, test_clock = False):
+    def _sendMessageToClock(self, a, b, c, d, e, f, beep, dots, test_clock = False, max_num_tries = 5):
         # pthread_mutex_lock (&clock_ack_mutex);
 
         # if(!(g_debugMode == DGTNIX_DEBUG_OFF))
@@ -467,29 +467,12 @@ class DGTBoard(object):
             self.ser.write(chr(0x00))
 
             time.sleep(1)
-            # acquired = self.dgt_clock_ack_lock.acquire(False)
-            # if acquired():
-            #     print "acquired lock"
-            #     # self.dgt_clock_ack_lock.release()
-            #
-            #     break
-            # else:
-            #     # self.dgt_clock_ack_lock.release()
-            #     time.sleep(1)
-            #     print "waiting for lock"
-
-            print "got lock"
-
-            # self.clock_queue.get()
-            # self.clock_queue.join()
-            # time.sleep(1)
-            # break
             if num_tries>1:
                 print "try : {0}".format(num_tries)
 
-            if self.dgt_clock and num_tries>=1:
-                break
-            if num_tries>=5:
+            # if self.dgt_clock and num_tries>=5:
+            #     break
+            if num_tries>=max_num_tries:
                 break
         # if not test_clock:
 
@@ -550,6 +533,8 @@ class DGTBoard(object):
 
             if buf:
                 if buf[3] & 15==10 or buf[6] & 15 == 10:
+                    print "clock ACK received!"
+
                     self.clock_ack_recv = True
                     # self.dgt_clock_ack_lock.acquire()
                     # self.clock_queue.get()
@@ -557,7 +542,6 @@ class DGTBoard(object):
                     if not self.dgt_clock:
                         self.dgt_clock = True
 
-                    print "clock ACK received!"
 
         elif command_id == _DGTNIX_EE_MOVES:
             print "Received _DGTNIX_EE_MOVES from the board\n"

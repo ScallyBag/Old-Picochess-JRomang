@@ -297,9 +297,9 @@ class Pycochess(object):
         # display lock
         self.display_lock = RLock()
 
-    def write_to_dgt(self, message, move=False, dots=False, beep=True):
+    def write_to_dgt(self, message, move=False, dots=False, beep=True, max_num_tries = 5):
         if self.dgt.dgt_clock:
-            self.dgt.send_message_to_clock(message, move=move, dots=dots, beep=beep)
+            self.dgt.send_message_to_clock(message, move=move, dots=dots, beep=beep, max_num_tries=max_num_tries)
 
     def write_to_piface(self, message, custom_bitmap = None, clear = False):
         if len(message) > 32:
@@ -458,7 +458,7 @@ class Pycochess(object):
 #            cad.lcd.backlight_off()
 #            cad.lcd.backlight_on()
         self.write_to_piface("New Game", clear=True)
-        self.write_to_dgt("newgam")
+        self.write_to_dgt("newgam", max_num_tries=2)
         self.reset_clocks()
 
         if self.engine_comp_color == WHITE:
@@ -468,13 +468,14 @@ class Pycochess(object):
     def set_level(self, level):
         sf.set_option("Skill Level", level)
         self.write_to_piface("Now on Level " + str(level), clear=True)
-        self.write_to_dgt("lvl{: >3}".format(level))
+        self.write_to_dgt("lvl{: >3}".format(level), max_num_tries=1)
 
     def set_book(self, book_map_entry):
         filepath = BOOK_PATH + book_map_entry[0] + BOOK_EXTENSION
         print "book filepath : {0}".format(filepath)
         sf.set_option("Book File", filepath)
         self.write_to_piface("Book:\n " + book_map_entry[1], clear=True)
+        self.write_to_dgt(book_map_entry[0], move=False, beep=True, max_num_tries=1)
 
     def set_time_control(self, message, dgt_message, mode):
         self.player_time = 0
@@ -552,7 +553,7 @@ class Pycochess(object):
                 self.comp_inc = 30 * 1000
         self.reset_clocks()
         self.write_to_piface(message, clear=True)
-        self.write_to_dgt(dgt_message, move=False, beep=False, dots=True)
+        self.write_to_dgt(dgt_message, move=False, beep=False, dots=True, max_num_tries=1)
 
 
     def set_comp_color(self, fen, start_new_game = True):
