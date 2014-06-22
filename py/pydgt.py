@@ -355,6 +355,27 @@ class DGTBoard(object):
 
             elif b_dots:
                 dots |= DGTNIX_RIGHT_SEMICOLON #hours:minutes mode
+
+        else:
+            s = self.compute_dgt_time_string(b_time) + self.compute_dgt_time_string(w_time)
+            if b_time < 1200000: #minutes.seconds mode
+                if b_dots:
+                    dots |= DGTNIX_LEFT_DOT
+                if b_time >= 600000:
+                    dots |= DGTNIX_LEFT_1
+            elif b_dots:
+                dots |= DGTNIX_LEFT_SEMICOLON #hours:minutes mode
+            #black
+            if w_time < 1200000:
+            #minutes.seconds mode
+
+                if w_dots:
+                    dots |= DGTNIX_RIGHT_DOT
+                if w_time >= 600000:
+                    dots |= DGTNIX_RIGHT_1
+
+            elif w_dots:
+                dots |= DGTNIX_RIGHT_SEMICOLON #hours:minutes mode
     #       }
     # else
     #   {
@@ -482,7 +503,7 @@ class DGTBoard(object):
 
 
     def read_message_from_board(self, head=None):
-        print "acquire"
+        # print "acquire"
         # self.dgt_clock_ack_lock.acquire()
         print "got DGT message"
         header_len = 3
@@ -532,7 +553,7 @@ class DGTBoard(object):
             print buf
 
             if buf:
-                if buf[3] & 15==10 or buf[6] & 15 == 10:
+                if buf[0] == 10 and buf[1] == 16 and buf[2] == 1 and buf[3] == 10 and not buf[4] and not buf[5] and not buf[6]:
                     print "clock ACK received!"
 
                     self.clock_ack_recv = True
@@ -541,6 +562,16 @@ class DGTBoard(object):
                     # self.clock_queue.task_done()
                     if not self.dgt_clock:
                         self.dgt_clock = True
+                if 5 <= buf[4] <= 6 and buf[5] == 49:
+                    print "1st clock button pressed"
+                if 33 <= buf[4] <= 34 and buf[5] == 52:
+                    print "2nd clock button pressed"
+                if 17 <= buf[4] <= 18 and buf[5] == 51:
+                    print "3rd clock button pressed"
+                if 9 <= buf[4] <= 10 and buf[5] == 50:
+                    print "4th clock button pressed"
+                if 65 <= buf[4] <= 66 and buf[5] == 53:
+                    print "5th clock button pressed"
 
 
         elif command_id == _DGTNIX_EE_MOVES:
@@ -601,7 +632,7 @@ class DGTBoard(object):
     def poll(self):
         while True:
             c = self.read(1)
-            print "got msg"
+            # print "got msg"
             if c:
                 self.read_message_from_board(head=c)
 
