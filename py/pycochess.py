@@ -16,6 +16,7 @@ import socket
 from ChessBoard import ChessBoard
 from pydgt import DGTBoard
 from pydgt import FEN
+from pydgt import CLOCK_BUTTON_PRESSED
 from polyglot_opening_book import PolyglotOpeningBook
 
 START_GAME_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
@@ -180,6 +181,9 @@ time_control_map = {
 
 }
 
+class ButtonEvent:
+    def __init__(self, pin_num):
+        self.pin_num = pin_num
 
 # Menus accessible via piface and perhaps other devices
 class PlayMode:
@@ -394,6 +398,10 @@ class Pycochess(object):
             if m:
                 move_queue.put(m)
         #        dgt_sem.release()
+        if attr.type == CLOCK_BUTTON_PRESSED:
+            # print "Clock button {0} pressed".format(attr.message)
+            e = ButtonEvent(attr.message)
+            self.button_event(e)
 
     def poll_dgt(self):
         thread = Thread(target=self.dgt.poll)
@@ -1163,7 +1171,7 @@ class Pycochess(object):
             try:
                 m = e["move"]
                 # print m
-                polyglot_moves.append((sf.to_san(fen, [m]), e["weight"]))
+                polyglot_moves.append((sf.to_san(fen, [m]), e["weight"], m))
 
             except ValueError:
                 if m == "e1h1":
@@ -1174,7 +1182,7 @@ class Pycochess(object):
                     m = "e8c8"
                 elif m == "e8h8":
                     m = "e8g8"
-                polyglot_moves.append((sf.to_san(fen, [m]), e["weight"]))
+                polyglot_moves.append((sf.to_san(fen, [m]), e["weight"], m))
             if j >= max_num_moves:
                 break
                 # print sf.to_san(fen, [m])
@@ -1227,6 +1235,8 @@ class Pycochess(object):
                 # Display last move
                 if len(self.move_list) > 0:
                     self.write_to_piface("Last move: {0}".format(self.move_list[-1]), clear=True)
+                    self.write_to_dgt(pyco.move_list[-1], move=True, beep=False)
+
             elif event.pin_num == PlayMenu.HINT:
                # if book move, show those first
                 fen = sf.get_fen(self.pyfish_fen,  self.move_list)
@@ -1246,14 +1256,20 @@ class Pycochess(object):
 
                         if j != last_index:
                             output_str += ", "
+                        if self.dgt.dgt_clock:
+                            self.write_to_dgt(e[2], move=True, max_num_tries=1, beep=False)
+                            sleep(1)
 
                     self.write_to_piface(output_str, clear=True)
                 else:
                     self.write_to_piface("Ponder: {0}".format(self.ponder_move), clear=True)
+                    self.write_to_dgt(self.ponder_move, move=True, max_num_tries=1, beep=False)
+
                # if not, then show a position hint
             elif event.pin_num == PlayMenu.EVAL:
                 self.write_to_piface("Score: {0}".format(self.score), clear=True)
-                pass
+                if self.score:
+                    self.write_to_dgt("{0}".format(self.score), move=False, beep=False, max_num_tries=1)
             elif event.pin_num == PlayMenu.SILENT:
                 # Toggle silence
                 self.silent = not self.silent
@@ -1262,6 +1278,8 @@ class Pycochess(object):
                 #     sf.stop()
 
                 self.write_to_piface("Silence {0}".format(message), clear=True)
+                self.write_to_dgt("sil "+message, move=False, max_num_tries=1)
+
             elif event.pin_num == PlayMenu.SWITCH_MODE:
                 if self.play_mode == GAME_MODE:
                     self.play_mode = ANALYSIS_MODE
@@ -1272,9 +1290,13 @@ class Pycochess(object):
                     self.last_output_move_can = None
 
                     self.write_to_piface("Analysis mode", clear=True)
+                    self.write_to_dgt("analyz", move=False, max_num_tries=1)
+
                 else:
                     self.play_mode = GAME_MODE
                     self.write_to_piface("Game mode", clear=True)
+                    self.write_to_dgt("  game", move=False, max_num_tries=1)
+
 
         if self.current_menu == MenuRotation.DATABASE:
             # Database options

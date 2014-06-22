@@ -14,6 +14,7 @@ clock_blink_iterator = cycle(range(2))
 BOARD = "Board"
 
 FEN = "FEN"
+CLOCK_BUTTON_PRESSED = "CLOCK_BUTTON_PRESSED"
 
 DGTNIX_MSG_UPDATE = 0x05
 _DGTNIX_SEND_BRD = 0x42
@@ -563,15 +564,19 @@ class DGTBoard(object):
                     if not self.dgt_clock:
                         self.dgt_clock = True
                 if 5 <= buf[4] <= 6 and buf[5] == 49:
-                    print "1st clock button pressed"
+                    self.fire(type=CLOCK_BUTTON_PRESSED, message=0)
+
                 if 33 <= buf[4] <= 34 and buf[5] == 52:
-                    print "2nd clock button pressed"
+                    self.fire(type=CLOCK_BUTTON_PRESSED, message=1)
+
                 if 17 <= buf[4] <= 18 and buf[5] == 51:
-                    print "3rd clock button pressed"
+                    self.fire(type=CLOCK_BUTTON_PRESSED, message=2)
+
                 if 9 <= buf[4] <= 10 and buf[5] == 50:
-                    print "4th clock button pressed"
+                    self.fire(type=CLOCK_BUTTON_PRESSED, message=3)
+
                 if 65 <= buf[4] <= 66 and buf[5] == 53:
-                    print "5th clock button pressed"
+                    self.fire(type=CLOCK_BUTTON_PRESSED, message=4)
 
 
         elif command_id == _DGTNIX_EE_MOVES:
