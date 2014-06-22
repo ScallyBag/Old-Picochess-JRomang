@@ -389,6 +389,7 @@ class Pycochess(object):
 
                 # self.update_castling_rights()
                 print "first dgt fen : {0}".format(self.first_dgt_fen)
+            fen = self.update_castling_rights(fen)
             print "Fen: {0}".format(fen)
 
             self.current_fen = fen
