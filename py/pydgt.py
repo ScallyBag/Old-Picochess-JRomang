@@ -466,7 +466,11 @@ class DGTBoard(object):
         # self.clock_queue.empty()
         # self.dgt_clock_ack_lock.acquire()
         while not self.clock_ack_recv:
-            num_tries +=1
+            num_tries += 1
+            if num_tries > 1:
+                time.sleep(1) # wait a bit longer for ack
+                if self.clock_ack_recv:
+                    break
             self.ser.write(chr(_DGTNIX_CLOCK_MESSAGE))
             self.ser.write(chr(0x0b))
             self.ser.write(chr(0x03))
@@ -551,7 +555,7 @@ class DGTBoard(object):
 
             pattern = '>'+'B'*message_length
             buf = unpack(pattern, message)
-            print buf
+            # print buf
 
             if buf:
                 if buf[0] == 10 and buf[1] == 16 and buf[2] == 1 and buf[3] == 10 and not buf[4] and not buf[5] and not buf[6]:
