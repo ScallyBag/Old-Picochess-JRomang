@@ -226,6 +226,14 @@ class MenuRotation:
 
 move_queue = Queue()
 
+class DGT_Clock_Message(object):
+    def __init__(self, message, move=False, dots=False, beep=True, max_num_tries=5):
+        self.message = message
+        self.move = move
+        self.dots = dots
+        self.beep = beep
+        self.max_num_tries = max_num_tries
+
 
 class Pycochess(object):
 
@@ -238,6 +246,8 @@ class Pycochess(object):
         self.use_tb = False
         self.clock_ack_queue = Queue()
         self.dgt_clock_lock = RLock()
+        self.dgt_pause_clock = False
+        self.dgt_clock_msg_queue = Queue()
 
         sf.set_option('SyzygyPath', '/home/pi/syzygy/')
         sf.set_option('SyzygyProbeLimit', 0)
@@ -308,10 +318,8 @@ class Pycochess(object):
 
     def write_to_dgt(self, message, move=False, dots=False, beep=True, max_num_tries = 5):
         if self.dgt.dgt_clock:
-            with self.dgt_clock_lock:
-                self.dgt.send_message_to_clock(message, move=move, dots=dots, beep=beep, max_num_tries=max_num_tries)
-                # Wait for dgt clock ack after sending a message
-                self.clock_ack_queue.get()
+            self.dgt_clock_msg_queue.put(DGT_Clock_Message(message, move=move, dots=dots, beep=beep, max_num_tries=max_num_tries))
+
     def write_to_piface(self, message, custom_bitmap = None, clear = False):
         if len(message) > 32:
             message = message[:32]
@@ -419,6 +427,29 @@ class Pycochess(object):
         thread = Thread(target=self.dgt.poll)
         thread.start()
 
+    def dgt_clock_ack_thread(self):
+        # print "starting dgt clock_msg_handler thread"
+        thread = Thread(target=self.dgt_clock_msg_handler)
+        thread.start()
+
+    def dgt_clock_msg_handler(self):
+        while True:
+            # print "dgt_clock_msg handler started!!"
+            with self.dgt_clock_lock:
+                # Wait for dgt clock ack after sending a message
+                # print "clock_msg hanlder started.."
+                msg = self.dgt_clock_msg_queue.get()
+                # print "got message!"
+                while True:
+                    self.dgt.send_message_to_clock(msg.message, move=msg.move, dots=msg.dots, beep=msg.beep, max_num_tries=msg.max_num_tries)
+                    ack_msg = self.clock_ack_queue.get(1)
+                    if ack_msg:
+                        break
+                # self.dgt.send
+                # self.dgt_clock_msg_queue.put(DGT_Clock_Message(message, move=move, dots=dots, beep=beep, max_num_tries=max_num_tries))
+
+
+
     def connect(self):
         if self.device != "human":
             self.dgt = DGTBoard(self.device)
@@ -427,10 +458,12 @@ class Pycochess(object):
             self.poll_dgt()
             # sleep(1)
             self.dgt.test_for_dgt_clock()
+            # p
             if self.dgt.dgt_clock:
                 print "Found DGT Clock"
-            # else:
-            #     print "No DGT Clock found"
+                self.dgt_clock_ack_thread()
+            else:
+                print "No DGT Clock found"
             self.dgt.get_board()
 
         # board.poll()
@@ -573,7 +606,7 @@ class Pycochess(object):
                 self.comp_inc = 30 * 1000
         self.reset_clocks()
         self.write_to_piface(message, clear=True)
-        self.write_to_dgt(dgt_message, move=False, beep=False, dots=True, max_num_tries=1)
+        self.write_to_dgt(dgt_message, move=False, beep=True, dots=True, max_num_tries=1)
 
 
     def set_comp_color(self, fen, start_new_game = True):
@@ -690,15 +723,14 @@ class Pycochess(object):
             if self.engine_computer_move:
                 # print "computer_move"
                 if self.engine_searching:
-                    self.update_time(color=self.engine_comp_color)
+                    if not self.dgt_pause_clock:
+                        self.update_time(color=self.engine_comp_color)
 #                    print "comp_time: {0}".format(self.time_black)
 
                 if self.engine_searching and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
-                    self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), custom_bitmap=custom_bitmap, clear=True)
-                    # self.write_to_dgt(self.format_time_strs(self.time_white, self.time_black, disp_length=6), beep=False, dots=True)
-
-
-                    self.dgt.print_time_on_clock(self.time_white, self.time_black, w_blink=w_blink, b_blink=b_blink)
+                    if not self.dgt_pause_clock:
+                        self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), custom_bitmap=custom_bitmap, clear=True)
+                        self.dgt.print_time_on_clock(self.time_white, self.time_black, w_blink=w_blink, b_blink=b_blink)
 
                 elif self.clock_mode == FIXED_TIME and self.engine_searching:
                     # If FIXED_TIME
@@ -724,10 +756,10 @@ class Pycochess(object):
             # print "player_move: {0}".format(player_move)
             if player_move and len(self.move_list) > 0 and (self.clock_mode == BLITZ or self.clock_mode == BLITZ_FISCHER):
                 # print "player_move"
-                self.update_player_time()
-                self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), custom_bitmap=custom_bitmap, clear=True)
-                # self.write_to_dgt(self.format_time_strs(self.time_white, self.time_black, disp_length=6), beep=False, dots=True)
-                self.dgt.print_time_on_clock(self.time_white, self.time_black, w_blink=w_blink, b_blink=b_blink)
+                if not self.dgt_pause_clock:
+                    self.update_player_time()
+                    self.write_to_piface(self.format_time_strs(self.time_white, self.time_black), custom_bitmap=custom_bitmap, clear=True)
+                    self.dgt.print_time_on_clock(self.time_white, self.time_black, w_blink=w_blink, b_blink=b_blink)
 
 
 
@@ -1043,6 +1075,7 @@ class Pycochess(object):
                     if self.ponder_move == '(none)':
                         self.write_to_piface(self.last_output_move + " (Book)", custom_bitmap=custom_bitmap, clear=True)
                         self.write_to_dgt("  book", beep=False, dots=False)
+                        # sleep(1)
                         self.write_to_dgt(best_move, move=True, beep=True, dots=False)
 
                     else:
@@ -1250,6 +1283,8 @@ class Pycochess(object):
                     self.write_to_dgt(pyco.move_list[-1], move=True, beep=False)
 
             elif event.pin_num == PlayMenu.HINT:
+                # self.dgt_pause_clock = True
+
                # if book move, show those first
                 fen = sf.get_fen(self.pyfish_fen,  self.move_list)
                 # print "fen: {0}".format(fen)
@@ -1273,12 +1308,16 @@ class Pycochess(object):
                             sleep(1)
 
                     self.write_to_piface(output_str, clear=True)
+
                 else:
                     self.write_to_piface("Ponder: {0}".format(self.ponder_move), clear=True)
                     self.write_to_dgt(self.ponder_move, move=True, max_num_tries=1, beep=False)
+                sleep(1)
+                # self.dgt_pause_clock = False
 
                # if not, then show a position hint
             elif event.pin_num == PlayMenu.EVAL:
+                self.dgt_pause_clock = not self.dgt_pause_clock
                 self.write_to_piface("Score: {0}".format(self.score), clear=True)
                 if self.score:
                     self.write_to_dgt("{0}".format(self.score), move=False, beep=False, max_num_tries=1)

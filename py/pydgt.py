@@ -493,6 +493,9 @@ class DGTBoard(object):
             self.ser.write(chr(0x01))
         self.ser.write(chr(0x00))
 
+        if test_clock:
+            time.sleep(1)
+
             # time.sleep(1)
             # if num_tries>1:
             #     print "try : {0}".format(num_tries)
