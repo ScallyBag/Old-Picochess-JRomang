@@ -17,6 +17,7 @@ from ChessBoard import ChessBoard
 from pydgt import DGTBoard
 from pydgt import FEN
 from pydgt import CLOCK_BUTTON_PRESSED
+from pydgt import CLOCK_ACK
 from polyglot_opening_book import PolyglotOpeningBook
 
 START_GAME_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
@@ -225,6 +226,7 @@ class MenuRotation:
 
 move_queue = Queue()
 
+
 class Pycochess(object):
 
     ANALYSIS = "Analysis"
@@ -234,6 +236,9 @@ class Pycochess(object):
     def __init__(self, device, **kwargs):
         self.alt_input_entry = START_ALT_INPUT
         self.use_tb = False
+        self.clock_ack_queue = Queue()
+        self.dgt_clock_lock = RLock()
+
         sf.set_option('SyzygyPath', '/home/pi/syzygy/')
         sf.set_option('SyzygyProbeLimit', 0)
 
@@ -303,8 +308,10 @@ class Pycochess(object):
 
     def write_to_dgt(self, message, move=False, dots=False, beep=True, max_num_tries = 5):
         if self.dgt.dgt_clock:
-            self.dgt.send_message_to_clock(message, move=move, dots=dots, beep=beep, max_num_tries=max_num_tries)
-
+            with self.dgt_clock_lock:
+                self.dgt.send_message_to_clock(message, move=move, dots=dots, beep=beep, max_num_tries=max_num_tries)
+                # Wait for dgt clock ack after sending a message
+                self.clock_ack_queue.get()
     def write_to_piface(self, message, custom_bitmap = None, clear = False):
         if len(message) > 32:
             message = message[:32]
@@ -403,6 +410,10 @@ class Pycochess(object):
             # print "Clock button {0} pressed".format(attr.message)
             e = ButtonEvent(attr.message)
             self.button_event(e)
+        if attr.type == CLOCK_ACK:
+            self.clock_ack_queue.put('ack')
+            print "Clock ACK Received"
+
 
     def poll_dgt(self):
         thread = Thread(target=self.dgt.poll)

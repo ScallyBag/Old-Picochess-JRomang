@@ -15,6 +15,7 @@ BOARD = "Board"
 
 FEN = "FEN"
 CLOCK_BUTTON_PRESSED = "CLOCK_BUTTON_PRESSED"
+CLOCK_ACK = "CLOCK_ACK"
 
 DGTNIX_MSG_UPDATE = 0x05
 _DGTNIX_SEND_BRD = 0x42
@@ -407,12 +408,12 @@ class DGTBoard(object):
         else:
             message = self.format_str_for_dgt(message)
         with self.dgt_clock_lock:
-            self.clock_ack_recv = False
+            # self.clock_ack_recv = False
             self._sendMessageToClock(self.char_to_lcd_code(message[0]), self.char_to_lcd_code(message[1]),
                                 self.char_to_lcd_code(message[2]), self.char_to_lcd_code(message[3]),
                                 self.char_to_lcd_code(message[4]), self.char_to_lcd_code(message[5]),
                                 beep, dots, test_clock=test_clock, max_num_tries = max_num_tries)
-            self.clock_ack_recv = False
+            # self.clock_ack_recv = False
 
 
 
@@ -462,44 +463,44 @@ class DGTBoard(object):
         #       }
         #   }
         print "Sending Message to Clock.."
-        num_tries = 0
+        # num_tries = 0
         # self.clock_queue.empty()
         # self.dgt_clock_ack_lock.acquire()
-        while not self.clock_ack_recv:
-            num_tries += 1
-            if num_tries > 1:
-                time.sleep(1) # wait a bit longer for ack
-                if self.clock_ack_recv:
-                    break
-            self.ser.write(chr(_DGTNIX_CLOCK_MESSAGE))
-            self.ser.write(chr(0x0b))
+        # while not self.clock_ack_recv:
+        #     num_tries += 1
+        #     if num_tries > 1:
+        #         time.sleep(1) # wait a bit longer for ack
+        #         if self.clock_ack_recv:
+        #             break
+        self.ser.write(chr(_DGTNIX_CLOCK_MESSAGE))
+        self.ser.write(chr(0x0b))
+        self.ser.write(chr(0x03))
+        self.ser.write(chr(0x01))
+        self.ser.write(chr(c))
+        self.ser.write(chr(b))
+        self.ser.write(chr(a))
+        self.ser.write(chr(f))
+        self.ser.write(chr(e))
+        self.ser.write(chr(d))
+
+        if dots:
+            self.ser.write(chr(dots))
+        else:
+            self.ser.write(chr(0))
+        if beep:
             self.ser.write(chr(0x03))
+        else:
             self.ser.write(chr(0x01))
-            self.ser.write(chr(c))
-            self.ser.write(chr(b))
-            self.ser.write(chr(a))
-            self.ser.write(chr(f))
-            self.ser.write(chr(e))
-            self.ser.write(chr(d))
+        self.ser.write(chr(0x00))
 
-            if dots:
-                self.ser.write(chr(dots))
-            else:
-                self.ser.write(chr(0))
-            if beep:
-                self.ser.write(chr(0x03))
-            else:
-                self.ser.write(chr(0x01))
-            self.ser.write(chr(0x00))
-
-            time.sleep(1)
-            if num_tries>1:
-                print "try : {0}".format(num_tries)
+            # time.sleep(1)
+            # if num_tries>1:
+            #     print "try : {0}".format(num_tries)
 
             # if self.dgt_clock and num_tries>=5:
             #     break
-            if num_tries>=max_num_tries:
-                break
+            # if num_tries>=max_num_tries:
+            #     break
         # if not test_clock:
 
         # Retry logic?
@@ -559,14 +560,15 @@ class DGTBoard(object):
 
             if buf:
                 if buf[0] == 10 and buf[1] == 16 and buf[2] == 1 and buf[3] == 10 and not buf[4] and not buf[5] and not buf[6]:
-                    print "clock ACK received!"
+                    # print "clock ACK received!"
 
-                    self.clock_ack_recv = True
+                    # self.clock_ack_recv = True
                     # self.dgt_clock_ack_lock.acquire()
                     # self.clock_queue.get()
                     # self.clock_queue.task_done()
                     if not self.dgt_clock:
                         self.dgt_clock = True
+                    self.fire(type=CLOCK_ACK, message='')
                 if 5 <= buf[4] <= 6 and buf[5] == 49:
                     self.fire(type=CLOCK_BUTTON_PRESSED, message=0)
 
