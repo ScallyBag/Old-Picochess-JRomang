@@ -16,6 +16,7 @@ BOARD = "Board"
 FEN = "FEN"
 CLOCK_BUTTON_PRESSED = "CLOCK_BUTTON_PRESSED"
 CLOCK_ACK = "CLOCK_ACK"
+CLOCK_LEVER = "CLOCK_LEVER"
 
 DGTNIX_MSG_UPDATE = 0x05
 _DGTNIX_SEND_BRD = 0x42
@@ -409,21 +410,38 @@ class DGTBoard(object):
             message = self.format_str_for_dgt(message)
         with self.dgt_clock_lock:
             # self.clock_ack_recv = False
+                  #     time.sleep(5)
             self._sendMessageToClock(self.char_to_lcd_code(message[0]), self.char_to_lcd_code(message[1]),
                                 self.char_to_lcd_code(message[2]), self.char_to_lcd_code(message[3]),
                                 self.char_to_lcd_code(message[4]), self.char_to_lcd_code(message[5]),
                                 beep, dots, test_clock=test_clock, max_num_tries = max_num_tries)
             # self.clock_ack_recv = False
+            if test_clock and not self.dgt_clock:
+                tries = 1
+                while True:
+                    time.sleep(1)
+                    if not self.dgt_clock:
+                        tries += 1
+                        if tries > max_num_tries:
+                            break
+                        self._sendMessageToClock(self.char_to_lcd_code(message[0]), self.char_to_lcd_code(message[1]),
+                                    self.char_to_lcd_code(message[2]), self.char_to_lcd_code(message[3]),
+                                    self.char_to_lcd_code(message[4]), self.char_to_lcd_code(message[5]),
+                                    beep, dots, test_clock=test_clock, max_num_tries = max_num_tries)
+                    else:
+                        break
+
 
 
 
     def test_for_dgt_clock(self, message="pic023", wait_time = 5):
     # try:
-        signal.signal(signal.SIGALRM, self.dgt_clock_test_post_handler)
+    #     signal.signal(signal.SIGALRM, self.dgt_clock_test_post_handler)
 
-        signal.alarm(wait_time)
-        self.send_message_to_clock(message, True, False, test_clock = True)
-        signal.alarm(0)
+        # signal.alarm(wait_time)
+        self.send_message_to_clock(message, True, False, test_clock=True, max_num_tries=wait_time)
+
+        # signal.alarm(0)
         # except serial.serialutil.SerialException:
         #     return False
         # return True
@@ -493,8 +511,8 @@ class DGTBoard(object):
             self.ser.write(chr(0x01))
         self.ser.write(chr(0x00))
 
-        if test_clock:
-            time.sleep(1)
+        # if test_clock:
+        #     time.sleep(5)
 
             # time.sleep(1)
             # if num_tries>1:
@@ -562,6 +580,8 @@ class DGTBoard(object):
             # print buf
 
             if buf:
+                if buf[0] == buf[1] == buf[2] == buf[3] == buf[4] == buf[5] == 0:
+                    self.fire(type=CLOCK_LEVER, message=buf[6])
                 if buf[0] == 10 and buf[1] == 16 and buf[2] == 1 and buf[3] == 10 and not buf[4] and not buf[5] and not buf[6]:
                     # print "clock ACK received!"
 

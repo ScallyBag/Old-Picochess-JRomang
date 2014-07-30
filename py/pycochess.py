@@ -18,6 +18,7 @@ from pydgt import DGTBoard
 from pydgt import FEN
 from pydgt import CLOCK_BUTTON_PRESSED
 from pydgt import CLOCK_ACK
+from pydgt import CLOCK_LEVER
 from polyglot_opening_book import PolyglotOpeningBook
 
 START_GAME_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
@@ -245,6 +246,7 @@ class Pycochess(object):
         self.alt_input_entry = START_ALT_INPUT
         self.use_tb = False
         self.clock_ack_queue = Queue()
+        self.clock_lever = None
         self.dgt_clock_lock = RLock()
         self.dgt_pause_clock = False
         self.dgt_clock_msg_queue = Queue()
@@ -421,6 +423,16 @@ class Pycochess(object):
         if attr.type == CLOCK_ACK:
             self.clock_ack_queue.put('ack')
             print "Clock ACK Received"
+        if attr.type == CLOCK_LEVER:
+            if self.clock_lever != attr.message:
+                if self.clock_lever:
+                    # not first clock level read
+                    # print "clock level changed to {0}!".format(attr.message)
+                    e = ButtonEvent(7)
+                    self.button_event(e)
+
+                self.clock_lever = attr.message
+
 
 
     def poll_dgt(self):
@@ -442,6 +454,7 @@ class Pycochess(object):
                 # print "got message!"
                 while True:
                     self.dgt.send_message_to_clock(msg.message, move=msg.move, dots=msg.dots, beep=msg.beep, max_num_tries=msg.max_num_tries)
+                    sleep(1)
                     ack_msg = self.clock_ack_queue.get(1)
                     if ack_msg:
                         break
@@ -1305,14 +1318,14 @@ class Pycochess(object):
                             output_str += ", "
                         if self.dgt.dgt_clock:
                             self.write_to_dgt(e[2], move=True, max_num_tries=1, beep=False)
-                            sleep(1)
+                            # sleep(1)
 
                     self.write_to_piface(output_str, clear=True)
 
                 else:
                     self.write_to_piface("Ponder: {0}".format(self.ponder_move), clear=True)
                     self.write_to_dgt(self.ponder_move, move=True, max_num_tries=1, beep=False)
-                sleep(1)
+                # sleep(1)
                 # self.dgt_pause_clock = False
 
                # if not, then show a position hint
@@ -1385,8 +1398,12 @@ class Pycochess(object):
                     msg = "Tablebases {0}".format(status)
                     print msg
                     self.write_to_piface(msg, clear=True)
+                    self.write_to_dgt("tb {0}".format(status))
+
                 elif event.pin_num == EngineMenu.ENG_INFO:
                     self.write_to_piface(sf.info(), clear=True)
+                    self.write_to_dgt(sf.info())
+
         if self.current_menu == MenuRotation.ALT_INPUT:
             if 0 <= event.pin_num <= 3:
                 self.alt_input_entry[event.pin_num] = self.char_add(self.alt_input_entry[event.pin_num], 1)
@@ -1405,6 +1422,8 @@ class Pycochess(object):
                     self.alt_input_entry[3] = '1'
 
                 self.write_to_piface("".join(self.alt_input_entry), clear=True)
+                self.write_to_dgt("".join(self.alt_input_entry))
+
 
             elif event.pin_num == 4:
                 # process move
@@ -1423,6 +1442,8 @@ class Pycochess(object):
                 # else:
                 m = "".join(self.alt_input_entry)
                 self.write_to_piface("Validating..", clear=True)
+                self.write_to_dgt("valid.")
+
                 if m == "b1b1":
                     self.start_new_game()
                 elif m == "e8e8":
@@ -1446,6 +1467,8 @@ class Pycochess(object):
                         self.alt_input_entry = START_ALT_INPUT
                     else:
                         self.write_to_piface("Invalid Move", clear=True)
+                        self.write_to_dgt("invalid")
+
 
         if self.current_menu == MenuRotation.SYSTEM:
             if 0 <= event.pin_num <= 4:
@@ -1454,6 +1477,8 @@ class Pycochess(object):
                     try:
                         s.connect(("google.com", 80))
                         self.write_to_piface(s.getsockname()[0], clear=True)
+                        self.write_to_dgt(s.getsockname()[0])
+
                         s.close()
                     # TODO: Better handling of exceptions of socket connect
                     except socket.error, v:
@@ -1461,11 +1486,15 @@ class Pycochess(object):
 
                 if event.pin_num == SystemMenu.SHUTDOWN:
                     self.write_to_piface("Shutting Down! Bye", clear=True)
+                    self.write_to_dgt("pwroff")
+
                     os.system("shutdown -h now")
 
                 if event.pin_num == SystemMenu.RESTART:
                     self.write_to_piface("Restarting..", clear=True)
                     os.execl(sys.executable, *([sys.executable]+sys.argv))
+                    self.write_to_dgt("restrt")
+
 
                 if event.pin_num == SystemMenu.UPDATE:
                     self.write_to_piface("Checking for Updates..", clear=True)
@@ -1486,8 +1515,12 @@ class Pycochess(object):
                         self.write_to_piface("No New Updates", clear=True)
                     else:
                         self.write_to_piface("Updates found. Updating...", clear=True)
+                        self.write_to_dgt("update")
+
                         os.system("cd {0};git pull".format(PROG_PATH))
                         self.write_to_piface("Restarting..", clear=True)
+                        self.write_to_dgt("restrt")
+
                         os.execl(sys.executable, *([sys.executable]+sys.argv))
         if event.pin_num == 6 or event.pin_num == 7:
             if event.pin_num == 6:
@@ -1504,17 +1537,30 @@ class Pycochess(object):
 
             if self.current_menu == MenuRotation.POSITION:
                 self.write_to_piface("Setup Position", clear=True)
+                self.write_to_dgt("setup")
+
+                # self.write_to_dgt()
             elif self.current_menu == MenuRotation.MAIN:
                 self.write_to_piface("Play Menu", clear=True)
+                self.write_to_dgt("play")
+
             elif self.current_menu == MenuRotation.ALT_INPUT:
                 self.write_to_piface("Alternate Input", clear=True)
+                self.write_to_dgt("altinp")
+
                 self.alt_input_entry = START_ALT_INPUT
             elif self.current_menu == MenuRotation.SYSTEM:
                 self.write_to_piface("System Menu", clear=True)
+                self.write_to_dgt("system")
+
             elif self.current_menu == MenuRotation.ENGINE:
                 self.write_to_piface("Engine Menu", clear=True)
+                self.write_to_dgt("engine")
+
             elif self.current_menu == MenuRotation.DATABASE:
                 self.write_to_piface("Database Menu", clear=True)
+                self.write_to_dgt("databs")
+
 
         # SCAN_POSITION, WHITE_TO_MOVE, BLACK_TO_MOVE, REVERSE_ORIENTATION = range(4)
         if self.current_menu == MenuRotation.POSITION:
@@ -1524,6 +1570,8 @@ class Pycochess(object):
                 color = "White" if self.turn == WHITE else "Black"
                 print "{0} to move".format(color)
                 self.write_to_piface("{0} to move".format(color), clear=True)
+                self.write_to_dgt(color)
+
 
             elif event.pin_num == PositionMenu.COMP_PLAY_TOGGLE:
                 print "current engine color: {0}".format(self.engine_comp_color)
@@ -1531,9 +1579,13 @@ class Pycochess(object):
                 color = "White" if self.engine_comp_color == WHITE else "Black"
                 print "Computer plays {0}".format(color)
                 self.write_to_piface("Computer plays {0}".format(color), clear=True)
+                # self.write_to_dgt("")
+
             elif event.pin_num == PositionMenu.REVERSE_ORIENTATION:
                 self.dgt.reverse_board()
                 self.write_to_piface("Reverse Board", clear=True)
+                self.write_to_dgt("revrse")
+
             elif event.pin_num == PositionMenu.SCAN_POSITION:
                 # Scan current fen
                 fen = self.fen_to_move(self.current_fen, self.turn)
@@ -1543,6 +1595,8 @@ class Pycochess(object):
                 self.san_move_list = []
 
                 self.write_to_piface("Scan Position", clear=True)
+                self.write_to_dgt("scan")
+
                 if self.engine_comp_color == self.turn:
                     print "Forcing comp to move"
                     self.engine_computer_move = True
