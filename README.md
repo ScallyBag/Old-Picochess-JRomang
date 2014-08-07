@@ -1,4 +1,4 @@
-Stockfish
+Picochess
 =========
 
 Stand alone chess computer with Stockfish and DGT Board
