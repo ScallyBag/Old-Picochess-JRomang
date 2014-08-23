@@ -1419,7 +1419,7 @@ moves_loop: // When in check and at SpNode search starts from here
         int s = RootMoves[i].score;
 
         // Don't allow crazy blunders even at very low skills
-        if (i > 0 && RootMoves[i - 1].score > s + 2 * PawnValueMg)
+        if(!(Options["Beginner Mode"]) && (i > 0 && RootMoves[i - 1].score > s + 2 * PawnValueMg))
             break;
 
         // This is our magic formula
