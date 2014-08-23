@@ -1121,12 +1121,12 @@ bool Position::is_draw() const {
       return true;
 
   StateInfo* stp = st;
-  for (int i = 2, e = std::min(st->rule50, st->pliesFromNull); i <= e; i += 2)
+  for (int i = 2, e = std::min(st->rule50, st->pliesFromNull), rep_count=0; i <= e; i += 2)
   {
       stp = stp->previous->previous;
 
-      if (stp->key == st->key)
-          return true; // Draw at first repetition
+      if (stp->key == st->key && ++rep_count>=2)
+          return true; // Draw at third repetition
   }
 
   return false;
