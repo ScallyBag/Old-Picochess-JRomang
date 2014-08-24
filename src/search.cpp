@@ -359,6 +359,7 @@ namespace {
     // Do we have to play with skill handicap? In this case enable MultiPV search
     // that we will use behind the scenes to retrieve a set of possible moves.
     multiPV = std::max(multiPV, skill.candidates_size());
+    if(Options["Beginner Mode"]) multiPV = 64;
 
     // Iterative deepening loop until requested to stop or target depth reached
     while (++depth <= MAX_PLY && !Signals.stop && (!Limits.depth || depth <= Limits.depth))
@@ -1411,6 +1412,13 @@ moves_loop: // When in check and at SpNode search starts from here
     int max_s = -VALUE_INFINITE;
     best = MOVE_NONE;
 
+    // In beginner mode, we send random moves from time to time.
+    if(Options["Beginner Mode"]
+       && rk.rand<unsigned>() % 20 >= Options["Skill Level"])
+    {
+        return RootMoves[rk.rand<unsigned>() % candidates].pv[0];
+    }
+
     // Choose best move. For each move score we add two terms both dependent on
     // weakness. One deterministic and bigger for weaker moves, and one random,
     // then we choose the move with the resulting highest score.
@@ -1419,7 +1427,7 @@ moves_loop: // When in check and at SpNode search starts from here
         int s = RootMoves[i].score;
 
         // Don't allow crazy blunders even at very low skills
-        if(!(Options["Beginner Mode"]) && (i > 0 && RootMoves[i - 1].score > s + 2 * PawnValueMg))
+        if(i > 0 && RootMoves[i - 1].score > s + 2 * PawnValueMg)
             break;
 
         // This is our magic formula
