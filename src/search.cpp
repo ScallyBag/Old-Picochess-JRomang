@@ -1414,9 +1414,9 @@ moves_loop: // When in check and at SpNode search starts from here
 
     // In beginner mode, we send random moves from time to time.
     if(Options["Beginner Mode"]
-       && rk.rand<unsigned>() % 20 >= Options["Skill Level"])
+       && (int)(rk.rand<unsigned>() % 20) >= Options["Skill Level"])
     {
-        return RootMoves[rk.rand<unsigned>() % candidates].pv[0];
+        return RootMoves[rk.rand<unsigned>() % RootMoves.size()].pv[0];
     }
 
     // Choose best move. For each move score we add two terms both dependent on
