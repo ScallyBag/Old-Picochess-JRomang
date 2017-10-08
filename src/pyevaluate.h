@@ -18,40 +18,19 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
+#ifndef PYEVALUATE_H_INCLUDED
+#define PYEVALUATE_H_INCLUDED
 
-#include "bitboard.h"
-#include "position.h"
-#include "search.h"
-#include "thread.h"
-#include "tt.h"
-#include "uci.h"
-#include "syzygy/tbprobe.h"
-#include "pyevaluate.h"
+#include <string>
 
-namespace PSQT {
-  void init();
+#include "types.h"
+
+class Position;
+
+namespace PyEval {
+
+void init();
+Value evaluate(const Position& pos);
 }
 
-int main(int argc, char* argv[]) {
-
-  std::cout << engine_info() << std::endl;
-
-  UCI::init(Options);
-  PSQT::init();
-  Bitboards::init();
-  Position::init();
-  Bitbases::init();
-  Search::init();
-  Pawns::init();
-  Tablebases::init(Options["SyzygyPath"]);
-  PyEval::init();
-  TT.resize(Options["Hash"]);
-  Threads.init(Options["Threads"]);
-  Search::clear(); // After threads are up
-
-  UCI::loop(argc, argv);
-
-  Threads.exit();
-  return 0;
-}
+#endif // #ifndef PYEVALUATE_H_INCLUDED

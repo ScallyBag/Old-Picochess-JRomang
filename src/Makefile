@@ -39,7 +39,7 @@ PGOBENCH = ./$(EXE) bench
 
 ### Object files
 OBJS = benchmark.o bitbase.o bitboard.o endgame.o evaluate.o main.o \
-	material.o misc.o movegen.o movepick.o pawns.o position.o psqt.o \
+	material.o misc.o movegen.o movepick.o pawns.o position.o psqt.o pyevaluate.o\
 	search.o thread.o timeman.o tt.o uci.o ucioption.o syzygy/tbprobe.o
 
 ### ==========================================================================
@@ -141,9 +141,9 @@ endif
 
 ### 3.1 Selecting compiler (default = gcc)
 
-CXXFLAGS += -Wall -Wcast-qual -std=c++11 $(EXTRACXXFLAGS)
+CXXFLAGS += -Wall -Wcast-qual -std=c++11 $(EXTRACXXFLAGS) $(shell python3-config --includes)
 DEPENDFLAGS += -std=c++11
-LDFLAGS += $(EXTRALDFLAGS)
+LDFLAGS += $(EXTRALDFLAGS) $(shell python3-config --libs)
 
 ifeq ($(COMP),)
 	COMP=gcc

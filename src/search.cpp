@@ -30,6 +30,7 @@
 #include "movegen.h"
 #include "movepick.h"
 #include "position.h"
+#include "pyevaluate.h"
 #include "search.h"
 #include "timeman.h"
 #include "thread.h"
@@ -54,7 +55,7 @@ namespace Tablebases {
 namespace TB = Tablebases;
 
 using std::string;
-using Eval::evaluate;
+using PyEval::evaluate;
 using namespace Search;
 
 namespace {
